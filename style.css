@@ -1,0 +1,101 @@
+body {
+  font-family: Arial, sans-serif;
+  margin: 20px;
+  background-color: #f4f4f4;
+}
+
+.container {
+  max-width: 900px;
+  margin: auto;
+  background: #fff;
+  padding: 20px;
+  border-radius: 8px;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+}
+
+h1,
+h2,
+h3,
+h4 {
+  color: #333;
+  text-align: center;
+}
+
+.input-section,
+.output-section,
+.graphs-section {
+  margin-bottom: 20px;
+  padding: 15px;
+  border: 1px solid #ddd;
+  border-radius: 5px;
+  background-color: #f9f9f9;
+}
+
+.input-section label {
+  display: block;
+  margin-bottom: 5px;
+  font-weight: bold;
+}
+
+.input-section input[type="number"] {
+  width: calc(100% - 22px);
+  padding: 8px;
+  margin-bottom: 10px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+.input-section button {
+  display: block;
+  width: 100%;
+  padding: 10px 15px;
+  background-color: #007bff;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 16px;
+}
+
+.input-section button:hover {
+  background-color: #0056b3;
+}
+
+.output-section span {
+  font-weight: bold;
+  color: #007bff;
+}
+
+.graphs-section {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 20px;
+}
+
+.graph-row {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 20px;
+  width: 100%;
+}
+
+.graph-container {
+  background-color: #fff;
+  border: 1px solid #eee;
+  padding: 10px;
+  border-radius: 5px;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+  text-align: center;
+}
+
+.graph-container.wide {
+  width: 100%; /* For the single output graph */
+}
+
+canvas {
+  background-color: #fff;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
