@@ -8,7 +8,7 @@
   </head>
   <body>
     <div class="container">
-      <h1>Нечіткий Контролер Рівня Безпеки</h1>
+      <h1>Нечіткий контролер для оцінки рівня безпеки системи</h1>
       <p class="description">
         Система нечіткого виводу для оцінки рівня безпеки на основі сили
         з'єднання, часу відгуку та споживання енергії
@@ -61,12 +61,13 @@
         <h2>Результат Обчислення</h2>
         <div class="result-display">
           <div class="result-item">
-            <span class="result-label">Рівень Безпеки:</span>
+            <span class="result-label">Security risk level value:</span>
             <span class="result-value" id="securityRiskOutput">--</span>
           </div>
           <div class="result-item">
-            <span class="result-label">Найактивніший Терм:</span>
+            <span class="result-label">Level of Security Risk:</span>
             <span class="result-term" id="activeOutputTerm">--</span>
+            <small class="result-explanation">Лінгвістична мітка з найвищим ступенем приналежності</small>
           </div>
         </div>
       </div>
@@ -126,11 +127,37 @@
       </div>
 
       <div class="rules-section">
-        <h3>База Правил</h3>
+        <h3>База Правил та Інтерпретація Результатів</h3>
         <p>
           Система використовує 27 правил нечіткого виводу для визначення рівня
           безпеки на основі комбінацій вхідних параметрів.
         </p>
+        
+        <div class="explanation-section">
+          <h4>Що означає "Домінуючий Терм"?</h4>
+          <p>
+            Домінуючий терм - це лінгвістична мітка (наприклад, "Високий", "Середній"), 
+            яка найкраще описує отриманий числовий результат. Він визначається як терм 
+            з найвищим ступенем приналежності для обчисленого значення.
+          </p>
+          <p>
+            <strong>Інтерпретація результатів:</strong><br>
+            • <strong>0-20:</strong> Дуже високий рівень безпеки (VeryLow risk)<br>
+            • <strong>20-40:</strong> Високий рівень безпеки (Low risk)<br>
+            • <strong>40-60:</strong> Середній рівень безпеки (Medium risk)<br>
+            • <strong>60-80:</strong> Низький рівень безпеки (High risk)<br>
+            • <strong>80-100:</strong> Дуже низький рівень безпеки (VeryHigh risk)
+          </p>
+          <p>
+            <strong>Приклад:</strong> Якщо рівень безпеки = 25.2, то:
+          </p>
+          <ul>
+            <li>Low (Високий рівень безпеки): 0.85 ← <em>Домінуючий терм</em></li>
+            <li>VeryLow (Дуже високий рівень безпеки): 0.35</li>
+            <li>Medium (Середній рівень безпеки): 0.15</li>
+          </ul>
+        </div>
+        
         <div class="rules-summary">
           <div class="rule-category">
             <strong>Низька сила з'єднання:</strong> Висока небезпека незалежно
