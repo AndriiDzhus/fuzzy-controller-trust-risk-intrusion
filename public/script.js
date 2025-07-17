@@ -1,7 +1,9 @@
-// Глобальні змінні для зберігання даних
-let membershipFunctions = null;
+// --- Fuzzy Controller Client using Server API ---
+// Глобальні змінні для зберігання даних від сервера
+let membershipFunctionsData = null;
 let currentCalculation = null;
 
+// --- DOM Elements and Variables ---
 // DOM елементи
 const connectionStrengthInput = document.getElementById("connectionStrength");
 const responseTimeInput = document.getElementById("responseTime");
@@ -54,7 +56,69 @@ const colors = {
   VeryHigh: "#c0392b",
 };
 
-// Event listeners
+// Tooltip елементи
+const tooltips = {
+  connectionStrength: document.getElementById("csTooltip"),
+  responseTime: document.getElementById("rtTooltip"),
+  energyConsumption: document.getElementById("ecTooltip"),
+  securityRiskLevel: document.getElementById("srTooltip"),
+};
+
+// --- API Functions ---
+// Функція для отримання даних функцій приналежності з сервера
+async function loadMembershipFunctions() {
+  try {
+    const response = await fetch("/api/membership-functions");
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    membershipFunctionsData = await response.json();
+    console.log(
+      "Membership functions loaded from server:",
+      membershipFunctionsData
+    );
+  } catch (error) {
+    console.error("Error loading membership functions:", error);
+    showError("Помилка завантаження даних з сервера");
+  }
+}
+
+// Функція для відправки запиту на обчислення результату
+async function calculateFuzzyResult(
+  connectionStrength,
+  responseTime,
+  energyConsumption
+) {
+  try {
+    const response = await fetch("/api/calculate", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        connectionStrength,
+        responseTime,
+        energyConsumption,
+      }),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(
+        errorData.error || `HTTP error! status: ${response.status}`
+      );
+    }
+
+    const result = await response.json();
+    console.log("Calculation result from server:", result);
+    return result;
+  } catch (error) {
+    console.error("Error calculating fuzzy result:", error);
+    throw error;
+  }
+}
+
+// --- Event Listeners ---
 calculateBtn.addEventListener("click", calculateAndDisplayFuzzyOutput);
 connectionStrengthInput.addEventListener("input", () => {
   csValue.textContent = connectionStrengthInput.value;
@@ -76,28 +140,19 @@ function debounceCalculation() {
   debounceTimer = setTimeout(calculateAndDisplayFuzzyOutput, 300);
 }
 
-// Завантаження функцій приналежності при ініціалізації
-async function loadMembershipFunctions() {
-  try {
-    const response = await fetch("/api/membership-functions");
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
-    membershipFunctions = await response.json();
-    drawAllGraphs();
-    return true;
-  } catch (error) {
-    console.error("Error loading membership functions:", error);
-    showError("Помилка завантаження функцій приналежності");
-    return false;
-  }
-}
-
-// Основна функція для обчислення та відображення результату
+// --- Main Calculation Function ---
 async function calculateAndDisplayFuzzyOutput() {
+  console.log("🧮 Початок обчислення...");
+
   const connectionStrengthVal = parseFloat(connectionStrengthInput.value);
   const responseTimeVal = parseFloat(responseTimeInput.value);
   const energyConsumptionVal = parseFloat(energyConsumptionInput.value);
+
+  console.log("📊 Вхідні дані:", {
+    connectionStrengthVal,
+    responseTimeVal,
+    energyConsumptionVal,
+  });
 
   // Валідація вхідних даних
   if (
@@ -105,6 +160,7 @@ async function calculateAndDisplayFuzzyOutput() {
     isNaN(responseTimeVal) ||
     isNaN(energyConsumptionVal)
   ) {
+    console.error("❌ Некоректні вхідні дані");
     showError("Некоректні вхідні дані");
     return;
   }
@@ -117,59 +173,65 @@ async function calculateAndDisplayFuzzyOutput() {
     energyConsumptionVal < 0 ||
     energyConsumptionVal > 100
   ) {
+    console.error("❌ Значення поза діапазоном 0-100");
     showError("Всі значення повинні бути в діапазоні 0-100");
     return;
   }
 
-  // Показати індикатор завантаження
-  calculateBtn.classList.add("loading");
-
   try {
-    const response = await fetch("/api/calculate", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        connectionStrength: connectionStrengthVal,
-        responseTime: responseTimeVal,
-        energyConsumption: energyConsumptionVal,
-      }),
-    });
+    console.log("📡 Відправка запиту на сервер...");
+    // Відправляємо запит на сервер для обчислення
+    const result = await calculateFuzzyResult(
+      connectionStrengthVal,
+      responseTimeVal,
+      energyConsumptionVal
+    );
 
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
+    console.log("✅ Результат отримано:", result);
 
-    const result = await response.json();
-    currentCalculation = result;
+    // Зберігаємо результат
+    currentCalculation = {
+      securityRisk: result.securityRisk,
+      mostActiveTerm: result.mostActiveTerm,
+      membershipData: result.membershipData,
+      inputValues: result.inputValues,
+    };
+
+    console.log("💾 Збережено результат:", currentCalculation);
 
     // Відображення результатів
-    securityRiskOutputSpan.textContent = result.securityRisk;
-    activeOutputTermSpan.textContent = translateTerm(result.mostActiveTerm);
+    securityRiskOutputSpan.textContent = currentCalculation.securityRisk;
+    activeOutputTermSpan.textContent = translateTerm(
+      currentCalculation.mostActiveTerm
+    );
+
+    console.log("📝 Оновлено UI результатів");
 
     // Оновлення відображення приналежності
-    updateMembershipDisplay(result.membershipData);
+    updateMembershipDisplay(currentCalculation.membershipData);
+
+    console.log("📊 Оновлено відображення приналежності");
 
     // Перемалювання графіків з поточними значеннями
     drawAllGraphs(
       connectionStrengthVal,
       responseTimeVal,
       energyConsumptionVal,
-      result.securityRisk,
-      result.mostActiveTerm
+      currentCalculation.securityRisk,
+      currentCalculation.mostActiveTerm
     );
 
     // Очистити повідомлення про помилку
     clearError();
+
+    console.log("✅ Обчислення завершено успішно");
   } catch (error) {
-    console.error("Error calculating result:", error);
-    showError("Помилка при обчисленні результату");
-  } finally {
-    calculateBtn.classList.remove("loading");
+    console.error("❌ Error calculating result:", error);
+    showError("Помилка при обчисленні результату: " + error.message);
   }
 }
 
+// --- Display Functions ---
 // Функція для відображення значень приналежності
 function updateMembershipDisplay(membershipData) {
   updateMembershipSection("csMembership", membershipData.connectionStrength);
@@ -180,6 +242,8 @@ function updateMembershipDisplay(membershipData) {
 
 function updateMembershipSection(elementId, data) {
   const container = document.getElementById(elementId);
+  if (!container) return;
+
   container.innerHTML = "";
 
   // Знаходимо максимальне значення для виділення
@@ -199,9 +263,9 @@ function updateMembershipSection(elementId, data) {
     }`;
 
     item.innerHTML = `
-            <span class="membership-label">${translateTerm(term)}</span>
-            <span class="membership-value">${value.toFixed(3)}</span>
-        `;
+      <span class="membership-label">${translateTerm(term)}</span>
+      <span class="membership-value">${value.toFixed(3)}</span>
+    `;
 
     container.appendChild(item);
   }
@@ -219,7 +283,7 @@ function translateTerm(term) {
   return translations[term] || term;
 }
 
-// Функції для малювання графіків
+// --- Graph Drawing Functions ---
 function drawAllGraphs(
   csVal = null,
   rtVal = null,
@@ -227,12 +291,27 @@ function drawAllGraphs(
   srVal = null,
   activeTerm = null
 ) {
-  if (!membershipFunctions) return;
+  console.log("🎨 Малювання графіків:", {
+    csVal,
+    rtVal,
+    ecVal,
+    srVal,
+    activeTerm,
+  });
+
+  if (!membershipFunctionsData) {
+    console.warn("⚠️ Membership functions data not loaded yet");
+    return;
+  }
+
+  console.log("📊 Дані для малювання:", membershipFunctionsData);
 
   drawMembershipGraph("connectionStrength", csVal, activeTerm);
   drawMembershipGraph("responseTime", rtVal, activeTerm);
   drawMembershipGraph("energyConsumption", ecVal, activeTerm);
   drawMembershipGraph("securityRiskLevel", srVal, activeTerm);
+
+  console.log("✅ Графіки намальовані");
 }
 
 function drawMembershipGraph(
@@ -240,15 +319,9 @@ function drawMembershipGraph(
   currentValue = null,
   highlightTerm = null
 ) {
-  if (!membershipFunctions) return;
-
-  const isOutput = variableName === "securityRiskLevel";
-  const data = isOutput
-    ? membershipFunctions.output[variableName]
-    : membershipFunctions.inputs[variableName];
   const canvasInfo = canvases[variableName];
 
-  if (!canvasInfo || !data) return;
+  if (!canvasInfo || !membershipFunctionsData) return;
 
   const { canvas, ctx } = canvasInfo;
   const width = canvas.width;
@@ -265,8 +338,17 @@ function drawMembershipGraph(
   // Малювання осей
   drawAxes(ctx, padding, width, height, graphWidth, graphHeight);
 
+  // Отримуємо дані для змінної з сервера
+  const variableData =
+    variableName === "securityRiskLevel"
+      ? membershipFunctionsData.output[variableName]
+      : membershipFunctionsData.inputs[variableName];
+
+  if (!variableData) return;
+
   // Малювання функцій приналежності
-  for (const [termName, points] of Object.entries(data)) {
+  Object.keys(variableData).forEach((termName) => {
+    const points = variableData[termName];
     const color = colors[termName] || "#333";
     const isHighlighted = termName === highlightTerm;
 
@@ -282,7 +364,7 @@ function drawMembershipGraph(
 
     // Додати підпис терма
     drawTermLabel(ctx, termName, color, padding, graphWidth);
-  }
+  });
 
   // Малювання поточного значення
   if (currentValue !== null) {
@@ -339,7 +421,7 @@ function drawMembershipCurve(
   color,
   isHighlighted
 ) {
-  if (points.length === 0) return;
+  if (!points || points.length === 0) return;
 
   ctx.beginPath();
   ctx.strokeStyle = color;
@@ -449,7 +531,7 @@ function drawAxisLabels(ctx, width, height, padding) {
   ctx.fillText("0.0", padding - 20, height - padding + 5);
 }
 
-// Функції для показу помилок
+// --- Error Handling Functions ---
 function showError(message) {
   // Видалити попередні повідомлення про помилки
   clearError();
@@ -460,7 +542,9 @@ function showError(message) {
   errorDiv.id = "error-message";
 
   const container = document.querySelector(".container");
-  container.insertBefore(errorDiv, container.firstChild);
+  if (container) {
+    container.insertBefore(errorDiv, container.firstChild);
+  }
 }
 
 function clearError() {
@@ -470,29 +554,164 @@ function clearError() {
   }
 }
 
-// Ініціалізація при завантаженні сторінки
-document.addEventListener("DOMContentLoaded", async () => {
-  console.log("Ініціалізація додатку...");
+// --- Tooltip Functions ---
+function setupCanvasTooltips() {
+  Object.keys(canvases).forEach((variableName) => {
+    const { canvas } = canvases[variableName];
+    const tooltip = tooltips[variableName];
 
-  // Завантажити функції приналежності
-  const loaded = await loadMembershipFunctions();
+    if (!tooltip) return;
 
-  if (loaded) {
-    // Встановити початкові значення
-    csValue.textContent = connectionStrengthInput.value;
-    rtValue.textContent = responseTimeInput.value;
-    ecValue.textContent = energyConsumptionInput.value;
+    canvas.addEventListener("mousemove", (event) => {
+      handleCanvasMouseMove(event, variableName, canvas, tooltip);
+    });
 
-    // Виконати початковий розрахунок
-    await calculateAndDisplayFuzzyOutput();
+    canvas.addEventListener("mouseleave", () => {
+      hideTooltip(tooltip);
+    });
+  });
+}
 
-    console.log("Додаток успішно ініціалізовано");
-  } else {
-    showError("Не вдалося ініціалізувати додаток");
+function handleCanvasMouseMove(event, variableName, canvas, tooltip) {
+  if (!membershipFunctionsData) return;
+
+  const rect = canvas.getBoundingClientRect();
+  const mouseX = event.clientX - rect.left;
+  const mouseY = event.clientY - rect.top;
+
+  // Розрахуємо координати відносно графіка
+  const padding = 40;
+  const graphWidth = canvas.width - 2 * padding;
+  const graphHeight = canvas.height - 2 * padding;
+
+  // Перевіримо, чи курсор знаходиться в межах графіка
+  if (
+    mouseX < padding ||
+    mouseX > canvas.width - padding ||
+    mouseY < padding ||
+    mouseY > canvas.height - padding
+  ) {
+    hideTooltip(tooltip);
+    return;
   }
-});
 
-// Функція для експорту результатів (додаткова функціональність)
+  // Конвертуємо координати курсора в значення графіка
+  const xValue = ((mouseX - padding) / graphWidth) * 100;
+
+  // Знайдемо значення функцій приналежності
+  const membershipInfo = getMembershipInfoAtX(variableName, xValue);
+
+  showTooltip(tooltip, event.clientX, event.clientY, xValue, membershipInfo);
+}
+
+function getMembershipInfoAtX(variableName, xValue) {
+  if (!membershipFunctionsData) return null;
+
+  const variableData =
+    variableName === "securityRiskLevel"
+      ? membershipFunctionsData.output[variableName]
+      : membershipFunctionsData.inputs[variableName];
+
+  if (!variableData) return null;
+
+  const info = {};
+
+  Object.keys(variableData).forEach((termName) => {
+    const points = variableData[termName];
+
+    // Знаходимо найближчу точку до xValue
+    let closestPoint = points[0];
+    let minDistance = Math.abs(points[0].x - xValue);
+
+    for (const point of points) {
+      const distance = Math.abs(point.x - xValue);
+      if (distance < minDistance) {
+        minDistance = distance;
+        closestPoint = point;
+      }
+    }
+
+    info[termName] = {
+      x: xValue,
+      y: closestPoint.y,
+      color: colors[termName] || "#333",
+    };
+  });
+
+  return info;
+}
+
+function showTooltip(tooltip, mouseX, mouseY, xValue, membershipInfo) {
+  if (!tooltip) return;
+
+  let content = `<strong>Координати:</strong><br>X: ${xValue.toFixed(1)}<br>`;
+
+  if (membershipInfo) {
+    content +=
+      '<hr style="margin: 6px 0; border: none; border-top: 1px solid rgba(255,255,255,0.3);">';
+    content += "<strong>Функції приналежності:</strong><br>";
+
+    // Сортуємо терми за значенням приналежності
+    const sortedTerms = Object.entries(membershipInfo).sort(
+      ([, a], [, b]) => b.y - a.y
+    );
+
+    sortedTerms.forEach(([termName, info]) => {
+      const colorDot = `<span style="display: inline-block; width: 10px; height: 10px; background: ${info.color}; border-radius: 50%; margin-right: 6px; vertical-align: middle; border: 1px solid rgba(255,255,255,0.3);"></span>`;
+      const membershipValue = info.y.toFixed(3);
+      const percentage = (info.y * 100).toFixed(1);
+      content += `${colorDot}<strong>${termName}:</strong> ${membershipValue} (${percentage}%)<br>`;
+    });
+  }
+
+  tooltip.innerHTML = content;
+
+  // Позиціонуємо tooltip у межах екрана
+  const { x, y } = positionTooltip(tooltip, mouseX, mouseY);
+  tooltip.style.left = x + "px";
+  tooltip.style.top = y + "px";
+  tooltip.classList.add("visible");
+}
+
+function hideTooltip(tooltip) {
+  if (!tooltip) return;
+  tooltip.classList.remove("visible");
+}
+
+// Функція для позиціонування tooltip у межах екрана
+function positionTooltip(tooltip, mouseX, mouseY) {
+  const tooltipRect = tooltip.getBoundingClientRect();
+  const viewportWidth = window.innerWidth;
+  const viewportHeight = window.innerHeight;
+
+  let x = mouseX;
+  let y = mouseY;
+
+  // Перевіряємо, чи tooltip виходить за правий край екрана
+  if (x + tooltipRect.width > viewportWidth) {
+    x = viewportWidth - tooltipRect.width - 10;
+  }
+
+  // Перевіряємо, чи tooltip виходить за лівий край екрана
+  if (x < 10) {
+    x = 10;
+  }
+
+  // Перевіряємо, чи tooltip виходить за верхній край екрана
+  if (y - tooltipRect.height - 15 < 10) {
+    y = mouseY + 25; // Показуємо знизу від курсора
+    tooltip.style.transform = "translate(-50%, 0)";
+    // Змінюємо стрілку для відображення зверху
+    tooltip.style.setProperty("--arrow-position", "top");
+  } else {
+    tooltip.style.transform = "translate(-50%, calc(-100% - 15px))";
+    tooltip.style.setProperty("--arrow-position", "bottom");
+  }
+
+  return { x, y };
+}
+
+// --- Export Functions ---
 function exportResults() {
   if (!currentCalculation) {
     showError("Немає даних для експорту");
@@ -526,3 +745,52 @@ function exportResults() {
   a.click();
   URL.revokeObjectURL(url);
 }
+
+// --- Initialization ---
+document.addEventListener("DOMContentLoaded", async () => {
+  console.log("🚀 Ініціалізація додатку...");
+  console.log("DOM елементи:", {
+    connectionStrengthInput: !!connectionStrengthInput,
+    responseTimeInput: !!responseTimeInput,
+    energyConsumptionInput: !!energyConsumptionInput,
+    canvases: Object.keys(canvases).map((key) => ({
+      [key]: !!canvases[key].canvas,
+    })),
+  });
+
+  // Встановити початкові значення
+  if (csValue && connectionStrengthInput) {
+    csValue.textContent = connectionStrengthInput.value;
+  }
+  if (rtValue && responseTimeInput) {
+    rtValue.textContent = responseTimeInput.value;
+  }
+  if (ecValue && energyConsumptionInput) {
+    ecValue.textContent = energyConsumptionInput.value;
+  }
+
+  try {
+    // Завантажити дані функцій приналежності з сервера
+    console.log("📡 Завантаження функцій приналежності...");
+    await loadMembershipFunctions();
+
+    if (membershipFunctionsData) {
+      console.log("✅ Функції приналежності завантажено успішно");
+    } else {
+      console.error("❌ Функції приналежності не завантажились");
+    }
+
+    // Налаштувати tooltip для графіків
+    console.log("🖱️ Налаштування tooltips...");
+    setupCanvasTooltips();
+
+    // Виконати початковий розрахунок
+    console.log("🧮 Початковий розрахунок...");
+    await calculateAndDisplayFuzzyOutput();
+
+    console.log("✅ Додаток успішно ініціалізовано");
+  } catch (error) {
+    console.error("❌ Помилка ініціалізації:", error);
+    showError("Помилка ініціалізації додатку: " + error.message);
+  }
+});
