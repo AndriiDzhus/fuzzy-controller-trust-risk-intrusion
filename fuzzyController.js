@@ -17,25 +17,25 @@ const energyConsumption = new LinguisticVariable("energyConsumption", [0, 100]);
 const securityRiskLevel = new LinguisticVariable("securityRiskLevel", [0, 100]);
 
 // Додаємо терми для Connection Strength
-connectionStrength.addTerm(new Term("Low", "trapeze", [0, 0, 35, 60]));
-connectionStrength.addTerm(new Term("Medium", "trapeze", [30, 55, 75, 90]));
-connectionStrength.addTerm(new Term("High", "trapeze", [75, 85, 100, 100]));
+connectionStrength.addTerm(new Term("Low", "trapeze", [0, 0, 20, 40]));
+connectionStrength.addTerm(new Term("Medium", "trapeze", [20, 40, 60, 80]));
+connectionStrength.addTerm(new Term("High", "trapeze", [60, 80, 100, 100]));
 
 // Додаємо терми для Response Time
-responseTime.addTerm(new Term("Low", "trapeze", [0, 0, 35, 60]));
-responseTime.addTerm(new Term("Medium", "trapeze", [30, 55, 75, 90]));
-responseTime.addTerm(new Term("High", "trapeze", [75, 85, 100, 100]));
+responseTime.addTerm(new Term("Low", "trapeze", [0, 0, 30, 50]));
+responseTime.addTerm(new Term("Medium", "trapeze", [30, 50, 70, 90]));
+responseTime.addTerm(new Term("High", "trapeze", [70, 90, 100, 100]));
 
 // Додаємо терми для Energy Consumption
-energyConsumption.addTerm(new Term("Low", "trapeze", [0, 0, 35, 60]));
-energyConsumption.addTerm(new Term("Medium", "trapeze", [30, 55, 75, 90]));
-energyConsumption.addTerm(new Term("High", "trapeze", [75, 85, 100, 100]));
+energyConsumption.addTerm(new Term("Low", "trapeze", [0, 0, 10, 30]));
+energyConsumption.addTerm(new Term("Medium", "trapeze", [10, 30, 50, 70]));
+energyConsumption.addTerm(new Term("High", "trapeze", [50, 70, 100, 100]));
 
 // Додаємо терми для Security Risk Level
 securityRiskLevel.addTerm(new Term("VeryLow", "triangle", [0, 0, 25]));
-securityRiskLevel.addTerm(new Term("Low", "triangle", [10, 30, 50]));
-securityRiskLevel.addTerm(new Term("Medium", "triangle", [35, 50, 65]));
-securityRiskLevel.addTerm(new Term("High", "triangle", [50, 70, 90]));
+securityRiskLevel.addTerm(new Term("Low", "triangle", [0, 25, 50]));
+securityRiskLevel.addTerm(new Term("Medium", "triangle", [25, 50, 75]));
+securityRiskLevel.addTerm(new Term("High", "triangle", [50, 75, 100]));
 securityRiskLevel.addTerm(new Term("VeryHigh", "triangle", [75, 100, 100]));
 
 // Додаємо змінні до системи
@@ -109,25 +109,25 @@ function triangularMF(x, a, b, c) {
 // Визначаємо параметри функцій приналежності для візуалізації
 const membershipParams = {
   connectionStrength: {
-    Low: { type: "trapeze", params: [0, 0, 35, 60] },
-    Medium: { type: "trapeze", params: [30, 55, 75, 90] },
-    High: { type: "trapeze", params: [75, 85, 100, 100] },
+    Low: { type: "trapeze", params: [0, 0, 20, 40] },
+    Medium: { type: "trapeze", params: [20, 40, 60, 80] },
+    High: { type: "trapeze", params: [60, 80, 100, 100] },
   },
   responseTime: {
-    Low: { type: "trapeze", params: [0, 0, 35, 60] },
-    Medium: { type: "trapeze", params: [30, 55, 75, 90] },
-    High: { type: "trapeze", params: [75, 85, 100, 100] },
+    Low: { type: "trapeze", params: [0, 0, 30, 50] },
+    Medium: { type: "trapeze", params: [30, 50, 70, 90] },
+    High: { type: "trapeze", params: [70, 90, 100, 100] },
   },
   energyConsumption: {
-    Low: { type: "trapeze", params: [0, 0, 35, 60] },
-    Medium: { type: "trapeze", params: [30, 55, 75, 90] },
-    High: { type: "trapeze", params: [75, 85, 100, 100] },
+    Low: { type: "trapeze", params: [0, 0, 10, 30] },
+    Medium: { type: "trapeze", params: [10, 30, 50, 70] },
+    High: { type: "trapeze", params: [50, 70, 100, 100] },
   },
   securityRiskLevel: {
     VeryLow: { type: "triangle", params: [0, 0, 25] },
-    Low: { type: "triangle", params: [10, 30, 50] },
-    Medium: { type: "triangle", params: [35, 50, 65] },
-    High: { type: "triangle", params: [50, 70, 90] },
+    Low: { type: "triangle", params: [0, 25, 50] },
+    Medium: { type: "triangle", params: [25, 50, 75] },
+    High: { type: "triangle", params: [50, 75, 100] },
     VeryHigh: { type: "triangle", params: [75, 100, 100] },
   },
 };
@@ -154,22 +154,22 @@ function calculateMembershipValues(variable, value) {
   const memberships = {};
   
   if (variable === "connectionStrength") {
-    memberships.Low = trapezoidalMF(value, 0, 0, 35, 60);
-    memberships.Medium = trapezoidalMF(value, 30, 55, 75, 90);
-    memberships.High = trapezoidalMF(value, 75, 85, 100, 100);
+    memberships.Low = trapezoidalMF(value, 0, 0, 20, 40);
+    memberships.Medium = trapezoidalMF(value, 20, 40, 60, 80);
+    memberships.High = trapezoidalMF(value, 60, 80, 100, 100);
   } else if (variable === "responseTime") {
-    memberships.Low = trapezoidalMF(value, 0, 0, 35, 60);
-    memberships.Medium = trapezoidalMF(value, 30, 55, 75, 90);
-    memberships.High = trapezoidalMF(value, 75, 85, 100, 100);
+    memberships.Low = trapezoidalMF(value, 0, 0, 30, 50);
+    memberships.Medium = trapezoidalMF(value, 30, 50, 70, 90);
+    memberships.High = trapezoidalMF(value, 70, 90, 100, 100);
   } else if (variable === "energyConsumption") {
-    memberships.Low = trapezoidalMF(value, 0, 0, 35, 60);
-    memberships.Medium = trapezoidalMF(value, 30, 55, 75, 90);
-    memberships.High = trapezoidalMF(value, 75, 85, 100, 100);
+    memberships.Low = trapezoidalMF(value, 0, 0, 10, 30);
+    memberships.Medium = trapezoidalMF(value, 10, 30, 50, 70);
+    memberships.High = trapezoidalMF(value, 50, 70, 100, 100);
   } else if (variable === "securityRiskLevel") {
     memberships.VeryLow = triangularMF(value, 0, 0, 25);
-    memberships.Low = triangularMF(value, 10, 30, 50);
-    memberships.Medium = triangularMF(value, 35, 50, 65);
-    memberships.High = triangularMF(value, 50, 70, 90);
+    memberships.Low = triangularMF(value, 0, 25, 50);
+    memberships.Medium = triangularMF(value, 25, 50, 75);
+    memberships.High = triangularMF(value, 50, 75, 100);
     memberships.VeryHigh = triangularMF(value, 75, 100, 100);
   }
   
