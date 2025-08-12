@@ -49,11 +49,11 @@ const canvases = {
 
 // Кольори для різних термів
 const colors = {
-  Low: "#3498db",
-  Medium: "#f39c12",
-  High: "#e74c3c",
-  VeryLow: "#9b59b6",
-  VeryHigh: "#c0392b",
+  Low: "#e74c3c",      // червоний
+  Medium: "#3498db",    // синій  
+  High: "#27ae60",      // зелений
+  VeryLow: "#3498db",   // синій
+  VeryHigh: "#3498db",  // синій
 };
 
 // Tooltip елементи
@@ -372,7 +372,7 @@ function drawMembershipGraph(
   }
 
   // Додати підписи осей
-  drawAxisLabels(ctx, width, height, padding);
+  drawAxisLabels(ctx, width, height, padding, variableName);
 }
 
 function drawAxes(ctx, padding, width, height, graphWidth, graphHeight) {
@@ -475,18 +475,27 @@ function drawTermLabel(ctx, termName, color, padding, graphWidth) {
 
   // Позиціонування підписів
   const positions = {
-    Low: 0.2,
-    VeryLow: 0.1,
+    Low: 0.25,
+    VeryLow: 0.05,
     Medium: 0.5,
-    High: 0.8,
-    VeryHigh: 0.9,
+    High: 0.75,
+    VeryHigh: 0.95,
   };
 
   const position = positions[termName] || 0.5;
   const x = padding + graphWidth * position;
-  const y = padding - 10;
-
-  ctx.fillText(translateTerm(termName), x, y);
+  
+  // Спеціальне відображення для довгих термів
+  if (termName === "VeryLow") {
+    ctx.fillText("Дуже", x, padding - 20);
+    ctx.fillText("Низький", x, padding - 8);
+  } else if (termName === "VeryHigh") {
+    ctx.fillText("Дуже", x, padding - 20);
+    ctx.fillText("Високий", x, padding - 8);
+  } else {
+    const y = padding - 10;
+    ctx.fillText(translateTerm(termName), x, y);
+  }
 }
 
 function drawCurrentValueMarker(ctx, value, padding, graphWidth, graphHeight) {
@@ -506,18 +515,46 @@ function drawCurrentValueMarker(ctx, value, padding, graphWidth, graphHeight) {
   ctx.fillStyle = "#2c3e50";
   ctx.font = "bold 14px Arial";
   ctx.textAlign = "center";
-  ctx.fillText(value.toFixed(1), x, padding + graphHeight + 20);
+  ctx.fillText(value.toFixed(1), x, padding + graphHeight + 40);
 }
 
-function drawAxisLabels(ctx, width, height, padding) {
+function drawAxisLabels(ctx, width, height, padding, variableName = null) {
   ctx.fillStyle = "#7f8c8d";
   ctx.font = "12px Arial";
   ctx.textAlign = "center";
 
-  // Підписи для X-осі
+  // Підписи для X-осі залежно від типу змінної
+  const graphWidth = width - 2 * padding;
+  
+  // Завжди показуємо 0 та 100
   ctx.fillText("0", padding, height - padding + 20);
-  ctx.fillText("50", width / 2, height - padding + 20);
   ctx.fillText("100", width - padding, height - padding + 20);
+  
+  // Додаємо ключові точки для кожного типу змінної
+  if (variableName === "connectionStrength") {
+    // Ключові точки: 20, 40, 60, 80
+    ctx.fillText("20", padding + (20/100) * graphWidth, height - padding + 20);
+    ctx.fillText("40", padding + (40/100) * graphWidth, height - padding + 20);
+    ctx.fillText("60", padding + (60/100) * graphWidth, height - padding + 20);
+    ctx.fillText("80", padding + (80/100) * graphWidth, height - padding + 20);
+  } else if (variableName === "responseTime") {
+    // Ключові точки: 30, 50, 70, 90
+    ctx.fillText("30", padding + (30/100) * graphWidth, height - padding + 20);
+    ctx.fillText("50", padding + (50/100) * graphWidth, height - padding + 20);
+    ctx.fillText("70", padding + (70/100) * graphWidth, height - padding + 20);
+    ctx.fillText("90", padding + (90/100) * graphWidth, height - padding + 20);
+  } else if (variableName === "energyConsumption") {
+    // Ключові точки: 10, 30, 50, 70
+    ctx.fillText("10", padding + (10/100) * graphWidth, height - padding + 20);
+    ctx.fillText("30", padding + (30/100) * graphWidth, height - padding + 20);
+    ctx.fillText("50", padding + (50/100) * graphWidth, height - padding + 20);
+    ctx.fillText("70", padding + (70/100) * graphWidth, height - padding + 20);
+  } else if (variableName === "securityRiskLevel") {
+    // Ключові точки: 25, 50, 75
+    ctx.fillText("25", padding + (25/100) * graphWidth, height - padding + 20);
+    ctx.fillText("50", padding + (50/100) * graphWidth, height - padding + 20);
+    ctx.fillText("75", padding + (75/100) * graphWidth, height - padding + 20);
+  }
 
   // Підписи для Y-осі
   ctx.save();
@@ -527,7 +564,6 @@ function drawAxisLabels(ctx, width, height, padding) {
   ctx.restore();
 
   ctx.fillText("1.0", padding - 20, padding + 5);
-  ctx.fillText("0.5", padding - 20, height / 2 + 5);
   ctx.fillText("0.0", padding - 20, height - padding + 5);
 }
 
