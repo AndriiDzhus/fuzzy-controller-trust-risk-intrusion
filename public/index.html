@@ -11,12 +11,13 @@
       <h1>Нечіткий контролер для оцінки рівня безпеки системи</h1>
       <p class="description">
         Система нечіткого виводу для оцінки рівня безпеки на основі сили
-        з'єднання, часу відгуку та споживання енергії
+        з'єднання (CS), часу відгуку (RT) та споживання енергії (EC).
+        Результат: рівень ризику безпеки (SR).
       </p>
 
       <div class="input-section">
         <div class="input-group">
-          <label for="connectionStrength">Сила З'єднання (0-100):</label>
+          <label for="connectionStrength">Сила З'єднання (CS) (0-100):</label>
           <input
             type="number"
             id="connectionStrength"
@@ -29,7 +30,7 @@
         </div>
 
         <div class="input-group">
-          <label for="responseTime">Час Відгуку (0-100):</label>
+          <label for="responseTime">Час Відгуку (RT) (0-100):</label>
           <input
             type="number"
             id="responseTime"
@@ -42,7 +43,7 @@
         </div>
 
         <div class="input-group">
-          <label for="energyConsumption">Споживання Енергії (0-100):</label>
+          <label for="energyConsumption">Споживання Енергії (EC) (0-100):</label>
           <input
             type="number"
             id="energyConsumption"
@@ -67,7 +68,7 @@
           <div class="result-item">
             <span class="result-label">Level of Security Risk:</span>
             <span class="result-term" id="activeOutputTerm">--</span>
-            <small class="result-explanation">Лінгвістична мітка з найвищим ступенем приналежності</small>
+            <small class="result-explanation">Домінуючий лінгвістичний терм для обчисленого значення</small>
           </div>
         </div>
       </div>
@@ -76,19 +77,19 @@
         <h3>Значення Приналежності для Поточних Входів</h3>
         <div class="membership-grid">
           <div class="membership-section">
-            <h4>Сила З'єднання</h4>
+            <h4>Сила З'єднання (CS)</h4>
             <div id="csMembership" class="membership-values"></div>
           </div>
           <div class="membership-section">
-            <h4>Час Відгуку</h4>
+            <h4>Час Відгуку (RT)</h4>
             <div id="rtMembership" class="membership-values"></div>
           </div>
           <div class="membership-section">
-            <h4>Споживання Енергії</h4>
+            <h4>Споживання Енергії (EC)</h4>
             <div id="ecMembership" class="membership-values"></div>
           </div>
           <div class="membership-section">
-            <h4>Рівень Безпеки</h4>
+            <h4>Рівень Ризику Безпеки (SR)</h4>
             <div id="srMembership" class="membership-values"></div>
           </div>
         </div>
@@ -98,7 +99,7 @@
         <h3>Функції Приналежності</h3>
         <div class="graph-row">
           <div class="graph-container">
-            <h4>Сила З'єднання</h4>
+            <h4>Сила З'єднання (CS)</h4>
             <canvas
               id="connectionStrengthCanvas"
               width="400"
@@ -107,14 +108,14 @@
             <div id="csTooltip" class="graph-tooltip"></div>
           </div>
           <div class="graph-container">
-            <h4>Час Відгуку</h4>
+            <h4>Час Відгуку (RT)</h4>
             <canvas id="responseTimeCanvas" width="400" height="250"></canvas>
             <div id="rtTooltip" class="graph-tooltip"></div>
           </div>
         </div>
         <div class="graph-row">
           <div class="graph-container">
-            <h4>Споживання Енергії</h4>
+            <h4>Споживання Енергії (EC)</h4>
             <canvas
               id="energyConsumptionCanvas"
               width="400"
@@ -123,7 +124,7 @@
             <div id="ecTooltip" class="graph-tooltip"></div>
           </div>
           <div class="graph-container">
-            <h4>Рівень Безпеки</h4>
+            <h4>Рівень Ризику Безпеки (SR)</h4>
             <canvas id="securityRiskCanvas" width="400" height="250"></canvas>
             <div id="srTooltip" class="graph-tooltip"></div>
           </div>
@@ -134,7 +135,9 @@
         <h3>База Правил та Інтерпретація Результатів</h3>
         <p>
           Система використовує 27 правил нечіткого виводу для визначення рівня
-          безпеки на основі комбінацій вхідних параметрів.
+          безпеки на основі комбінацій вхідних параметрів:
+          <strong>CS</strong> (Connection Strength), <strong>RT</strong> (Response Time), 
+          <strong>EC</strong> (Energy Consumption) → <strong>SR</strong> (Security Risk).
         </p>
         
         <div class="explanation-section">
@@ -146,33 +149,33 @@
           </p>
           <p>
             <strong>Інтерпретація результатів:</strong><br>
-            • <strong>0-20:</strong> Дуже високий рівень безпеки (VeryLow risk)<br>
-            • <strong>20-40:</strong> Високий рівень безпеки (Low risk)<br>
-            • <strong>40-60:</strong> Середній рівень безпеки (Medium risk)<br>
-            • <strong>60-80:</strong> Низький рівень безпеки (High risk)<br>
-            • <strong>80-100:</strong> Дуже низький рівень безпеки (VeryHigh risk)
+            • <strong>0-20:</strong> Дуже низький ризик безпеки (VeryLow risk)<br>
+            • <strong>20-40:</strong> Низький ризик безпеки (Low risk)<br>
+            • <strong>40-60:</strong> Середній ризик безпеки (Medium risk)<br>
+            • <strong>60-80:</strong> Високий ризик безпеки (High risk)<br>
+            • <strong>80-100:</strong> Дуже високий ризик безпеки (VeryHigh risk)
           </p>
           <p>
-            <strong>Приклад:</strong> Якщо рівень безпеки = 25.2, то:
+            <strong>Приклад:</strong> Якщо рівень ризику безпеки = 25.2, то:
           </p>
           <ul>
-            <li>Low (Високий рівень безпеки): 0.85 ← <em>Домінуючий терм</em></li>
-            <li>VeryLow (Дуже високий рівень безпеки): 0.35</li>
-            <li>Medium (Середній рівень безпеки): 0.15</li>
+            <li>Low (Низький ризик): 0.85 ← <em>Домінуючий терм</em></li>
+            <li>VeryLow (Дуже низький ризик): 0.35</li>
+            <li>Medium (Середній ризик): 0.15</li>
           </ul>
         </div>
         
         <div class="rules-summary">
           <div class="rule-category">
-            <strong>Низька сила з'єднання:</strong> Висока небезпека незалежно
+            <strong>Низька сила з'єднання (CS):</strong> Висока небезпека незалежно
             від інших параметрів
           </div>
           <div class="rule-category">
-            <strong>Середня сила з'єднання:</strong> Рівень безпеки залежить від
-            часу відгуку та споживання енергії
+            <strong>Середня сила з'єднання (CS):</strong> Рівень безпеки залежить від
+            часу відгуку (RT) та споживання енергії (EC)
           </div>
           <div class="rule-category">
-            <strong>Висока сила з'єднання:</strong> Низька небезпека в більшості
+            <strong>Висока сила з'єднання (CS):</strong> Низька небезпека в більшості
             випадків
           </div>
         </div>

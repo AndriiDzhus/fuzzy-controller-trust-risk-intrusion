@@ -18,7 +18,7 @@
 - **Споживання Енергії** (Energy Consumption)
 
 ### Вихідний параметр (0-100):
-- **Рівень Безпеки** (Security Risk Level)
+- **Рівень Ризику Безпеки** (Security Risk Level)
 
 ### Лінгвістичні терми:
 
@@ -59,7 +59,17 @@ npm start
 npm run dev
 ```
 
-5. **Відкрити браузер:**
+5. **Запуск тестів:**
+```bash
+npm test
+```
+
+6. **Запуск тестів у режимі спостереження:**
+```bash
+npm run test:watch
+```
+
+7. **Відкрити браузер:**
 ```
 http://localhost:3000
 ```
@@ -67,13 +77,24 @@ http://localhost:3000
 ## Структура проекту
 
 ```
-fuzzy_controller_dzhus/
+fuzzy-logic-security-risk/
 ├── package.json              # Конфігурація npm
-├── server.js                 # Серверна частина
+├── server.js                 # Серверна частина Express
+├── fuzzyController.js        # Логіка нечіткого виводу
+├── jest.config.js            # Конфігурація тестів
+├── .gitignore                # Git виключення
+├── __tests__/                # Тестові файли
+│   ├── fuzzyController.test.js
+│   ├── securityRisk.test.js
+│   └── integration.test.js
 ├── public/                   # Клієнтські файли
 │   ├── index.html           # HTML інтерфейс
 │   ├── style.css            # Стилі CSS
 │   └── script.js            # Клієнтський JavaScript
+├── docs/                     # Документація
+│   ├── membership_functions.png
+│   ├── membership_functions.pdf
+│   └── rule_base.png
 └── README.md                # Документація
 ```
 
@@ -145,20 +166,53 @@ fuzzy_controller_dzhus/
 - **Express.js**: Веб-сервер
 - **Canvas API**: Візуалізація графіків
 
+## Тестування
+
+Проект покритий комплексними юніт тестами, які перевіряють:
+
+### Типи тестів:
+- **Функції приналежності**: Трапецоїдальні та трикутні функції
+- **Нечіткі обчислення**: Повний цикл fuzzy inference
+- **Граничні випадки**: Мінімальні/максимальні значення
+- **Ключові правила виводу**: Перевірка найважливіших правил
+- **Інтеграційні тести**: End-to-end тестування системи
+
+### Команди тестування:
+```bash
+# Запуск всіх тестів
+npm test
+
+# Запуск з покриттям коду
+npm run test:coverage
+
+# Запуск конкретного тесту
+npm test -- fuzzyController.test.js
+
+# Режим спостереження (автоматичний перезапуск)
+npm run test:watch
+```
+
+### Покриття коду:
+Покриття коду за замовчуванням вимкнено для швидкості розробки.
+Для генерації звіту використовуйте `npm run test:coverage`.
+
+Звіт про покриття генерується в папці `coverage/`
+
 ## Розробка
 
 ### Додавання нових правил:
-Редагуйте функцію `addRule()` в `server.js`
+Редагуйте масив `fuzzySystem.rules` в `fuzzyController.js`
 
 ### Зміна функцій приналежності:
-Модифікуйте параметри `TrapezoidalCurve` та `TriangularCurve` в `server.js`
+Модифікуйте параметри в `fuzzyController.js` (функції `addTerm`)
 
 ### Оновлення інтерфейсу:
 Редагуйте файли в папці `public/`
 
 ## Автори
 
-Andrii Dzhus - Розробник
+Andrii Dzhus - Розробник  
+Volodymyr Martyniuk - Співрозробник
 
 ## Ліцензія
 
