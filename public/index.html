@@ -3,70 +3,69 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Fuzzy Logic Security Risk Controller</title>
+    <title>Fuzzy Logic Communication System Controller</title>
     <link rel="stylesheet" href="style.css" />
   </head>
   <body>
     <div class="container">
-      <h1>Нечіткий контролер для оцінки рівня безпеки системи</h1>
+      <h1>Нечіткий контролер для визначення вірогідності системи зв'язку</h1>
       <p class="description">
-        Система нечіткого виводу для оцінки рівня безпеки на основі сили
-        з'єднання (CS), часу відгуку (RT) та споживання енергії (EC).
-        Результат: рівень ризику безпеки (SR).
+        Система нечіткого виводу для визначення Вірогідності (P) на основі
+        Залишкової енергії (E), Коефіцієнта передавання (T) та Коефіцієнта затримки (D).
       </p>
 
       <div class="input-section">
         <div class="input-group">
-          <label for="connectionStrength">Сила З'єднання (CS) (0-100):</label>
+          <label for="residualEnergy">Залишкова Енергія (E) (0-100):</label>
           <input
             type="number"
-            id="connectionStrength"
+            id="residualEnergy"
             value="50"
             min="0"
             max="100"
             step="0.1"
           />
-          <span class="input-value" id="csValue">50</span>
+          <span class="input-value" id="eValue">50</span>
         </div>
 
         <div class="input-group">
-          <label for="responseTime">Час Відгуку (RT) (0-100):</label>
+          <label for="transmissionCoefficient">Коефіцієнт Передавання (T) (0-100):</label>
           <input
             type="number"
-            id="responseTime"
+            id="transmissionCoefficient"
             value="50"
             min="0"
             max="100"
             step="0.1"
           />
-          <span class="input-value" id="rtValue">50</span>
+          <span class="input-value" id="tValue">50</span>
         </div>
 
         <div class="input-group">
-          <label for="energyConsumption">Споживання Енергії (EC) (0-100):</label>
+          <label for="delayCoefficient">Коефіцієнт Затримки (D) (0-100):</label>
           <input
             type="number"
-            id="energyConsumption"
+            id="delayCoefficient"
             value="50"
             min="0"
             max="100"
             step="0.1"
           />
-          <span class="input-value" id="ecValue">50</span>
+          <span class="input-value" id="dValue">50</span>
         </div>
 
-        <button id="calculateBtn">Обчислити Рівень Безпеки</button>
+        <button id="calculateBtn">Обчислити Вірогідність</button>
       </div>
 
       <div class="output-section">
         <h2>Результат Обчислення</h2>
         <div class="result-display">
           <div class="result-item">
-            <span class="result-label">Security risk level value:</span>
-            <span class="result-value" id="securityRiskOutput">--</span>
+            <span class="result-label">Значення вірогідності (P):</span>
+            <span class="result-value" id="probabilityOutput">--</span>
           </div>
           <div class="result-item">
-            <span class="result-label">Level of Security Risk:</span>
+            <span class="result-label">Рівень вірогідності:</span>
             <span class="result-term" id="activeOutputTerm">--</span>
             <small class="result-explanation">Домінуючий лінгвістичний терм для обчисленого значення</small>
           </div>
@@ -77,20 +76,20 @@
         <h3>Значення Приналежності для Поточних Входів</h3>
         <div class="membership-grid">
           <div class="membership-section">
-            <h4>Сила З'єднання (CS)</h4>
-            <div id="csMembership" class="membership-values"></div>
+            <h4>Залишкова Енергія (E)</h4>
+            <div id="eMembership" class="membership-values"></div>
           </div>
           <div class="membership-section">
-            <h4>Час Відгуку (RT)</h4>
-            <div id="rtMembership" class="membership-values"></div>
+            <h4>Коефіцієнт Передавання (T)</h4>
+            <div id="tMembership" class="membership-values"></div>
           </div>
           <div class="membership-section">
-            <h4>Споживання Енергії (EC)</h4>
-            <div id="ecMembership" class="membership-values"></div>
+            <h4>Коефіцієнт Затримки (D)</h4>
+            <div id="dMembership" class="membership-values"></div>
           </div>
           <div class="membership-section">
-            <h4>Рівень Ризику Безпеки (SR)</h4>
-            <div id="srMembership" class="membership-values"></div>
+            <h4>Вірогідність (P)</h4>
+            <div id="pMembership" class="membership-values"></div>
           </div>
         </div>
       </div>
@@ -99,34 +98,34 @@
         <h3>Функції Приналежності</h3>
         <div class="graph-row">
           <div class="graph-container">
-            <h4>Сила З'єднання (CS)</h4>
+            <h4>Залишкова Енергія (E)</h4>
             <canvas
-              id="connectionStrengthCanvas"
+              id="residualEnergyCanvas"
               width="400"
               height="250"
             ></canvas>
-            <div id="csTooltip" class="graph-tooltip"></div>
+            <div id="eTooltip" class="graph-tooltip"></div>
           </div>
           <div class="graph-container">
-            <h4>Час Відгуку (RT)</h4>
-            <canvas id="responseTimeCanvas" width="400" height="250"></canvas>
-            <div id="rtTooltip" class="graph-tooltip"></div>
+            <h4>Коефіцієнт Передавання (T)</h4>
+            <canvas id="transmissionCoefficientCanvas" width="400" height="250"></canvas>
+            <div id="tTooltip" class="graph-tooltip"></div>
           </div>
         </div>
         <div class="graph-row">
           <div class="graph-container">
-            <h4>Споживання Енергії (EC)</h4>
+            <h4>Коефіцієнт Затримки (D)</h4>
             <canvas
-              id="energyConsumptionCanvas"
+              id="delayCoefficientCanvas"
               width="400"
               height="250"
             ></canvas>
-            <div id="ecTooltip" class="graph-tooltip"></div>
+            <div id="dTooltip" class="graph-tooltip"></div>
           </div>
           <div class="graph-container">
-            <h4>Рівень Ризику Безпеки (SR)</h4>
-            <canvas id="securityRiskCanvas" width="400" height="250"></canvas>
-            <div id="srTooltip" class="graph-tooltip"></div>
+            <h4>Вірогідність (P)</h4>
+            <canvas id="probabilityCanvas" width="400" height="250"></canvas>
+            <div id="pTooltip" class="graph-tooltip"></div>
           </div>
         </div>
       </div>
@@ -134,48 +133,47 @@
       <div class="rules-section">
         <h3>База Правил та Інтерпретація Результатів</h3>
         <p>
-          Система використовує 27 правил нечіткого виводу для визначення рівня
-          безпеки на основі комбінацій вхідних параметрів:
-          <strong>CS</strong> (Connection Strength), <strong>RT</strong> (Response Time), 
-          <strong>EC</strong> (Energy Consumption) → <strong>SR</strong> (Security Risk).
+          Система використовує 27 правил нечіткого виводу для визначення вірогідності
+          на основі комбінацій вхідних параметрів:
+          <strong>E</strong> (Залишкова енергія), <strong>T</strong> (Коефіцієнт передавання), 
+          <strong>D</strong> (Коефіцієнт затримки) → <strong>P</strong> (Вірогідність).
         </p>
         
         <div class="explanation-section">
           <h4>Що означає "Домінуючий Терм"?</h4>
           <p>
-            Домінуючий терм - це лінгвістична мітка (наприклад, "Високий", "Середній"), 
+            Домінуючий терм - це лінгвістична мітка (наприклад, "Велика", "Середня"), 
             яка найкраще описує отриманий числовий результат. Він визначається як терм 
             з найвищим ступенем приналежності для обчисленого значення.
           </p>
           <p>
             <strong>Інтерпретація результатів:</strong><br>
-            • <strong>0-20:</strong> Дуже низький ризик безпеки (VeryLow risk)<br>
-            • <strong>20-40:</strong> Низький ризик безпеки (Low risk)<br>
-            • <strong>40-60:</strong> Середній ризик безпеки (Medium risk)<br>
-            • <strong>60-80:</strong> Високий ризик безпеки (High risk)<br>
-            • <strong>80-100:</strong> Дуже високий ризик безпеки (VeryHigh risk)
+            • <strong>0-25:</strong> Дуже мала вірогідність (VeryLow)<br>
+            • <strong>25-50:</strong> Мала вірогідність (Low)<br>
+            • <strong>50-75:</strong> Середня вірогідність (Medium)<br>
+            • <strong>75-100:</strong> Велика або Дуже велика вірогідність (High/VeryHigh)
           </p>
           <p>
-            <strong>Приклад:</strong> Якщо рівень ризику безпеки = 25.2, то:
+            <strong>Приклад:</strong> Якщо вірогідність = 62.5, то:
           </p>
           <ul>
-            <li>Low (Низький ризик): 0.85 ← <em>Домінуючий терм</em></li>
-            <li>VeryLow (Дуже низький ризик): 0.35</li>
-            <li>Medium (Середній ризик): 0.15</li>
+            <li>Medium (Середня): 0.50 ← <em>Домінуючий терм</em></li>
+            <li>High (Велика): 0.50</li>
+            <li>Low (Мала): 0.00</li>
           </ul>
         </div>
         
         <div class="rules-summary">
           <div class="rule-category">
-            <strong>Низька сила з'єднання (CS):</strong> Висока небезпека незалежно
-            від інших параметрів
+            <strong>Мала залишкова енергія (E):</strong> Низька вірогідність системи
+            незалежно від інших параметрів
           </div>
           <div class="rule-category">
-            <strong>Середня сила з'єднання (CS):</strong> Рівень безпеки залежить від
-            часу відгуку (RT) та споживання енергії (EC)
+            <strong>Середня залишкова енергія (E):</strong> Вірогідність залежить від
+            коефіцієнтів передавання (T) та затримки (D)
           </div>
           <div class="rule-category">
-            <strong>Висока сила з'єднання (CS):</strong> Низька небезпека в більшості
+            <strong>Велика залишкова енергія (E):</strong> Висока вірогідність в більшості
             випадків
           </div>
         </div>

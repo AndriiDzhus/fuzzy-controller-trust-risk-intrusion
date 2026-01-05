@@ -1,61 +1,86 @@
 // Приклад коригування функцій приналежності відповідно до ТЗ
 
-// === ВАРІАНТ 1: Більш рівномірний розподіл ===
+// === ПОТОЧНА КОНФІГУРАЦІЯ СИСТЕМИ ===
 
-// В fuzzyController.js, рядки 19-34, замініть:
+// Вхідні змінні:
+// 1. Залишкова енергія (E) - residualEnergy
+// 2. Коефіцієнт передавання (T) - transmissionCoefficient  
+// 3. Коефіцієнт затримки (D) - delayCoefficient
+
+// Вихідна змінна:
+// Вірогідність (P) - probability
+
+// === ФУНКЦІЇ ПРИНАЛЕЖНОСТІ ДЛЯ ВХОДІВ ===
+
+// Залишкова енергія (E):
 /*
-connectionStrength.addTerm(new Term("Low", "trapeze", [0, 0, 30, 50]));
-connectionStrength.addTerm(new Term("Medium", "trapeze", [25, 45, 55, 75]));
-connectionStrength.addTerm(new Term("High", "trapeze", [50, 70, 100, 100]));
+residualEnergy.addTerm(new Term("Low", "trapeze", [0, 0, 10, 30]));
+residualEnergy.addTerm(new Term("Medium", "trapeze", [10, 30, 50, 70]));
+residualEnergy.addTerm(new Term("High", "trapeze", [50, 70, 100, 100]));
 */
 
-// В membershipParams, рядки 110-130, замініть:
+// Коефіцієнт передавання (T):
 /*
-connectionStrength: {
-  Low: { type: "trapeze", params: [0, 0, 30, 50] },
-  Medium: { type: "trapeze", params: [25, 45, 55, 75] },
-  High: { type: "trapeze", params: [50, 70, 100, 100] },
-},
+transmissionCoefficient.addTerm(new Term("Low", "trapeze", [0, 0, 20, 40]));
+transmissionCoefficient.addTerm(new Term("Medium", "trapeze", [20, 40, 60, 80]));
+transmissionCoefficient.addTerm(new Term("High", "trapeze", [60, 80, 100, 100]));
 */
 
-// В calculateMembershipValues, рядки 156-166, замініть:
+// Коефіцієнт затримки (D):
 /*
-if (variable === "connectionStrength") {
-  memberships.Low = trapezoidalMF(value, 0, 0, 30, 50);
-  memberships.Medium = trapezoidalMF(value, 25, 45, 55, 75);
-  memberships.High = trapezoidalMF(value, 50, 70, 100, 100);
-}
+delayCoefficient.addTerm(new Term("Low", "trapeze", [0, 0, 30, 50]));
+delayCoefficient.addTerm(new Term("Medium", "trapeze", [30, 50, 70, 90]));
+delayCoefficient.addTerm(new Term("High", "trapeze", [70, 90, 100, 100]));
 */
 
-// === ВАРІАНТ 2: Згідно з технічним завданням ===
-// Якщо у вашому ТЗ вказані конкретні значення, використайте їх
-// Наприклад, якщо ТЗ вимагає:
+// === ФУНКЦІЇ ПРИНАЛЕЖНОСТІ ДЛЯ ВИХОДУ ===
 
-// Входи - більш чіткі межі:
+// Вірогідність (P):
 /*
-Low: [0, 0, 25, 45]
-Medium: [20, 40, 60, 80] 
-High: [55, 75, 100, 100]
+probability.addTerm(new Term("VeryLow", "triangle", [0, 0, 25]));
+probability.addTerm(new Term("Low", "triangle", [0, 25, 50]));
+probability.addTerm(new Term("Medium", "triangle", [25, 50, 75]));
+probability.addTerm(new Term("High", "triangle", [50, 75, 100]));
+probability.addTerm(new Term("VeryHigh", "triangle", [75, 100, 100]));
 */
 
-// Виходи - п'ять рівномірних рівнів:
+// === ПАРАМЕТРИ ДЛЯ ВІЗУАЛІЗАЦІЇ ===
+
 /*
-VeryLow: [0, 0, 15]
-Low: [10, 25, 40]
-Medium: [35, 50, 65]
-High: [60, 75, 90]
-VeryHigh: [85, 100, 100]
+const membershipParams = {
+  residualEnergy: {
+    Low: { type: "trapeze", params: [0, 0, 10, 30] },
+    Medium: { type: "trapeze", params: [10, 30, 50, 70] },
+    High: { type: "trapeze", params: [50, 70, 100, 100] },
+  },
+  transmissionCoefficient: {
+    Low: { type: "trapeze", params: [0, 0, 20, 40] },
+    Medium: { type: "trapeze", params: [20, 40, 60, 80] },
+    High: { type: "trapeze", params: [60, 80, 100, 100] },
+  },
+  delayCoefficient: {
+    Low: { type: "trapeze", params: [0, 0, 30, 50] },
+    Medium: { type: "trapeze", params: [30, 50, 70, 90] },
+    High: { type: "trapeze", params: [70, 90, 100, 100] },
+  },
+  probability: {
+    VeryLow: { type: "triangle", params: [0, 0, 25] },
+    Low: { type: "triangle", params: [0, 25, 50] },
+    Medium: { type: "triangle", params: [25, 50, 75] },
+    High: { type: "triangle", params: [50, 75, 100] },
+    VeryHigh: { type: "triangle", params: [75, 100, 100] },
+  },
+};
 */
 
 // === КРОКИ ДЛЯ ЗАСТОСУВАННЯ ЗМІН ===
 /*
 1. Відредагуйте fuzzyController.js у трьох місцях:
-   - Рядки термів для fuzzyis (19-34)
-   - Об'єкт membershipParams (110-130)
-   - Функція calculateMembershipValues (156-166)
+   - Терми для fuzzyis бібліотеки
+   - Об'єкт membershipParams
+   - Функція calculateMembershipValues
 
 2. Перезапустіть сервер:
-   pkill -f "node server.js"
    npm start
 
 3. Перевірте результат:
@@ -66,3 +91,5 @@ VeryHigh: [85, 100, 100]
 */
 
 console.log("Цей файл містить приклади коригування функцій приналежності");
+console.log("Вхідні змінні: E (Залишкова енергія), T (Коефіцієнт передавання), D (Коефіцієнт затримки)");
+console.log("Вихідна змінна: P (Вірогідність)");

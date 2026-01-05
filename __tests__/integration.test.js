@@ -1,5 +1,5 @@
 const { 
-  calculateSecurityRisk, 
+  calculateProbability, 
   calculateMembershipValues, 
   getMostActiveTerm 
 } = require('../fuzzyController');
@@ -7,91 +7,91 @@ const {
 describe('Integration Tests - Complete Fuzzy System', () => {
   
   // Тести для повного циклу обчислення
-  describe('End-to-End Security Risk Assessment', () => {
-    test('should complete full assessment cycle for optimal scenario', () => {
-      const cs = 85; // High connection strength
-      const rt = 25; // Low response time  
-      const ec = 15; // Low energy consumption
+  describe('End-to-End Probability Assessment', () => {
+    test('should complete full assessment cycle for high probability scenario', () => {
+      const e = 85; // High residual energy
+      const t = 70; // High transmission coefficient  
+      const d = 35; // Low delay coefficient
 
-      // 1. Обчислюємо ризик безпеки
-      const securityRisk = calculateSecurityRisk(cs, rt, ec);
-      expect(securityRisk).toBeGreaterThanOrEqual(0);
-      expect(securityRisk).toBeLessThanOrEqual(100);
-      expect(securityRisk).toBeLessThan(25); // Має бути VeryLow
+      // 1. Обчислюємо вірогідність
+      const probability = calculateProbability(e, t, d);
+      expect(probability).toBeGreaterThanOrEqual(0);
+      expect(probability).toBeLessThanOrEqual(100);
+      expect(probability).toBeGreaterThan(75); // Має бути VeryHigh
 
       // 2. Обчислюємо приналежності для входів
-      const csMembership = calculateMembershipValues('connectionStrength', cs);
-      const rtMembership = calculateMembershipValues('responseTime', rt);  
-      const ecMembership = calculateMembershipValues('energyConsumption', ec);
+      const eMembership = calculateMembershipValues('residualEnergy', e);
+      const tMembership = calculateMembershipValues('transmissionCoefficient', t);  
+      const dMembership = calculateMembershipValues('delayCoefficient', d);
 
       // 3. Перевіряємо що вхідні значення правильно класифіковані
-      expect(csMembership.High).toBeGreaterThan(0.5); // 85 має бути High
-      expect(rtMembership.Low).toBeGreaterThan(0.5);  // 25 має бути Low
-      expect(ecMembership.Low).toBeGreaterThan(0.5);  // 15 має бути Low
+      expect(eMembership.High).toBeGreaterThan(0.5); // 85 має бути High
+      expect(tMembership.High).toBeGreaterThanOrEqual(0.5);  // 70 має бути High (на границі)
+      expect(dMembership.Low).toBeGreaterThanOrEqual(0.5);  // 35 має бути Low
 
       // 4. Обчислюємо приналежність результату
-      const riskMembership = calculateMembershipValues('securityRiskLevel', securityRisk);
+      const probMembership = calculateMembershipValues('probability', probability);
       
       // 5. Знаходимо найактивніший терм
-      const mostActive = getMostActiveTerm(riskMembership);
-      expect(['VeryLow', 'Low']).toContain(mostActive); // Має бути низький ризик
+      const mostActive = getMostActiveTerm(probMembership);
+      expect(['VeryHigh', 'High']).toContain(mostActive); // Має бути висока вірогідність
     });
 
-    test('should complete full assessment cycle for critical scenario', () => {
-      const cs = 15; // Low connection strength
-      const rt = 85; // High response time
-      const ec = 90; // High energy consumption
+    test('should complete full assessment cycle for low probability scenario', () => {
+      const e = 10; // Low residual energy
+      const t = 50; // Medium transmission coefficient
+      const d = 60; // Medium delay coefficient
 
-      // 1. Обчислюємо ризик безпеки  
-      const securityRisk = calculateSecurityRisk(cs, rt, ec);
-      expect(securityRisk).toBeGreaterThanOrEqual(0);
-      expect(securityRisk).toBeLessThanOrEqual(100);
-      expect(securityRisk).toBeGreaterThan(75); // Має бути VeryHigh
+      // 1. Обчислюємо вірогідність  
+      const probability = calculateProbability(e, t, d);
+      expect(probability).toBeGreaterThanOrEqual(0);
+      expect(probability).toBeLessThanOrEqual(100);
+      expect(probability).toBeLessThan(25); // Має бути VeryLow
 
       // 2. Обчислюємо приналежності для входів
-      const csMembership = calculateMembershipValues('connectionStrength', cs);
-      const rtMembership = calculateMembershipValues('responseTime', rt);
-      const ecMembership = calculateMembershipValues('energyConsumption', ec);
+      const eMembership = calculateMembershipValues('residualEnergy', e);
+      const tMembership = calculateMembershipValues('transmissionCoefficient', t);
+      const dMembership = calculateMembershipValues('delayCoefficient', d);
 
       // 3. Перевіряємо що вхідні значення правильно класифіковані
-      expect(csMembership.Low).toBeGreaterThan(0.5);  // 15 має бути Low
-      expect(rtMembership.High).toBeGreaterThan(0.5); // 85 має бути High  
-      expect(ecMembership.High).toBeGreaterThan(0.5); // 90 має бути High
+      expect(eMembership.Low).toBeGreaterThan(0.5);  // 10 має бути Low
+      expect(tMembership.Medium).toBeGreaterThan(0.5); // 50 має бути Medium  
+      expect(dMembership.Medium).toBeGreaterThan(0.5); // 60 має бути Medium
 
       // 4. Обчислюємо приналежність результату
-      const riskMembership = calculateMembershipValues('securityRiskLevel', securityRisk);
+      const probMembership = calculateMembershipValues('probability', probability);
       
       // 5. Знаходимо найактивніший терм
-      const mostActive = getMostActiveTerm(riskMembership);
-      expect(['VeryHigh', 'High']).toContain(mostActive); // Має бути високий ризик
+      const mostActive = getMostActiveTerm(probMembership);
+      expect(['VeryLow', 'Low']).toContain(mostActive); // Має бути низька вірогідність
     });
   });
 
-  // Ключові правила нечіткого виводу (скорочено до найважливіших)
+  // Ключові правила нечіткого виводу
   describe('Key Fuzzy Rules Validation', () => {
     const keyTestCases = [
-      // Найкращі сценарії
-      { input: [85, 15, 15], expectedRange: [0, 25], description: 'High-Low-Low -> VeryLow (optimal)' },
-      { input: [50, 15, 15], expectedRange: [0, 25], description: 'Medium-Low-Low -> VeryLow (good)' },
+      // Найкращі сценарії (висока вірогідність)
+      { input: [85, 70, 35], expectedRange: [75, 100], description: 'High-High-Low -> VeryHigh (optimal)' },
+      { input: [85, 50, 40], expectedRange: [75, 100], description: 'High-Medium-Low -> VeryHigh (good)' },
       
-      // Найгірші сценарії
-      { input: [15, 85, 80], expectedRange: [75, 100], description: 'Low-High-High -> VeryHigh (critical)' },
-      { input: [15, 60, 40], expectedRange: [75, 100], description: 'Low-Medium-Medium -> VeryHigh (bad)' },
+      // Найгірші сценарії (низька вірогідність)
+      { input: [10, 50, 60], expectedRange: [0, 25], description: 'Low-Medium-Medium -> VeryLow (critical)' },
+      { input: [5, 50, 80], expectedRange: [0, 25], description: 'Low-Medium-High -> VeryLow (bad)' },
       
       // Змішані сценарії
-      { input: [50, 85, 80], expectedRange: [75, 100], description: 'Medium-High-High -> VeryHigh (risky)' },
-      { input: [85, 85, 80], expectedRange: [0, 50], description: 'High-High-High -> Low (stable)' }
+      { input: [40, 50, 60], expectedRange: [25, 75], description: 'Medium-Medium-Medium -> Medium (balanced)' },
+      { input: [80, 20, 40], expectedRange: [50, 100], description: 'High-Low-Low -> High (stable)' }
     ];
 
     keyTestCases.forEach(({ input, expectedRange, description }) => {
       test(`should validate rule: ${description}`, () => {
-        const [cs, rt, ec] = input;
-        const [minRisk, maxRisk] = expectedRange;
+        const [e, t, d] = input;
+        const [minProb, maxProb] = expectedRange;
         
-        const actualRisk = calculateSecurityRisk(cs, rt, ec);
+        const actualProbability = calculateProbability(e, t, d);
         
-        expect(actualRisk).toBeGreaterThanOrEqual(minRisk);
-        expect(actualRisk).toBeLessThanOrEqual(maxRisk);
+        expect(actualProbability).toBeGreaterThanOrEqual(minProb);
+        expect(actualProbability).toBeLessThanOrEqual(maxProb);
       });
     });
   });
@@ -99,20 +99,20 @@ describe('Integration Tests - Complete Fuzzy System', () => {
   // Спрощені тести стійкості
   describe('System Robustness Tests', () => {
     test('should handle floating point precision', () => {
-      const risk1 = calculateSecurityRisk(33.333, 66.666, 99.999);
-      const risk2 = calculateSecurityRisk(33.334, 66.667, 100.000);
+      const prob1 = calculateProbability(33.333, 66.666, 49.999);
+      const prob2 = calculateProbability(33.334, 66.667, 50.000);
       
       // Результати мають бути близькими
-      expect(Math.abs(risk1 - risk2)).toBeLessThan(5);
+      expect(Math.abs(prob1 - prob2)).toBeLessThan(5);
     });
 
     test('should be stable for repeated calculations', () => {
-      const inputs = [75.5, 42.3, 18.7];
+      const inputs = [75.5, 42.3, 38.7];
       const results = [];
       
-      // Виконуємо 10 обчислень (замість 100)
+      // Виконуємо 10 обчислень
       for (let i = 0; i < 10; i++) {
-        results.push(calculateSecurityRisk(...inputs));
+        results.push(calculateProbability(...inputs));
       }
       
       // Всі результати мають бути однакові
@@ -125,44 +125,44 @@ describe('Integration Tests - Complete Fuzzy System', () => {
     test('should handle stress testing with random inputs', () => {
       // Зменшено з 1000 до 100 ітерацій
       for (let i = 0; i < 100; i++) {
-        const cs = Math.random() * 100;
-        const rt = Math.random() * 100;
-        const ec = Math.random() * 100;
+        const e = Math.random() * 100;
+        const t = Math.random() * 100;
+        const d = Math.random() * 100;
         
-        const risk = calculateSecurityRisk(cs, rt, ec);
+        const probability = calculateProbability(e, t, d);
         
-        expect(risk).toBeGreaterThanOrEqual(0);
-        expect(risk).toBeLessThanOrEqual(100);
-        expect(Number.isFinite(risk)).toBe(true);
-        expect(Number.isNaN(risk)).toBe(false);
+        expect(probability).toBeGreaterThanOrEqual(0);
+        expect(probability).toBeLessThanOrEqual(100);
+        expect(Number.isFinite(probability)).toBe(true);
+        expect(Number.isNaN(probability)).toBe(false);
       }
     });
   });
 
   // Тести для покриття всіх термів
   describe('Term Coverage Tests', () => {
-    test('should be able to produce VeryLow risk', () => {
-      const risk = calculateSecurityRisk(90, 10, 5);
-      const membership = calculateMembershipValues('securityRiskLevel', risk);
+    test('should be able to produce VeryLow probability', () => {
+      const probability = calculateProbability(5, 50, 60);
+      const membership = calculateMembershipValues('probability', probability);
       const mostActive = getMostActiveTerm(membership);
       
       expect(mostActive).toBe('VeryLow');
-      expect(risk).toBeLessThan(25);
+      expect(probability).toBeLessThan(25);
     });
 
-    test('should be able to produce VeryHigh risk', () => {
-      const risk = calculateSecurityRisk(10, 90, 95);
-      const membership = calculateMembershipValues('securityRiskLevel', risk);
+    test('should be able to produce VeryHigh probability', () => {
+      const probability = calculateProbability(90, 85, 35);
+      const membership = calculateMembershipValues('probability', probability);
       const mostActive = getMostActiveTerm(membership);
       
       expect(mostActive).toBe('VeryHigh');
-      expect(risk).toBeGreaterThan(75);
+      expect(probability).toBeGreaterThan(75);
     });
 
-    test('should be able to produce Medium risk', () => {
-      const risk = calculateSecurityRisk(50, 30, 40);
-      expect(risk).toBeGreaterThanOrEqual(25);
-      expect(risk).toBeLessThan(75);
+    test('should be able to produce Medium probability', () => {
+      const probability = calculateProbability(40, 50, 60);
+      expect(probability).toBeGreaterThanOrEqual(25);
+      expect(probability).toBeLessThanOrEqual(75);
     });
   });
 });

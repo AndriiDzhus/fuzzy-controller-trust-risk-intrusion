@@ -13,22 +13,22 @@ app.use(express.json());
 app.post("/api/calculate", (req, res) => {
   try {
     const {
-      connectionStrength: cs,
-      responseTime: rt,
-      energyConsumption: ec,
+      residualEnergy: e,
+      transmissionCoefficient: t,
+      delayCoefficient: d,
     } = req.body;
 
     // Валідація вхідних даних
     if (
-      isNaN(cs) ||
-      isNaN(rt) ||
-      isNaN(ec) ||
-      cs < 0 ||
-      cs > 100 ||
-      rt < 0 ||
-      rt > 100 ||
-      ec < 0 ||
-      ec > 100
+      isNaN(e) ||
+      isNaN(t) ||
+      isNaN(d) ||
+      e < 0 ||
+      e > 100 ||
+      t < 0 ||
+      t > 100 ||
+      d < 0 ||
+      d > 100
     ) {
       return res.status(400).json({
         error: "Invalid input values. All values must be between 0 and 100.",
@@ -36,44 +36,44 @@ app.post("/api/calculate", (req, res) => {
     }
 
     // Виконуємо нечіткий вивід за допомогою fuzzyController
-    const securityRisk = fuzzyController.calculateSecurityRisk(cs, rt, ec);
+    const probability = fuzzyController.calculateProbability(e, t, d);
 
     // Обчислюємо ступені приналежності для вхідних та вихідних значень
     const inputMemberships = {
-      connectionStrength: fuzzyController.calculateMembershipValues(
-        "connectionStrength",
-        cs
+      residualEnergy: fuzzyController.calculateMembershipValues(
+        "residualEnergy",
+        e
       ),
-      responseTime: fuzzyController.calculateMembershipValues(
-        "responseTime",
-        rt
+      transmissionCoefficient: fuzzyController.calculateMembershipValues(
+        "transmissionCoefficient",
+        t
       ),
-      energyConsumption: fuzzyController.calculateMembershipValues(
-        "energyConsumption",
-        ec
+      delayCoefficient: fuzzyController.calculateMembershipValues(
+        "delayCoefficient",
+        d
       ),
     };
 
     const outputMemberships = fuzzyController.calculateMembershipValues(
-      "securityRiskLevel",
-      securityRisk
+      "probability",
+      probability
     );
     const mostActiveTerm = fuzzyController.getMostActiveTerm(outputMemberships);
 
     // Формуємо дані про приналежність
     const membershipData = {
-      connectionStrength: inputMemberships.connectionStrength,
-      responseTime: inputMemberships.responseTime,
-      energyConsumption: inputMemberships.energyConsumption,
-      securityRiskLevel: outputMemberships,
+      residualEnergy: inputMemberships.residualEnergy,
+      transmissionCoefficient: inputMemberships.transmissionCoefficient,
+      delayCoefficient: inputMemberships.delayCoefficient,
+      probability: outputMemberships,
     };
 
     // Повертаємо результат
     res.json({
-      securityRisk: parseFloat(securityRisk.toFixed(2)),
+      probability: parseFloat(probability.toFixed(2)),
       mostActiveTerm: mostActiveTerm,
       membershipData: membershipData,
-      inputValues: { cs, rt, ec },
+      inputValues: { e, t, d },
     });
   } catch (error) {
     console.error("Error in calculation:", error);
@@ -86,12 +86,12 @@ app.get("/api/membership-functions", (req, res) => {
   try {
     const data = {
       inputs: {
-        connectionStrength: generateMembershipData("connectionStrength"),
-        responseTime: generateMembershipData("responseTime"),
-        energyConsumption: generateMembershipData("energyConsumption"),
+        residualEnergy: generateMembershipData("residualEnergy"),
+        transmissionCoefficient: generateMembershipData("transmissionCoefficient"),
+        delayCoefficient: generateMembershipData("delayCoefficient"),
       },
       output: {
-        securityRiskLevel: generateMembershipData("securityRiskLevel"),
+        probability: generateMembershipData("probability"),
       },
     };
     res.json(data);
@@ -150,12 +150,12 @@ app.get("/api/rules", (req, res) => {
 
         return {
           id: index + 1,
-          condition: `IF connectionStrength IS ${
+          condition: `IF residualEnergy IS ${
             conditions[0] || "Unknown"
-          } AND responseTime IS ${
+          } AND transmissionCoefficient IS ${
             conditions[1] || "Unknown"
-          } AND energyConsumption IS ${conditions[2] || "Unknown"}`,
-          conclusion: `THEN securityRiskLevel IS ${
+          } AND delayCoefficient IS ${conditions[2] || "Unknown"}`,
+          conclusion: `THEN probability IS ${
             conclusions[0] || "Unknown"
           }`,
           beliefDegree: rule.beliefDegree || 0,
@@ -179,26 +179,30 @@ app.get("/api/system-info", (req, res) => {
     systemName: fuzzyController.fuzzySystem.name,
     inputVariables: [
       {
-        name: "connectionStrength",
+        name: "residualEnergy",
+        displayName: "Залишкова енергія (E)",
         range: [0, 100],
-        terms: Object.keys(fuzzyController.membershipParams.connectionStrength),
+        terms: Object.keys(fuzzyController.membershipParams.residualEnergy),
       },
       {
-        name: "responseTime",
+        name: "transmissionCoefficient",
+        displayName: "Коефіцієнт передавання (T)",
         range: [0, 100],
-        terms: Object.keys(fuzzyController.membershipParams.responseTime),
+        terms: Object.keys(fuzzyController.membershipParams.transmissionCoefficient),
       },
       {
-        name: "energyConsumption",
+        name: "delayCoefficient",
+        displayName: "Коефіцієнт затримки (D)",
         range: [0, 100],
-        terms: Object.keys(fuzzyController.membershipParams.energyConsumption),
+        terms: Object.keys(fuzzyController.membershipParams.delayCoefficient),
       },
     ],
     outputVariables: [
       {
-        name: "securityRiskLevel",
+        name: "probability",
+        displayName: "Вірогідність (P)",
         range: [0, 100],
-        terms: Object.keys(fuzzyController.membershipParams.securityRiskLevel),
+        terms: Object.keys(fuzzyController.membershipParams.probability),
       },
     ],
     totalRules: fuzzyController.fuzzySystem.rules.length,
@@ -212,9 +216,9 @@ app.listen(PORT, () => {
   console.log(`Total fuzzy rules: ${fuzzyController.fuzzySystem.rules.length}`);
   console.log("System configuration:");
   console.log(
-    "- Input variables: connectionStrength, responseTime, energyConsumption"
+    "- Input variables: residualEnergy (E), transmissionCoefficient (T), delayCoefficient (D)"
   );
-  console.log("- Output variable: securityRiskLevel");
+  console.log("- Output variable: probability (P)");
   console.log("- Inference method: Mamdani");
   console.log("Ready to process fuzzy logic calculations!");
 });

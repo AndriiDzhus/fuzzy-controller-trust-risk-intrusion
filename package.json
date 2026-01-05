@@ -1,7 +1,7 @@
 {
-  "name": "fuzzy-security-controller",
+  "name": "fuzzy-communication-controller",
   "version": "1.0.0",
-  "description": "Fuzzy Logic Security Risk Controller using fuzzyIS library",
+  "description": "Fuzzy Logic Communication System Probability Controller using fuzzyIS library",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
@@ -13,11 +13,12 @@
   "keywords": [
     "fuzzy",
     "logic",
-    "security",
+    "communication",
+    "probability",
     "controller",
     "nodejs"
   ],
-  "author": "Andrii Dzhus",
+  "author": "Volodymyr Martyniuk",
   "license": "MIT",
   "dependencies": {
     "express": "^4.18.2",
