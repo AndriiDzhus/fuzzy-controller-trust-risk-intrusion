@@ -50,7 +50,7 @@ const canvases = {
 // Кольори для різних термів
 const colors = {
   Low: "#e74c3c",      // червоний
-  Medium: "#3498db",    // синій  
+  Medium: "#3498db",    // синій
   High: "#27ae60",      // зелений
   VeryLow: "#3498db",   // синій
   VeryHigh: "#3498db",  // синій
@@ -283,6 +283,24 @@ function translateTerm(term) {
   return translations[term] || term;
 }
 
+// Функція для знаходження найактивнішого терма з даних приналежності
+function getMostActiveTermFromData(membershipData) {
+  if (!membershipData) return null;
+
+  let maxValue = -1;
+  let maxTerm = null;
+
+  for (const [term, value] of Object.entries(membershipData)) {
+    if (value > maxValue) {
+      maxValue = value;
+      maxTerm = term;
+    }
+  }
+
+  // Повертаємо терм тільки якщо його значення > 0
+  return maxValue > 0 ? maxTerm : null;
+}
+
 // --- Graph Drawing Functions ---
 function drawAllGraphs(
   eVal = null,
@@ -306,9 +324,21 @@ function drawAllGraphs(
 
   console.log("📊 Дані для малювання:", membershipFunctionsData);
 
-  drawMembershipGraph("errors", eVal, activeTerm);
-  drawMembershipGraph("connections", cVal, activeTerm);
-  drawMembershipGraph("bytes", bVal, activeTerm);
+  // Визначаємо активні терми для кожної вхідної змінної
+  let activeErrorsTerm = null;
+  let activeConnectionsTerm = null;
+  let activeBytesTerm = null;
+
+  if (currentCalculation && currentCalculation.membershipData) {
+    // Знаходимо найактивніший терм для кожної вхідної змінної
+    activeErrorsTerm = getMostActiveTermFromData(currentCalculation.membershipData.errors);
+    activeConnectionsTerm = getMostActiveTermFromData(currentCalculation.membershipData.connections);
+    activeBytesTerm = getMostActiveTermFromData(currentCalculation.membershipData.bytes);
+  }
+
+  drawMembershipGraph("errors", eVal, activeErrorsTerm);
+  drawMembershipGraph("connections", cVal, activeConnectionsTerm);
+  drawMembershipGraph("bytes", bVal, activeBytesTerm);
   drawMembershipGraph("trustIndex", tVal, activeTerm);
 
   console.log("✅ Графіки намальовані");
