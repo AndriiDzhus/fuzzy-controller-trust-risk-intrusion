@@ -3,7 +3,7 @@ const path = require("path");
 const fuzzyController = require("./fuzzyController");
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 3002;
 
 // Middleware
 app.use(express.static("public"));
@@ -13,22 +13,22 @@ app.use(express.json());
 app.post("/api/calculate", (req, res) => {
   try {
     const {
-      connectionStrength: cs,
-      responseTime: rt,
-      energyConsumption: ec,
+      errors: e,
+      connections: c,
+      bytes: b,
     } = req.body;
 
     // Валідація вхідних даних
     if (
-      isNaN(cs) ||
-      isNaN(rt) ||
-      isNaN(ec) ||
-      cs < 0 ||
-      cs > 100 ||
-      rt < 0 ||
-      rt > 100 ||
-      ec < 0 ||
-      ec > 100
+      isNaN(e) ||
+      isNaN(c) ||
+      isNaN(b) ||
+      e < 0 ||
+      e > 100 ||
+      c < 0 ||
+      c > 100 ||
+      b < 0 ||
+      b > 100
     ) {
       return res.status(400).json({
         error: "Invalid input values. All values must be between 0 and 100.",
@@ -36,44 +36,44 @@ app.post("/api/calculate", (req, res) => {
     }
 
     // Виконуємо нечіткий вивід за допомогою fuzzyController
-    const securityRisk = fuzzyController.calculateSecurityRisk(cs, rt, ec);
+    const trustIndex = fuzzyController.calculateTrustIndex(e, c, b);
 
     // Обчислюємо ступені приналежності для вхідних та вихідних значень
     const inputMemberships = {
-      connectionStrength: fuzzyController.calculateMembershipValues(
-        "connectionStrength",
-        cs
+      errors: fuzzyController.calculateMembershipValues(
+        "errors",
+        e
       ),
-      responseTime: fuzzyController.calculateMembershipValues(
-        "responseTime",
-        rt
+      connections: fuzzyController.calculateMembershipValues(
+        "connections",
+        c
       ),
-      energyConsumption: fuzzyController.calculateMembershipValues(
-        "energyConsumption",
-        ec
+      bytes: fuzzyController.calculateMembershipValues(
+        "bytes",
+        b
       ),
     };
 
     const outputMemberships = fuzzyController.calculateMembershipValues(
-      "securityRiskLevel",
-      securityRisk
+      "trustIndex",
+      trustIndex
     );
     const mostActiveTerm = fuzzyController.getMostActiveTerm(outputMemberships);
 
     // Формуємо дані про приналежність
     const membershipData = {
-      connectionStrength: inputMemberships.connectionStrength,
-      responseTime: inputMemberships.responseTime,
-      energyConsumption: inputMemberships.energyConsumption,
-      securityRiskLevel: outputMemberships,
+      errors: inputMemberships.errors,
+      connections: inputMemberships.connections,
+      bytes: inputMemberships.bytes,
+      trustIndex: outputMemberships,
     };
 
     // Повертаємо результат
     res.json({
-      securityRisk: parseFloat(securityRisk.toFixed(2)),
+      trustIndex: parseFloat(trustIndex.toFixed(2)),
       mostActiveTerm: mostActiveTerm,
       membershipData: membershipData,
-      inputValues: { cs, rt, ec },
+      inputValues: { e, c, b },
     });
   } catch (error) {
     console.error("Error in calculation:", error);
@@ -86,12 +86,12 @@ app.get("/api/membership-functions", (req, res) => {
   try {
     const data = {
       inputs: {
-        connectionStrength: generateMembershipData("connectionStrength"),
-        responseTime: generateMembershipData("responseTime"),
-        energyConsumption: generateMembershipData("energyConsumption"),
+        errors: generateMembershipData("errors", 100),
+        connections: generateMembershipData("connections", 100),
+        bytes: generateMembershipData("bytes", 100),
       },
       output: {
-        securityRiskLevel: generateMembershipData("securityRiskLevel"),
+        trustIndex: generateMembershipData("trustIndex", 100),
       },
     };
     res.json(data);
@@ -102,7 +102,7 @@ app.get("/api/membership-functions", (req, res) => {
 });
 
 // Функція для генерації даних функцій приналежності
-function generateMembershipData(variableName) {
+function generateMembershipData(variableName, maxRange = 100) {
   const data = {};
   const params = fuzzyController.membershipParams[variableName];
   const step = 2; // Генеруємо точки через кожні 2 одиниці для більш читабельного графіка
@@ -111,7 +111,7 @@ function generateMembershipData(variableName) {
     data[termName] = [];
     const termParams = params[termName];
 
-    for (let x = 0; x <= 100; x += step) {
+    for (let x = 0; x <= maxRange; x += step) {
       let membershipValue = 0;
 
       if (termParams.type === "trapeze") {
@@ -150,12 +150,12 @@ app.get("/api/rules", (req, res) => {
 
         return {
           id: index + 1,
-          condition: `IF connectionStrength IS ${
+          condition: `IF errors IS ${
             conditions[0] || "Unknown"
-          } AND responseTime IS ${
+          } AND connections IS ${
             conditions[1] || "Unknown"
-          } AND energyConsumption IS ${conditions[2] || "Unknown"}`,
-          conclusion: `THEN securityRiskLevel IS ${
+          } AND bytes IS ${conditions[2] || "Unknown"}`,
+          conclusion: `THEN trustIndex IS ${
             conclusions[0] || "Unknown"
           }`,
           beliefDegree: rule.beliefDegree || 0,
@@ -179,26 +179,26 @@ app.get("/api/system-info", (req, res) => {
     systemName: fuzzyController.fuzzySystem.name,
     inputVariables: [
       {
-        name: "connectionStrength",
+        name: "errors",
         range: [0, 100],
-        terms: Object.keys(fuzzyController.membershipParams.connectionStrength),
+        terms: Object.keys(fuzzyController.membershipParams.errors),
       },
       {
-        name: "responseTime",
+        name: "connections",
         range: [0, 100],
-        terms: Object.keys(fuzzyController.membershipParams.responseTime),
+        terms: Object.keys(fuzzyController.membershipParams.connections),
       },
       {
-        name: "energyConsumption",
+        name: "bytes",
         range: [0, 100],
-        terms: Object.keys(fuzzyController.membershipParams.energyConsumption),
+        terms: Object.keys(fuzzyController.membershipParams.bytes),
       },
     ],
     outputVariables: [
       {
-        name: "securityRiskLevel",
+        name: "trustIndex",
         range: [0, 100],
-        terms: Object.keys(fuzzyController.membershipParams.securityRiskLevel),
+        terms: Object.keys(fuzzyController.membershipParams.trustIndex),
       },
     ],
     totalRules: fuzzyController.fuzzySystem.rules.length,
@@ -212,9 +212,9 @@ app.listen(PORT, () => {
   console.log(`Total fuzzy rules: ${fuzzyController.fuzzySystem.rules.length}`);
   console.log("System configuration:");
   console.log(
-    "- Input variables: connectionStrength, responseTime, energyConsumption"
+    "- Input variables: errors (0-100), connections (0-100), bytes (0-100)"
   );
-  console.log("- Output variable: securityRiskLevel");
+  console.log("- Output variable: trustIndex (0-100)");
   console.log("- Inference method: Mamdani");
   console.log("Ready to process fuzzy logic calculations!");
 });
