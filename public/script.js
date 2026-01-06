@@ -5,45 +5,45 @@ let currentCalculation = null;
 
 // --- DOM Elements and Variables ---
 // DOM елементи
-const connectionStrengthInput = document.getElementById("connectionStrength");
-const responseTimeInput = document.getElementById("responseTime");
-const energyConsumptionInput = document.getElementById("energyConsumption");
+const errorsInput = document.getElementById("errors");
+const connectionsInput = document.getElementById("connections");
+const bytesInput = document.getElementById("bytes");
 const calculateBtn = document.getElementById("calculateBtn");
-const securityRiskOutputSpan = document.getElementById("securityRiskOutput");
+const trustIndexOutputSpan = document.getElementById("trustIndexOutput");
 const activeOutputTermSpan = document.getElementById("activeOutputTerm");
 
 // Елементи для відображення значень
-const csValue = document.getElementById("csValue");
-const rtValue = document.getElementById("rtValue");
-const ecValue = document.getElementById("ecValue");
+const eValue = document.getElementById("eValue");
+const cValue = document.getElementById("cValue");
+const bValue = document.getElementById("bValue");
 
 // Canvas елементи для графіків
-const connectionStrengthCanvas = document.getElementById(
-  "connectionStrengthCanvas"
+const errorsCanvas = document.getElementById(
+  "errorsCanvas"
 );
-const responseTimeCanvas = document.getElementById("responseTimeCanvas");
-const energyConsumptionCanvas = document.getElementById(
-  "energyConsumptionCanvas"
+const connectionsCanvas = document.getElementById("connectionsCanvas");
+const bytesCanvas = document.getElementById(
+  "bytesCanvas"
 );
-const securityRiskCanvas = document.getElementById("securityRiskCanvas");
+const trustIndexCanvas = document.getElementById("trustIndexCanvas");
 
 // Контексти для малювання
 const canvases = {
-  connectionStrength: {
-    canvas: connectionStrengthCanvas,
-    ctx: connectionStrengthCanvas.getContext("2d"),
+  errors: {
+    canvas: errorsCanvas,
+    ctx: errorsCanvas.getContext("2d"),
   },
-  responseTime: {
-    canvas: responseTimeCanvas,
-    ctx: responseTimeCanvas.getContext("2d"),
+  connections: {
+    canvas: connectionsCanvas,
+    ctx: connectionsCanvas.getContext("2d"),
   },
-  energyConsumption: {
-    canvas: energyConsumptionCanvas,
-    ctx: energyConsumptionCanvas.getContext("2d"),
+  bytes: {
+    canvas: bytesCanvas,
+    ctx: bytesCanvas.getContext("2d"),
   },
-  securityRiskLevel: {
-    canvas: securityRiskCanvas,
-    ctx: securityRiskCanvas.getContext("2d"),
+  trustIndex: {
+    canvas: trustIndexCanvas,
+    ctx: trustIndexCanvas.getContext("2d"),
   },
 };
 
@@ -58,10 +58,10 @@ const colors = {
 
 // Tooltip елементи
 const tooltips = {
-  connectionStrength: document.getElementById("csTooltip"),
-  responseTime: document.getElementById("rtTooltip"),
-  energyConsumption: document.getElementById("ecTooltip"),
-  securityRiskLevel: document.getElementById("srTooltip"),
+  errors: document.getElementById("eTooltip"),
+  connections: document.getElementById("cTooltip"),
+  bytes: document.getElementById("bTooltip"),
+  trustIndex: document.getElementById("tTooltip"),
 };
 
 // --- API Functions ---
@@ -85,9 +85,9 @@ async function loadMembershipFunctions() {
 
 // Функція для відправки запиту на обчислення результату
 async function calculateFuzzyResult(
-  connectionStrength,
-  responseTime,
-  energyConsumption
+  errors,
+  connections,
+  bytes
 ) {
   try {
     const response = await fetch("/api/calculate", {
@@ -96,9 +96,9 @@ async function calculateFuzzyResult(
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        connectionStrength,
-        responseTime,
-        energyConsumption,
+        errors,
+        connections,
+        bytes,
       }),
     });
 
@@ -120,16 +120,16 @@ async function calculateFuzzyResult(
 
 // --- Event Listeners ---
 calculateBtn.addEventListener("click", calculateAndDisplayFuzzyOutput);
-connectionStrengthInput.addEventListener("input", () => {
-  csValue.textContent = connectionStrengthInput.value;
+errorsInput.addEventListener("input", () => {
+  eValue.textContent = errorsInput.value;
   debounceCalculation();
 });
-responseTimeInput.addEventListener("input", () => {
-  rtValue.textContent = responseTimeInput.value;
+connectionsInput.addEventListener("input", () => {
+  cValue.textContent = connectionsInput.value;
   debounceCalculation();
 });
-energyConsumptionInput.addEventListener("input", () => {
-  ecValue.textContent = energyConsumptionInput.value;
+bytesInput.addEventListener("input", () => {
+  bValue.textContent = bytesInput.value;
   debounceCalculation();
 });
 
@@ -144,21 +144,21 @@ function debounceCalculation() {
 async function calculateAndDisplayFuzzyOutput() {
   console.log("🧮 Початок обчислення...");
 
-  const connectionStrengthVal = parseFloat(connectionStrengthInput.value);
-  const responseTimeVal = parseFloat(responseTimeInput.value);
-  const energyConsumptionVal = parseFloat(energyConsumptionInput.value);
+  const errorsVal = parseFloat(errorsInput.value);
+  const connectionsVal = parseFloat(connectionsInput.value);
+  const bytesVal = parseFloat(bytesInput.value);
 
   console.log("📊 Вхідні дані:", {
-    connectionStrengthVal,
-    responseTimeVal,
-    energyConsumptionVal,
+    errorsVal,
+    connectionsVal,
+    bytesVal,
   });
 
   // Валідація вхідних даних
   if (
-    isNaN(connectionStrengthVal) ||
-    isNaN(responseTimeVal) ||
-    isNaN(energyConsumptionVal)
+    isNaN(errorsVal) ||
+    isNaN(connectionsVal) ||
+    isNaN(bytesVal)
   ) {
     console.error("❌ Некоректні вхідні дані");
     showError("Некоректні вхідні дані");
@@ -166,14 +166,14 @@ async function calculateAndDisplayFuzzyOutput() {
   }
 
   if (
-    connectionStrengthVal < 0 ||
-    connectionStrengthVal > 100 ||
-    responseTimeVal < 0 ||
-    responseTimeVal > 100 ||
-    energyConsumptionVal < 0 ||
-    energyConsumptionVal > 100
+    errorsVal < 0 ||
+    errorsVal > 100 ||
+    connectionsVal < 0 ||
+    connectionsVal > 100 ||
+    bytesVal < 0 ||
+    bytesVal > 100
   ) {
-    console.error("❌ Значення поза діапазоном 0-100");
+    console.error("❌ Значення поза допустимим діапазоном");
     showError("Всі значення повинні бути в діапазоні 0-100");
     return;
   }
@@ -182,16 +182,16 @@ async function calculateAndDisplayFuzzyOutput() {
     console.log("📡 Відправка запиту на сервер...");
     // Відправляємо запит на сервер для обчислення
     const result = await calculateFuzzyResult(
-      connectionStrengthVal,
-      responseTimeVal,
-      energyConsumptionVal
+      errorsVal,
+      connectionsVal,
+      bytesVal
     );
 
     console.log("✅ Результат отримано:", result);
 
     // Зберігаємо результат
     currentCalculation = {
-      securityRisk: result.securityRisk,
+      trustIndex: result.trustIndex,
       mostActiveTerm: result.mostActiveTerm,
       membershipData: result.membershipData,
       inputValues: result.inputValues,
@@ -200,7 +200,7 @@ async function calculateAndDisplayFuzzyOutput() {
     console.log("💾 Збережено результат:", currentCalculation);
 
     // Відображення результатів
-    securityRiskOutputSpan.textContent = currentCalculation.securityRisk;
+    trustIndexOutputSpan.textContent = currentCalculation.trustIndex;
     activeOutputTermSpan.textContent = translateTerm(
       currentCalculation.mostActiveTerm
     );
@@ -214,10 +214,10 @@ async function calculateAndDisplayFuzzyOutput() {
 
     // Перемалювання графіків з поточними значеннями
     drawAllGraphs(
-      connectionStrengthVal,
-      responseTimeVal,
-      energyConsumptionVal,
-      currentCalculation.securityRisk,
+      errorsVal,
+      connectionsVal,
+      bytesVal,
+      currentCalculation.trustIndex,
       currentCalculation.mostActiveTerm
     );
 
@@ -234,10 +234,10 @@ async function calculateAndDisplayFuzzyOutput() {
 // --- Display Functions ---
 // Функція для відображення значень приналежності
 function updateMembershipDisplay(membershipData) {
-  updateMembershipSection("csMembership", membershipData.connectionStrength);
-  updateMembershipSection("rtMembership", membershipData.responseTime);
-  updateMembershipSection("ecMembership", membershipData.energyConsumption);
-  updateMembershipSection("srMembership", membershipData.securityRiskLevel);
+  updateMembershipSection("eMembership", membershipData.errors);
+  updateMembershipSection("cMembership", membershipData.connections);
+  updateMembershipSection("bMembership", membershipData.bytes);
+  updateMembershipSection("tMembership", membershipData.trustIndex);
 }
 
 function updateMembershipSection(elementId, data) {
@@ -285,17 +285,17 @@ function translateTerm(term) {
 
 // --- Graph Drawing Functions ---
 function drawAllGraphs(
-  csVal = null,
-  rtVal = null,
-  ecVal = null,
-  srVal = null,
+  eVal = null,
+  cVal = null,
+  bVal = null,
+  tVal = null,
   activeTerm = null
 ) {
   console.log("🎨 Малювання графіків:", {
-    csVal,
-    rtVal,
-    ecVal,
-    srVal,
+    eVal,
+    cVal,
+    bVal,
+    tVal,
     activeTerm,
   });
 
@@ -306,10 +306,10 @@ function drawAllGraphs(
 
   console.log("📊 Дані для малювання:", membershipFunctionsData);
 
-  drawMembershipGraph("connectionStrength", csVal, activeTerm);
-  drawMembershipGraph("responseTime", rtVal, activeTerm);
-  drawMembershipGraph("energyConsumption", ecVal, activeTerm);
-  drawMembershipGraph("securityRiskLevel", srVal, activeTerm);
+  drawMembershipGraph("errors", eVal, activeTerm);
+  drawMembershipGraph("connections", cVal, activeTerm);
+  drawMembershipGraph("bytes", bVal, activeTerm);
+  drawMembershipGraph("trustIndex", tVal, activeTerm);
 
   console.log("✅ Графіки намальовані");
 }
@@ -340,12 +340,15 @@ function drawMembershipGraph(
 
   // Отримуємо дані для змінної з сервера
   const variableData =
-    variableName === "securityRiskLevel"
+    variableName === "trustIndex"
       ? membershipFunctionsData.output[variableName]
       : membershipFunctionsData.inputs[variableName];
 
   if (!variableData) return;
 
+  // Всі змінні мають діапазон 0-100
+  const maxRange = 100;
+  
   // Малювання функцій приналежності
   Object.keys(variableData).forEach((termName) => {
     const points = variableData[termName];
@@ -359,7 +362,8 @@ function drawMembershipGraph(
       graphWidth,
       graphHeight,
       color,
-      isHighlighted
+      isHighlighted,
+      maxRange
     );
 
     // Додати підпис терма
@@ -368,7 +372,7 @@ function drawMembershipGraph(
 
   // Малювання поточного значення
   if (currentValue !== null) {
-    drawCurrentValueMarker(ctx, currentValue, padding, graphWidth, graphHeight);
+    drawCurrentValueMarker(ctx, currentValue, padding, graphWidth, graphHeight, maxRange);
   }
 
   // Додати підписи осей
@@ -419,7 +423,8 @@ function drawMembershipCurve(
   graphWidth,
   graphHeight,
   color,
-  isHighlighted
+  isHighlighted,
+  maxRange = 100
 ) {
   if (!points || points.length === 0) return;
 
@@ -430,7 +435,7 @@ function drawMembershipCurve(
   ctx.lineJoin = "round";
 
   points.forEach((point, index) => {
-    const x = padding + (point.x / 100) * graphWidth;
+    const x = padding + (point.x / maxRange) * graphWidth;
     const y = padding + graphHeight - point.y * graphHeight;
 
     if (index === 0) {
@@ -448,7 +453,7 @@ function drawMembershipCurve(
     ctx.fillStyle = color + "20"; // Прозорість 20%
 
     points.forEach((point, index) => {
-      const x = padding + (point.x / 100) * graphWidth;
+      const x = padding + (point.x / maxRange) * graphWidth;
       const y = padding + graphHeight - point.y * graphHeight;
 
       if (index === 0) {
@@ -460,7 +465,7 @@ function drawMembershipCurve(
     });
 
     ctx.lineTo(
-      padding + (points[points.length - 1].x / 100) * graphWidth,
+      padding + (points[points.length - 1].x / maxRange) * graphWidth,
       padding + graphHeight
     );
     ctx.closePath();
@@ -498,8 +503,8 @@ function drawTermLabel(ctx, termName, color, padding, graphWidth) {
   }
 }
 
-function drawCurrentValueMarker(ctx, value, padding, graphWidth, graphHeight) {
-  const x = padding + (value / 100) * graphWidth;
+function drawCurrentValueMarker(ctx, value, padding, graphWidth, graphHeight, maxRange = 100) {
+  const x = padding + (value / maxRange) * graphWidth;
 
   ctx.beginPath();
   ctx.strokeStyle = "#2c3e50";
@@ -526,34 +531,37 @@ function drawAxisLabels(ctx, width, height, padding, variableName = null) {
   // Підписи для X-осі залежно від типу змінної
   const graphWidth = width - 2 * padding;
   
-  // Завжди показуємо 0 та 100
+  // Завжди показуємо 0 та максимум
   ctx.fillText("0", padding, height - padding + 20);
-  ctx.fillText("100", width - padding, height - padding + 20);
   
   // Додаємо ключові точки для кожного типу змінної
-  if (variableName === "connectionStrength") {
-    // Ключові точки: 20, 40, 60, 80
-    ctx.fillText("20", padding + (20/100) * graphWidth, height - padding + 20);
-    ctx.fillText("40", padding + (40/100) * graphWidth, height - padding + 20);
-    ctx.fillText("60", padding + (60/100) * graphWidth, height - padding + 20);
-    ctx.fillText("80", padding + (80/100) * graphWidth, height - padding + 20);
-  } else if (variableName === "responseTime") {
-    // Ключові точки: 30, 50, 70, 90
+  if (variableName === "errors") {
+    // Ключові точки: 30, 50, 70, 90, 100
     ctx.fillText("30", padding + (30/100) * graphWidth, height - padding + 20);
     ctx.fillText("50", padding + (50/100) * graphWidth, height - padding + 20);
     ctx.fillText("70", padding + (70/100) * graphWidth, height - padding + 20);
     ctx.fillText("90", padding + (90/100) * graphWidth, height - padding + 20);
-  } else if (variableName === "energyConsumption") {
-    // Ключові точки: 10, 30, 50, 70
+    ctx.fillText("100", width - padding, height - padding + 20);
+  } else if (variableName === "connections") {
+    // Ключові точки: 10, 30, 50, 70, 100
     ctx.fillText("10", padding + (10/100) * graphWidth, height - padding + 20);
     ctx.fillText("30", padding + (30/100) * graphWidth, height - padding + 20);
     ctx.fillText("50", padding + (50/100) * graphWidth, height - padding + 20);
     ctx.fillText("70", padding + (70/100) * graphWidth, height - padding + 20);
-  } else if (variableName === "securityRiskLevel") {
-    // Ключові точки: 25, 50, 75
+    ctx.fillText("100", width - padding, height - padding + 20);
+  } else if (variableName === "bytes") {
+    // Ключові точки: 20, 40, 60, 80, 100
+    ctx.fillText("20", padding + (20/100) * graphWidth, height - padding + 20);
+    ctx.fillText("40", padding + (40/100) * graphWidth, height - padding + 20);
+    ctx.fillText("60", padding + (60/100) * graphWidth, height - padding + 20);
+    ctx.fillText("80", padding + (80/100) * graphWidth, height - padding + 20);
+    ctx.fillText("100", width - padding, height - padding + 20);
+  } else if (variableName === "trustIndex") {
+    // Ключові точки: 25, 50, 75, 100
     ctx.fillText("25", padding + (25/100) * graphWidth, height - padding + 20);
     ctx.fillText("50", padding + (50/100) * graphWidth, height - padding + 20);
     ctx.fillText("75", padding + (75/100) * graphWidth, height - padding + 20);
+    ctx.fillText("100", width - padding, height - padding + 20);
   }
 
   // Підписи для Y-осі
@@ -756,12 +764,12 @@ function exportResults() {
 
   const data = {
     inputs: {
-      connectionStrength: parseFloat(connectionStrengthInput.value),
-      responseTime: parseFloat(responseTimeInput.value),
-      energyConsumption: parseFloat(energyConsumptionInput.value),
+      errors: parseFloat(errorsInput.value),
+      connections: parseFloat(connectionsInput.value),
+      bytes: parseFloat(bytesInput.value),
     },
     output: {
-      securityRisk: currentCalculation.securityRisk,
+      trustIndex: currentCalculation.trustIndex,
       mostActiveTerm: currentCalculation.mostActiveTerm,
     },
     membershipValues: currentCalculation.membershipData,
@@ -786,23 +794,23 @@ function exportResults() {
 document.addEventListener("DOMContentLoaded", async () => {
   console.log("🚀 Ініціалізація додатку...");
   console.log("DOM елементи:", {
-    connectionStrengthInput: !!connectionStrengthInput,
-    responseTimeInput: !!responseTimeInput,
-    energyConsumptionInput: !!energyConsumptionInput,
+    errorsInput: !!errorsInput,
+    connectionsInput: !!connectionsInput,
+    bytesInput: !!bytesInput,
     canvases: Object.keys(canvases).map((key) => ({
       [key]: !!canvases[key].canvas,
     })),
   });
 
   // Встановити початкові значення
-  if (csValue && connectionStrengthInput) {
-    csValue.textContent = connectionStrengthInput.value;
+  if (eValue && errorsInput) {
+    eValue.textContent = errorsInput.value;
   }
-  if (rtValue && responseTimeInput) {
-    rtValue.textContent = responseTimeInput.value;
+  if (cValue && connectionsInput) {
+    cValue.textContent = connectionsInput.value;
   }
-  if (ecValue && energyConsumptionInput) {
-    ecValue.textContent = energyConsumptionInput.value;
+  if (bValue && bytesInput) {
+    bValue.textContent = bytesInput.value;
   }
 
   try {

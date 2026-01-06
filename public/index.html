@@ -8,65 +8,65 @@
   </head>
   <body>
     <div class="container">
-      <h1>Нечіткий контролер для оцінки рівня безпеки системи</h1>
+      <h1>Нечіткий контролер для оцінки індексу довіри системи</h1>
       <p class="description">
-        Система нечіткого виводу для оцінки рівня безпеки на основі сили
-        з'єднання (CS), часу відгуку (RT) та споживання енергії (EC).
-        Результат: рівень ризику безпеки (SR).
+        Система нечіткого виводу для оцінки індексу довіри на основі кількості помилок (E),
+        кількості з'єднань (C) та кількості байтів (B).
+        Результат: індекс довіри (T).
       </p>
 
       <div class="input-section">
         <div class="input-group">
-          <label for="connectionStrength">Сила З'єднання (CS) (0-100):</label>
+          <label for="errors">Кількість Помилок (E) (0-100):</label>
           <input
             type="number"
-            id="connectionStrength"
+            id="errors"
             value="50"
             min="0"
             max="100"
             step="0.1"
           />
-          <span class="input-value" id="csValue">50</span>
+          <span class="input-value" id="eValue">50</span>
         </div>
 
         <div class="input-group">
-          <label for="responseTime">Час Відгуку (RT) (0-100):</label>
+          <label for="connections">Кількість З'єднань (C) (0-100):</label>
           <input
             type="number"
-            id="responseTime"
+            id="connections"
             value="50"
             min="0"
             max="100"
             step="0.1"
           />
-          <span class="input-value" id="rtValue">50</span>
+          <span class="input-value" id="cValue">50</span>
         </div>
 
         <div class="input-group">
-          <label for="energyConsumption">Споживання Енергії (EC) (0-100):</label>
+          <label for="bytes">Кількість Байтів (B) (0-100):</label>
           <input
             type="number"
-            id="energyConsumption"
+            id="bytes"
             value="50"
             min="0"
             max="100"
             step="0.1"
           />
-          <span class="input-value" id="ecValue">50</span>
+          <span class="input-value" id="bValue">50</span>
         </div>
 
-        <button id="calculateBtn">Обчислити Рівень Безпеки</button>
+        <button id="calculateBtn">Обчислити Індекс Довіри</button>
       </div>
 
       <div class="output-section">
         <h2>Результат Обчислення</h2>
         <div class="result-display">
           <div class="result-item">
-            <span class="result-label">Security risk level value:</span>
-            <span class="result-value" id="securityRiskOutput">--</span>
+            <span class="result-label">Trust Index value:</span>
+            <span class="result-value" id="trustIndexOutput">--</span>
           </div>
           <div class="result-item">
-            <span class="result-label">Level of Security Risk:</span>
+            <span class="result-label">Level of Trust:</span>
             <span class="result-term" id="activeOutputTerm">--</span>
             <small class="result-explanation">Домінуючий лінгвістичний терм для обчисленого значення</small>
           </div>
@@ -77,20 +77,20 @@
         <h3>Значення Приналежності для Поточних Входів</h3>
         <div class="membership-grid">
           <div class="membership-section">
-            <h4>Сила З'єднання (CS)</h4>
-            <div id="csMembership" class="membership-values"></div>
+            <h4>Кількість Помилок (E)</h4>
+            <div id="eMembership" class="membership-values"></div>
           </div>
           <div class="membership-section">
-            <h4>Час Відгуку (RT)</h4>
-            <div id="rtMembership" class="membership-values"></div>
+            <h4>Кількість З'єднань (C)</h4>
+            <div id="cMembership" class="membership-values"></div>
           </div>
           <div class="membership-section">
-            <h4>Споживання Енергії (EC)</h4>
-            <div id="ecMembership" class="membership-values"></div>
+            <h4>Кількість Байтів (B)</h4>
+            <div id="bMembership" class="membership-values"></div>
           </div>
           <div class="membership-section">
-            <h4>Рівень Ризику Безпеки (SR)</h4>
-            <div id="srMembership" class="membership-values"></div>
+            <h4>Індекс Довіри (T)</h4>
+            <div id="tMembership" class="membership-values"></div>
           </div>
         </div>
       </div>
@@ -99,34 +99,34 @@
         <h3>Функції Приналежності</h3>
         <div class="graph-row">
           <div class="graph-container">
-            <h4>Сила З'єднання (CS)</h4>
+            <h4>Кількість Помилок (E)</h4>
             <canvas
-              id="connectionStrengthCanvas"
+              id="errorsCanvas"
               width="400"
               height="250"
             ></canvas>
-            <div id="csTooltip" class="graph-tooltip"></div>
+            <div id="eTooltip" class="graph-tooltip"></div>
           </div>
           <div class="graph-container">
-            <h4>Час Відгуку (RT)</h4>
-            <canvas id="responseTimeCanvas" width="400" height="250"></canvas>
-            <div id="rtTooltip" class="graph-tooltip"></div>
+            <h4>Кількість З'єднань (C)</h4>
+            <canvas id="connectionsCanvas" width="400" height="250"></canvas>
+            <div id="cTooltip" class="graph-tooltip"></div>
           </div>
         </div>
         <div class="graph-row">
           <div class="graph-container">
-            <h4>Споживання Енергії (EC)</h4>
+            <h4>Кількість Байтів (B)</h4>
             <canvas
-              id="energyConsumptionCanvas"
+              id="bytesCanvas"
               width="400"
               height="250"
             ></canvas>
-            <div id="ecTooltip" class="graph-tooltip"></div>
+            <div id="bTooltip" class="graph-tooltip"></div>
           </div>
           <div class="graph-container">
-            <h4>Рівень Ризику Безпеки (SR)</h4>
-            <canvas id="securityRiskCanvas" width="400" height="250"></canvas>
-            <div id="srTooltip" class="graph-tooltip"></div>
+            <h4>Індекс Довіри (T)</h4>
+            <canvas id="trustIndexCanvas" width="400" height="250"></canvas>
+            <div id="tTooltip" class="graph-tooltip"></div>
           </div>
         </div>
       </div>
@@ -134,10 +134,10 @@
       <div class="rules-section">
         <h3>База Правил та Інтерпретація Результатів</h3>
         <p>
-          Система використовує 27 правил нечіткого виводу для визначення рівня
-          безпеки на основі комбінацій вхідних параметрів:
-          <strong>CS</strong> (Connection Strength), <strong>RT</strong> (Response Time), 
-          <strong>EC</strong> (Energy Consumption) → <strong>SR</strong> (Security Risk).
+          Система використовує 27 правил нечіткого виводу для визначення індексу довіри
+          на основі комбінацій вхідних параметрів:
+          <strong>E</strong> (Errors - Помилки), <strong>C</strong> (Connections - З'єднання), 
+          <strong>B</strong> (Bytes - Байти) → <strong>T</strong> (Trust Index - Індекс довіри).
         </p>
         
         <div class="explanation-section">
@@ -149,34 +149,31 @@
           </p>
           <p>
             <strong>Інтерпретація результатів:</strong><br>
-            • <strong>0-20:</strong> Дуже низький ризик безпеки (VeryLow risk)<br>
-            • <strong>20-40:</strong> Низький ризик безпеки (Low risk)<br>
-            • <strong>40-60:</strong> Середній ризик безпеки (Medium risk)<br>
-            • <strong>60-80:</strong> Високий ризик безпеки (High risk)<br>
-            • <strong>80-100:</strong> Дуже високий ризик безпеки (VeryHigh risk)
+            • <strong>0-20:</strong> Дуже низький рівень довіри (VeryLow trust)<br>
+            • <strong>20-40:</strong> Низький рівень довіри (Low trust)<br>
+            • <strong>40-60:</strong> Середній рівень довіри (Medium trust)<br>
+            • <strong>60-80:</strong> Високий рівень довіри (High trust)<br>
+            • <strong>80-100:</strong> Дуже високий рівень довіри (VeryHigh trust)
           </p>
           <p>
-            <strong>Приклад:</strong> Якщо рівень ризику безпеки = 25.2, то:
+            <strong>Приклад:</strong> Якщо індекс довіри = 72.5, то:
           </p>
           <ul>
-            <li>Low (Низький ризик): 0.85 ← <em>Домінуючий терм</em></li>
-            <li>VeryLow (Дуже низький ризик): 0.35</li>
-            <li>Medium (Середній ризик): 0.15</li>
+            <li>High (Високий): 0.85 ← <em>Домінуючий терм</em></li>
+            <li>Medium (Середній): 0.35</li>
+            <li>VeryHigh (Дуже високий): 0.15</li>
           </ul>
         </div>
         
         <div class="rules-summary">
           <div class="rule-category">
-            <strong>Низька сила з'єднання (CS):</strong> Висока небезпека незалежно
-            від інших параметрів
+            <strong>Мала кількість помилок (E):</strong> Високий рівень довіри в більшості випадків
           </div>
           <div class="rule-category">
-            <strong>Середня сила з'єднання (CS):</strong> Рівень безпеки залежить від
-            часу відгуку (RT) та споживання енергії (EC)
+            <strong>Середня кількість помилок (E):</strong> Рівень довіри залежить від з'єднань та байтів
           </div>
           <div class="rule-category">
-            <strong>Висока сила з'єднання (CS):</strong> Низька небезпека в більшості
-            випадків
+            <strong>Велика кількість помилок (E):</strong> Низький рівень довіри незалежно від інших параметрів
           </div>
         </div>
       </div>
