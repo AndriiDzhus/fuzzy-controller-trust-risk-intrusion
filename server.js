@@ -141,24 +141,24 @@ app.get("/", (req, res) => {
 // API endpoint для отримання інформації про правила
 app.get("/api/rules", (req, res) => {
   try {
+    const rules = fuzzyController.rules;
     res.json({
-      totalRules: fuzzyController.fuzzySystem.rules.length,
-      rules: fuzzyController.fuzzySystem.rules.map((rule, index) => {
-        // Правильна структура для fuzzyis - використовуємо conditions і conclusions
-        const conditions = rule.conditions || [];
-        const conclusions = rule.conclusions || [];
+      totalRules: rules.length,
+      rules: rules.map((rule, index) => {
+        // Структура правил @thi.ng/fuzzy: { if: { E: 'Low', T: 'Low', D: 'Low' }, then: { P: 'Low' } }
+        const conditions = rule.if || {};
+        const conclusions = rule.then || {};
 
         return {
           id: index + 1,
           condition: `IF residualEnergy IS ${
-            conditions[0] || "Unknown"
+            conditions.E || "Unknown"
           } AND transmissionCoefficient IS ${
-            conditions[1] || "Unknown"
-          } AND delayCoefficient IS ${conditions[2] || "Unknown"}`,
+            conditions.T || "Unknown"
+          } AND delayCoefficient IS ${conditions.D || "Unknown"}`,
           conclusion: `THEN probability IS ${
-            conclusions[0] || "Unknown"
+            conclusions.P || "Unknown"
           }`,
-          beliefDegree: rule.beliefDegree || 0,
         };
       }),
     });
@@ -166,9 +166,6 @@ app.get("/api/rules", (req, res) => {
     console.error("Error getting rules:", error);
     res.status(500).json({
       error: "Internal server error: " + error.message,
-      rulesLength: fuzzyController.fuzzySystem.rules
-        ? fuzzyController.fuzzySystem.rules.length
-        : 0,
     });
   }
 });
@@ -176,7 +173,7 @@ app.get("/api/rules", (req, res) => {
 // API endpoint для отримання інформації про систему
 app.get("/api/system-info", (req, res) => {
   res.json({
-    systemName: fuzzyController.fuzzySystem.name,
+    systemName: "Communication System Probability Controller",
     inputVariables: [
       {
         name: "residualEnergy",
@@ -205,20 +202,22 @@ app.get("/api/system-info", (req, res) => {
         terms: Object.keys(fuzzyController.membershipParams.probability),
       },
     ],
-    totalRules: fuzzyController.fuzzySystem.rules.length,
-    fuzzyLibrary: "FuzzyIS",
+    totalRules: fuzzyController.rules.length,
+    fuzzyLibrary: "@thi.ng/fuzzy",
+    defuzzificationMethod: "centroid",
   });
 });
 
 app.listen(PORT, () => {
   console.log(`Fuzzy Controller Server running on http://localhost:${PORT}`);
-  console.log(`Using FuzzyIS library for fuzzy inference`);
-  console.log(`Total fuzzy rules: ${fuzzyController.fuzzySystem.rules.length}`);
+  console.log(`Using @thi.ng/fuzzy library with centroid defuzzification`);
+  console.log(`Total fuzzy rules: ${fuzzyController.rules.length}`);
   console.log("System configuration:");
   console.log(
     "- Input variables: residualEnergy (E), transmissionCoefficient (T), delayCoefficient (D)"
   );
   console.log("- Output variable: probability (P)");
   console.log("- Inference method: Mamdani");
+  console.log("- Defuzzification: Centroid (like MATLAB)");
   console.log("Ready to process fuzzy logic calculations!");
 });

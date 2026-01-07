@@ -51,8 +51,8 @@ const membershipParams = {
   residualEnergy: {
     Low: { type: "trapeze", params: [0, 0, 10, 30] },
     Medium: { type: "trapeze", params: [10, 30, 50, 70] },
-    High: { type: "trapeze", params: [50, 70, 100, 100] },
-  },
+  High: { type: "trapeze", params: [50, 70, 100, 100] },
+},
   transmissionCoefficient: {
     Low: { type: "trapeze", params: [0, 0, 20, 40] },
     Medium: { type: "trapeze", params: [20, 40, 60, 80] },

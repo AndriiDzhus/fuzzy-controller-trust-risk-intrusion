@@ -1,103 +1,90 @@
-const fuzzyis = require("fuzzyis");
+const { 
+  variable, 
+  triangle, 
+  trapezoid, 
+  and,
+  defuzz, 
+  centroidStrategy
+} = require('@thi.ng/fuzzy');
 
-// Імпортуємо необхідні компоненти з fuzzyis
-const { LinguisticVariable, Term, Rule, FIS } = fuzzyis;
-
-// --- Fuzzy Logic Controller Implementation using FuzzyIS ---
+// --- Fuzzy Logic Controller Implementation using @thi.ng/fuzzy ---
 // Система для визначення Вірогідності (P) на основі:
 // - Залишкова енергія (E)
 // - Коефіцієнт передавання (T)
 // - Коефіцієнт затримки (D)
 
-// Створюємо нову систему нечіткого виводу
-const fuzzySystem = new FIS("Communication System Probability Controller");
+// Вхідні лінгвістичні змінні
+// E: Залишкова енергія [0, 100]
+const residualEnergy = variable([0, 100], {
+  Low: trapezoid(0, 0, 10, 30),
+  Medium: trapezoid(10, 30, 50, 70),
+  High: trapezoid(50, 70, 100, 100)
+});
 
-// Створюємо вхідні лінгвістичні змінні
-const residualEnergy = new LinguisticVariable("residualEnergy", [0, 100]);
-const transmissionCoefficient = new LinguisticVariable("transmissionCoefficient", [0, 100]);
-const delayCoefficient = new LinguisticVariable("delayCoefficient", [0, 100]);
+// T: Коефіцієнт передавання [0, 100]
+const transmissionCoefficient = variable([0, 100], {
+  Low: trapezoid(0, 0, 20, 40),
+  Medium: trapezoid(20, 40, 60, 80),
+  High: trapezoid(60, 80, 100, 100)
+});
 
-// Створюємо вихідну лінгвістичну змінну
-const probability = new LinguisticVariable("probability", [0, 100]);
+// D: Коефіцієнт затримки [0, 100]
+const delayCoefficient = variable([0, 100], {
+  Low: trapezoid(0, 0, 30, 50),
+  Medium: trapezoid(30, 50, 70, 90),
+  High: trapezoid(70, 90, 100, 100)
+});
 
-// Додаємо терми для Залишкової енергії (E)
-// μ_м(E): 1 if E ≤ 10, (30-E)/(30-10) if 10 < E ≤ 30, 0 if E > 30
-// μ_с(E): 0 if E ≤ 10, (E-10)/(30-10) if 10 < E ≤ 30, 1 if 30 < E ≤ 50, (70-E)/(70-50) if 50 < E < 70, 0 if E ≥ 70
-// μ_в(E): 0 if E ≤ 50, (E-50)/(70-50) if 50 < E ≤ 70, 1 if E > 70
-residualEnergy.addTerm(new Term("Low", "trapeze", [0, 0, 10, 30]));
-residualEnergy.addTerm(new Term("Medium", "trapeze", [10, 30, 50, 70]));
-residualEnergy.addTerm(new Term("High", "trapeze", [50, 70, 100, 100]));
+// Вихідна лінгвістична змінна
+// P: Вірогідність [0, 100]
+const probability = variable([0, 100], {
+  VeryLow: triangle(0, 0, 25),
+  Low: triangle(0, 25, 50),
+  Medium: triangle(25, 50, 75),
+  High: triangle(50, 75, 100),
+  VeryHigh: triangle(75, 100, 100)
+});
 
-// Додаємо терми для Коефіцієнта передавання (T)
-// μ_м(T): 1 if T ≤ 20, (40-T)/(40-20) if 20 < T ≤ 40, 0 if T > 40
-// μ_с(T): 0 if T ≤ 20, (T-20)/(40-20) if 20 < T ≤ 40, 1 if 40 < T ≤ 60, (80-T)/(80-60) if 60 < T < 80, 0 if T ≥ 80
-// μ_в(T): 0 if T ≤ 60, (T-60)/(80-60) if 60 < T ≤ 80, 1 if T > 80
-transmissionCoefficient.addTerm(new Term("Low", "trapeze", [0, 0, 20, 40]));
-transmissionCoefficient.addTerm(new Term("Medium", "trapeze", [20, 40, 60, 80]));
-transmissionCoefficient.addTerm(new Term("High", "trapeze", [60, 80, 100, 100]));
-
-// Додаємо терми для Коефіцієнта затримки (D)
-// μ_м(D): 1 if D ≤ 30, (50-D)/(50-30) if 30 < D ≤ 50, 0 if D > 50
-// μ_с(D): 0 if D ≤ 30, (D-30)/(50-30) if 30 < D ≤ 50, 1 if 50 < D ≤ 70, (90-D)/(90-70) if 70 < D < 90, 0 if D ≥ 90
-// μ_в(D): 0 if D ≤ 70, (D-70)/(90-70) if 70 < D ≤ 90, 1 if D > 90
-delayCoefficient.addTerm(new Term("Low", "trapeze", [0, 0, 30, 50]));
-delayCoefficient.addTerm(new Term("Medium", "trapeze", [30, 50, 70, 90]));
-delayCoefficient.addTerm(new Term("High", "trapeze", [70, 90, 100, 100]));
-
-// Додаємо терми для Вірогідності (P)
-// μ_дм(P): 1 if P ≤ 0, (25-P)/25 if 0 < P ≤ 25, 0 if P > 25
-// μ_м(P): 0 if P ≤ 0, P/25 if 0 < P ≤ 25, (50-P)/(50-25) if 25 < P ≤ 50, 0 if 50 < P
-// μ_с(P): 0 if P ≤ 25, (P-25)/(50-25) if 25 < P ≤ 50, (75-P)/(75-50) if 50 < P ≤ 75, 0 if 75 < P
-// μ_в(P): 0 if P ≤ 50, (P-50)/(75-50) if 50 < P ≤ 75, (100-P)/(100-75) if 75 < P ≤ 100, 0 if 100 < P
-// μ_дв(P): 0 if P ≤ 75, (P-75)/(100-75) if 75 < P ≤ 100, 1 if P > 100
-probability.addTerm(new Term("VeryLow", "triangle", [0, 0, 25]));
-probability.addTerm(new Term("Low", "triangle", [0, 25, 50]));
-probability.addTerm(new Term("Medium", "triangle", [25, 50, 75]));
-probability.addTerm(new Term("High", "triangle", [50, 75, 100]));
-probability.addTerm(new Term("VeryHigh", "triangle", [75, 100, 100]));
-
-// Додаємо змінні до системи
-fuzzySystem.addInput(residualEnergy);
-fuzzySystem.addInput(transmissionCoefficient);
-fuzzySystem.addInput(delayCoefficient);
-fuzzySystem.addOutput(probability);
-
-// Створюємо правила нечіткого виводу на основі таблиці rule_v2.jpeg
+// База правил на основі таблиці rule_v2.jpeg
 // Порядок: [E, T, D] → [P]
-fuzzySystem.rules = [
+const rules = [
   // E = Low (Мала)
-  new Rule(["Low", "Low", "Low"], ["Low"], "and"),       // 1: Мала, Малий, Малий → Мала
-  new Rule(["Low", "Low", "Medium"], ["VeryLow"], "and"), // 2: Мала, Малий, Середній → Дуже мала
-  new Rule(["Low", "Low", "High"], ["VeryLow"], "and"),   // 3: Мала, Малий, Великий → Дуже мала
-  new Rule(["Low", "Medium", "Low"], ["VeryLow"], "and"), // 4: Мала, Середній, Малий → Дуже мала
-  new Rule(["Low", "Medium", "Medium"], ["VeryLow"], "and"), // 5: Мала, Середній, Середній → Дуже мала
-  new Rule(["Low", "Medium", "High"], ["VeryLow"], "and"), // 6: Мала, Середній, Великий → Дуже мала
-  new Rule(["Low", "High", "Low"], ["Low"], "and"),       // 7: Мала, Великий, Малий → Мала
-  new Rule(["Low", "High", "Medium"], ["Low"], "and"),    // 8: Мала, Великий, Середній → Мала
-  new Rule(["Low", "High", "High"], ["Low"], "and"),      // 9: Мала, Великий, Великий → Мала
+  and({ E: 'Low', T: 'Low', D: 'Low' }, { P: 'Low' }),       // 1: Мала, Малий, Малий → Мала
+  and({ E: 'Low', T: 'Low', D: 'Medium' }, { P: 'VeryLow' }), // 2: Мала, Малий, Середній → Дуже мала
+  and({ E: 'Low', T: 'Low', D: 'High' }, { P: 'VeryLow' }),   // 3: Мала, Малий, Великий → Дуже мала
+  and({ E: 'Low', T: 'Medium', D: 'Low' }, { P: 'VeryLow' }), // 4: Мала, Середній, Малий → Дуже мала
+  and({ E: 'Low', T: 'Medium', D: 'Medium' }, { P: 'VeryLow' }), // 5: Мала, Середній, Середній → Дуже мала
+  and({ E: 'Low', T: 'Medium', D: 'High' }, { P: 'VeryLow' }), // 6: Мала, Середній, Великий → Дуже мала
+  and({ E: 'Low', T: 'High', D: 'Low' }, { P: 'Low' }),       // 7: Мала, Великий, Малий → Мала
+  and({ E: 'Low', T: 'High', D: 'Medium' }, { P: 'Low' }),    // 8: Мала, Великий, Середній → Мала
+  and({ E: 'Low', T: 'High', D: 'High' }, { P: 'Low' }),      // 9: Мала, Великий, Великий → Мала
 
   // E = Medium (Середня)
-  new Rule(["Medium", "Low", "Low"], ["Medium"], "and"),  // 10: Середня, Малий, Малий → Середня
-  new Rule(["Medium", "Low", "Medium"], ["Low"], "and"),  // 11: Середня, Малий, Середній → Мала
-  new Rule(["Medium", "Low", "High"], ["Low"], "and"),    // 12: Середня, Малий, Великий → Мала
-  new Rule(["Medium", "Medium", "Low"], ["Medium"], "and"), // 13: Середня, Середній, Малий → Середня
-  new Rule(["Medium", "Medium", "Medium"], ["Medium"], "and"), // 14: Середня, Середній, Середній → Середня
-  new Rule(["Medium", "Medium", "High"], ["Medium"], "and"), // 15: Середня, Середній, Великий → Середня
-  new Rule(["Medium", "High", "Low"], ["High"], "and"),   // 16: Середня, Великий, Малий → Велика
-  new Rule(["Medium", "High", "Medium"], ["High"], "and"), // 17: Середня, Великий, Середній → Велика
-  new Rule(["Medium", "High", "High"], ["Medium"], "and"), // 18: Середня, Великий, Великий → Середня
+  and({ E: 'Medium', T: 'Low', D: 'Low' }, { P: 'Medium' }),  // 10: Середня, Малий, Малий → Середня
+  and({ E: 'Medium', T: 'Low', D: 'Medium' }, { P: 'Low' }),  // 11: Середня, Малий, Середній → Мала
+  and({ E: 'Medium', T: 'Low', D: 'High' }, { P: 'Low' }),    // 12: Середня, Малий, Великий → Мала
+  and({ E: 'Medium', T: 'Medium', D: 'Low' }, { P: 'Medium' }), // 13: Середня, Середній, Малий → Середня
+  and({ E: 'Medium', T: 'Medium', D: 'Medium' }, { P: 'Medium' }), // 14: Середня, Середній, Середній → Середня
+  and({ E: 'Medium', T: 'Medium', D: 'High' }, { P: 'Medium' }), // 15: Середня, Середній, Великий → Середня
+  and({ E: 'Medium', T: 'High', D: 'Low' }, { P: 'High' }),   // 16: Середня, Великий, Малий → Велика
+  and({ E: 'Medium', T: 'High', D: 'Medium' }, { P: 'High' }), // 17: Середня, Великий, Середній → Велика
+  and({ E: 'Medium', T: 'High', D: 'High' }, { P: 'Medium' }), // 18: Середня, Великий, Великий → Середня
 
   // E = High (Велика)
-  new Rule(["High", "Low", "Low"], ["High"], "and"),      // 19: Велика, Малий, Малий → Велика
-  new Rule(["High", "Low", "Medium"], ["High"], "and"),   // 20: Велика, Малий, Середній → Велика
-  new Rule(["High", "Low", "High"], ["High"], "and"),     // 21: Велика, Малий, Великий → Велика
-  new Rule(["High", "Medium", "Low"], ["VeryHigh"], "and"), // 22: Велика, Середній, Малий → Дуже велика
-  new Rule(["High", "Medium", "Medium"], ["VeryHigh"], "and"), // 23: Велика, Середній, Середній → Дуже велика
-  new Rule(["High", "Medium", "High"], ["VeryHigh"], "and"), // 24: Велика, Середній, Великий → Дуже велика
-  new Rule(["High", "High", "Low"], ["VeryHigh"], "and"), // 25: Велика, Великий, Малий → Дуже велика
-  new Rule(["High", "High", "Medium"], ["VeryHigh"], "and"), // 26: Велика, Великий, Середній → Дуже велика
-  new Rule(["High", "High", "High"], ["High"], "and"),    // 27: Велика, Великий, Великий → Велика
+  and({ E: 'High', T: 'Low', D: 'Low' }, { P: 'High' }),      // 19: Велика, Малий, Малий → Велика
+  and({ E: 'High', T: 'Low', D: 'Medium' }, { P: 'High' }),   // 20: Велика, Малий, Середній → Велика
+  and({ E: 'High', T: 'Low', D: 'High' }, { P: 'High' }),     // 21: Велика, Малий, Великий → Велика
+  and({ E: 'High', T: 'Medium', D: 'Low' }, { P: 'VeryHigh' }), // 22: Велика, Середній, Малий → Дуже велика
+  and({ E: 'High', T: 'Medium', D: 'Medium' }, { P: 'VeryHigh' }), // 23: Велика, Середній, Середній → Дуже велика
+  and({ E: 'High', T: 'Medium', D: 'High' }, { P: 'VeryHigh' }), // 24: Велика, Середній, Великий → Дуже велика
+  and({ E: 'High', T: 'High', D: 'Low' }, { P: 'VeryHigh' }), // 25: Велика, Великий, Малий → Дуже велика
+  and({ E: 'High', T: 'High', D: 'Medium' }, { P: 'VeryHigh' }), // 26: Велика, Великий, Середній → Дуже велика
+  and({ E: 'High', T: 'High', D: 'High' }, { P: 'High' }),    // 27: Велика, Великий, Великий → Велика
 ];
+
+// Вхідні та вихідні змінні для defuzz
+const inputs = { E: residualEnergy, T: transmissionCoefficient, D: delayCoefficient };
+const outputs = { P: probability };
 
 // Функції для роботи з даними функцій приналежності (для візуалізації)
 function trapezoidalMF(x, a, b, c, d) {
@@ -150,40 +137,53 @@ const membershipParams = {
   },
 };
 
-// Функція для обчислення вірогідності системи
+// Функція для обчислення вірогідності системи (з центроїдною дефазифікацією)
 function calculateProbability(residualEnergyVal, transmissionCoefficientVal, delayCoefficientVal) {
   try {
-    // Виконуємо нечіткий вивід за допомогою fuzzyis
-    const result = fuzzySystem.getPreciseOutput([
-      residualEnergyVal,
-      transmissionCoefficientVal,
-      delayCoefficientVal,
-    ]);
+    const vals = { 
+      E: residualEnergyVal, 
+      T: transmissionCoefficientVal, 
+      D: delayCoefficientVal 
+    };
     
-    return result[0]; // Повертаємо перше (і єдине) значення з масиву результатів
+    // Виконуємо нечіткий вивід з центроїдною стратегією дефазифікації
+    const result = defuzz(inputs, outputs, rules, vals, centroidStrategy());
+    
+    // Якщо результат NaN або undefined, повертаємо значення за замовчуванням
+    if (result.P === undefined || Number.isNaN(result.P)) {
+      // Для граничних випадків, коли жодне правило не спрацьовує
+      return 25; // Низька вірогідність як fallback
+    }
+    
+    return result.P;
   } catch (error) {
+    // Обробка випадку, коли жодне правило не спрацьовує
+    if (error.message === 'no fuzzy sets given') {
+      // Для граничних випадків (0,0,0) повертаємо низьку вірогідність
+      return 25;
+    }
     console.error("Error in fuzzy inference:", error);
     throw error;
   }
 }
 
 // Функція для обчислення ступенів приналежності
-function calculateMembershipValues(variable, value) {
+function calculateMembershipValues(variableName, value) {
   const memberships = {};
   
-  if (variable === "residualEnergy") {
+  if (variableName === "residualEnergy") {
     memberships.Low = trapezoidalMF(value, 0, 0, 10, 30);
     memberships.Medium = trapezoidalMF(value, 10, 30, 50, 70);
     memberships.High = trapezoidalMF(value, 50, 70, 100, 100);
-  } else if (variable === "transmissionCoefficient") {
+  } else if (variableName === "transmissionCoefficient") {
     memberships.Low = trapezoidalMF(value, 0, 0, 20, 40);
     memberships.Medium = trapezoidalMF(value, 20, 40, 60, 80);
     memberships.High = trapezoidalMF(value, 60, 80, 100, 100);
-  } else if (variable === "delayCoefficient") {
+  } else if (variableName === "delayCoefficient") {
     memberships.Low = trapezoidalMF(value, 0, 0, 30, 50);
     memberships.Medium = trapezoidalMF(value, 30, 50, 70, 90);
     memberships.High = trapezoidalMF(value, 70, 90, 100, 100);
-  } else if (variable === "probability") {
+  } else if (variableName === "probability") {
     memberships.VeryLow = triangularMF(value, 0, 0, 25);
     memberships.Low = triangularMF(value, 0, 25, 50);
     memberships.Medium = triangularMF(value, 25, 50, 75);
@@ -211,11 +211,14 @@ function getMostActiveTerm(memberships) {
 
 // Експорт функцій та даних
 module.exports = {
-  fuzzySystem,
   calculateProbability,
   calculateMembershipValues,
   getMostActiveTerm,
   membershipParams,
   trapezoidalMF,
   triangularMF,
+  // Для сумісності
+  inputs,
+  outputs,
+  rules,
 };

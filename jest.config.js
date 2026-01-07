@@ -12,7 +12,13 @@ module.exports = {
     '!coverage/**',
     '!membership_adjustment_example.js'
   ],
-  // Прибрали жорсткі coverageThreshold - не блокують розробку
-  verbose: false, // Менше виводу для чистоти
-  testTimeout: 5000 // Зменшили таймаут
+  // Дозволяємо Jest трансформувати ES модулі з @thi.ng пакетів
+  transformIgnorePatterns: [
+    '/node_modules/(?!(@thi\\.ng)/)'
+  ],
+  transform: {
+    '^.+\\.js$': 'babel-jest'
+  },
+  verbose: false,
+  testTimeout: 5000
 };

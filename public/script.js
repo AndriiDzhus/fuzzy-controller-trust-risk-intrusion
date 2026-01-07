@@ -279,6 +279,24 @@ function translateTerm(term) {
   return translations[term] || term;
 }
 
+// Функція для знаходження найактивнішого терма з даних приналежності
+function getMostActiveTermFromData(membershipData) {
+  if (!membershipData) return null;
+
+  let maxValue = -1;
+  let maxTerm = null;
+
+  for (const [term, value] of Object.entries(membershipData)) {
+    if (value > maxValue) {
+      maxValue = value;
+      maxTerm = term;
+    }
+  }
+
+  // Повертаємо терм тільки якщо його значення > 0
+  return maxValue > 0 ? maxTerm : null;
+}
+
 // --- Graph Drawing Functions ---
 function drawAllGraphs(
   eVal = null,
@@ -302,9 +320,21 @@ function drawAllGraphs(
 
   console.log("📊 Дані для малювання:", membershipFunctionsData);
 
-  drawMembershipGraph("residualEnergy", eVal, activeTerm);
-  drawMembershipGraph("transmissionCoefficient", tVal, activeTerm);
-  drawMembershipGraph("delayCoefficient", dVal, activeTerm);
+  // Визначаємо активні терми для кожної вхідної змінної
+  let activeResidualEnergyTerm = null;
+  let activeTransmissionCoefficientTerm = null;
+  let activeDelayCoefficientTerm = null;
+
+  if (currentCalculation && currentCalculation.membershipData) {
+    // Знаходимо найактивніший терм для кожної вхідної змінної
+    activeResidualEnergyTerm = getMostActiveTermFromData(currentCalculation.membershipData.residualEnergy);
+    activeTransmissionCoefficientTerm = getMostActiveTermFromData(currentCalculation.membershipData.transmissionCoefficient);
+    activeDelayCoefficientTerm = getMostActiveTermFromData(currentCalculation.membershipData.delayCoefficient);
+  }
+
+  drawMembershipGraph("residualEnergy", eVal, activeResidualEnergyTerm);
+  drawMembershipGraph("transmissionCoefficient", tVal, activeTransmissionCoefficientTerm);
+  drawMembershipGraph("delayCoefficient", dVal, activeDelayCoefficientTerm);
   drawMembershipGraph("probability", pVal, activeTerm);
 
   console.log("✅ Графіки намальовані");
