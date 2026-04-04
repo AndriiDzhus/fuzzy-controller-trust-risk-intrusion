@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="uk">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Security Risk Controller</title>
+    <link rel="stylesheet" href="style.css" />
+    <link rel="stylesheet" href="navigation.css" />
+  </head>
+  <body>
+    <div class="container">
+      <div class="top-bar">
+        <nav class="navigation">
+          <ul class="nav-list">
+            <li><a class="nav-link" href="index.html" data-i18n="navigation.main"></a></li>
+            <li><a class="nav-link active" href="security.html" data-i18n="navigation.security"></a></li>
+            <li><a class="nav-link" href="intrusion.html" data-i18n="navigation.intrusion"></a></li>
+          </ul>
+        </nav>
+        <div class="lang-wrap">
+          <label for="languageSwitcher" data-i18n="common.language"></label>
+          <select id="languageSwitcher" class="lang-select">
+            <option value="uk" data-i18n="common.languages.uk"></option>
+            <option value="en" data-i18n="common.languages.en"></option>
+          </select>
+        </div>
+      </div>
+
+      <h1 data-i18n="security.title"></h1>
+      <p class="description" data-i18n="security.description"></p>
+
+      <div class="input-section">
+        <div class="input-group">
+          <label for="energySlider" data-i18n="security.inputs.energy"></label>
+          <input type="range" id="energySlider" min="0" max="100" step="0.1" value="50" />
+          <input type="number" id="energyNumber" min="0" max="100" step="0.1" value="50" />
+          <span class="input-value" id="energyValue">50.0</span>
+        </div>
+        <div class="input-group">
+          <label for="strengthSlider" data-i18n="security.inputs.strength"></label>
+          <input type="range" id="strengthSlider" min="0" max="100" step="0.1" value="50" />
+          <input type="number" id="strengthNumber" min="0" max="100" step="0.1" value="50" />
+          <span class="input-value" id="strengthValue">50.0</span>
+        </div>
+        <div class="input-group">
+          <label for="responseSlider" data-i18n="security.inputs.response"></label>
+          <input type="range" id="responseSlider" min="0" max="100" step="0.1" value="50" />
+          <input type="number" id="responseNumber" min="0" max="100" step="0.1" value="50" />
+          <span class="input-value" id="responseValue">50.0</span>
+        </div>
+        <button id="calculateBtn" data-i18n="security.buttons.calculate" onclick="recalculateSecurity()"></button>
+      </div>
+
+      <div class="output-section">
+        <h2 data-i18n="security.results.title"></h2>
+        <div class="result-display">
+          <div class="result-item">
+            <span class="result-label" data-i18n="security.results.value"></span>
+            <span class="result-value" id="riskValue">--</span>
+          </div>
+          <div class="result-item">
+            <span class="result-label" data-i18n="security.results.level"></span>
+            <span class="result-term" id="riskTerm">--</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="membership-display">
+        <h3 data-i18n="security.membership.title"></h3>
+        <div class="membership-grid">
+          <div class="membership-section">
+            <h4 data-i18n="security.membership.energy"></h4>
+            <div id="energyMembership" class="membership-values"></div>
+          </div>
+          <div class="membership-section">
+            <h4 data-i18n="security.membership.strength"></h4>
+            <div id="strengthMembership" class="membership-values"></div>
+          </div>
+          <div class="membership-section">
+            <h4 data-i18n="security.membership.response"></h4>
+            <div id="responseMembership" class="membership-values"></div>
+          </div>
+          <div class="membership-section">
+            <h4 data-i18n="security.membership.risk"></h4>
+            <div id="riskMembership" class="membership-values"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="graphs-section">
+        <h3 data-i18n="security.graphs.title"></h3>
+        <div class="graph-row">
+          <div class="graph-container">
+            <h4 data-i18n="security.membership.energy"></h4>
+            <canvas id="energyCanvas" width="400" height="250"></canvas>
+          </div>
+          <div class="graph-container">
+            <h4 data-i18n="security.membership.strength"></h4>
+            <canvas id="strengthCanvas" width="400" height="250"></canvas>
+          </div>
+        </div>
+        <div class="graph-row">
+          <div class="graph-container">
+            <h4 data-i18n="security.membership.response"></h4>
+            <canvas id="responseCanvas" width="400" height="250"></canvas>
+          </div>
+          <div class="graph-container">
+            <h4 data-i18n="security.membership.risk"></h4>
+            <canvas id="riskCanvas" width="400" height="250"></canvas>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script src="i18n-helper.js"></script>
+    <script src="security.js"></script>
+  </body>
+</html>

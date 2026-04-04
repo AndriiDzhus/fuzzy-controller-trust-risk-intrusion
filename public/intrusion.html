@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="uk">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Intrusion Probability Controller</title>
+    <link rel="stylesheet" href="style.css" />
+    <link rel="stylesheet" href="navigation.css" />
+  </head>
+  <body>
+    <div class="container">
+      <div class="top-bar">
+        <nav class="navigation">
+          <ul class="nav-list">
+            <li><a class="nav-link" href="index.html" data-i18n="navigation.main"></a></li>
+            <li><a class="nav-link" href="security.html" data-i18n="navigation.security"></a></li>
+            <li><a class="nav-link active" href="intrusion.html" data-i18n="navigation.intrusion"></a></li>
+          </ul>
+        </nav>
+        <div class="lang-wrap">
+          <label for="languageSwitcher" data-i18n="common.language"></label>
+          <select id="languageSwitcher" class="lang-select">
+            <option value="uk" data-i18n="common.languages.uk"></option>
+            <option value="en" data-i18n="common.languages.en"></option>
+          </select>
+        </div>
+      </div>
+
+      <h1 data-i18n="intrusion.title"></h1>
+      <p class="description" data-i18n="intrusion.description"></p>
+
+      <div class="input-section">
+        <div class="input-group">
+          <label for="packetsSlider" data-i18n="intrusion.inputs.packets"></label>
+          <input type="range" id="packetsSlider" min="0" max="100" step="0.1" value="50" />
+          <input type="number" id="packetsNumber" min="0" max="100" step="0.1" value="50" />
+          <span class="input-value" id="packetsValue">50.0</span>
+        </div>
+        <div class="input-group">
+          <label for="rateSlider" data-i18n="intrusion.inputs.rate"></label>
+          <input type="range" id="rateSlider" min="0" max="100" step="0.1" value="50" />
+          <input type="number" id="rateNumber" min="0" max="100" step="0.1" value="50" />
+          <span class="input-value" id="rateValue">50.0</span>
+        </div>
+        <div class="input-group">
+          <label for="deliverySlider" data-i18n="intrusion.inputs.delivery"></label>
+          <input type="range" id="deliverySlider" min="0" max="100" step="0.1" value="50" />
+          <input type="number" id="deliveryNumber" min="0" max="100" step="0.1" value="50" />
+          <span class="input-value" id="deliveryValue">50.0</span>
+        </div>
+        <button id="calculateBtn" data-i18n="intrusion.buttons.calculate" onclick="recalculateIntrusion()"></button>
+      </div>
+
+      <div class="output-section">
+        <h2 data-i18n="intrusion.results.title"></h2>
+        <div class="result-display">
+          <div class="result-item">
+            <span class="result-label" data-i18n="intrusion.results.value"></span>
+            <span class="result-value" id="intrusionValue">--</span>
+          </div>
+          <div class="result-item">
+            <span class="result-label" data-i18n="intrusion.results.level"></span>
+            <span class="result-term" id="intrusionTerm">--</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="membership-display">
+        <h3 data-i18n="intrusion.membership.title"></h3>
+        <div class="membership-grid">
+          <div class="membership-section">
+            <h4 data-i18n="intrusion.membership.packets"></h4>
+            <div id="packetsMembership" class="membership-values"></div>
+          </div>
+          <div class="membership-section">
+            <h4 data-i18n="intrusion.membership.rate"></h4>
+            <div id="rateMembership" class="membership-values"></div>
+          </div>
+          <div class="membership-section">
+            <h4 data-i18n="intrusion.membership.delivery"></h4>
+            <div id="deliveryMembership" class="membership-values"></div>
+          </div>
+          <div class="membership-section">
+            <h4 data-i18n="intrusion.membership.intrusion"></h4>
+            <div id="intrusionMembership" class="membership-values"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="graphs-section">
+        <h3 data-i18n="intrusion.graphs.title"></h3>
+        <div class="graph-row">
+          <div class="graph-container">
+            <h4 data-i18n="intrusion.membership.packets"></h4>
+            <canvas id="packetsCanvas" width="400" height="250"></canvas>
+          </div>
+          <div class="graph-container">
+            <h4 data-i18n="intrusion.membership.rate"></h4>
+            <canvas id="rateCanvas" width="400" height="250"></canvas>
+          </div>
+        </div>
+        <div class="graph-row">
+          <div class="graph-container">
+            <h4 data-i18n="intrusion.membership.delivery"></h4>
+            <canvas id="deliveryCanvas" width="400" height="250"></canvas>
+          </div>
+          <div class="graph-container">
+            <h4 data-i18n="intrusion.membership.intrusion"></h4>
+            <canvas id="intrusionCanvas" width="400" height="250"></canvas>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script src="i18n-helper.js"></script>
+    <script src="intrusion.js"></script>
+  </body>
+</html>
