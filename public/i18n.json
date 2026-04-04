@@ -4,6 +4,11 @@
       "language": "Мова",
       "coordinates": "Координати",
       "membershipFunctions": "Функції приналежності",
+      "tooltip": {
+        "xAxis": "Вісь X",
+        "outputAxis": "Вихід",
+        "memberships": "Ступені приналежності"
+      },
       "languages": {
         "uk": "Українська",
         "en": "English"
@@ -52,7 +57,14 @@
         "trust": "Індекс Довіри (T)"
       },
       "graphs": {
-        "title": "Функції Приналежності"
+        "title": "Функції Приналежності",
+        "axes": {
+          "membershipY": "Y - Ступінь приналежності",
+          "errorsX": "X - Шкала помилок (E)",
+          "connectionsX": "X - Шкала з'єднань (C)",
+          "bytesX": "X - Шкала байтів (B)",
+          "trustX": "X - Шкала індексу довіри (T)"
+        }
       },
       "rules": {
         "title": "База Правил та Інтерпретація Результатів",
@@ -86,7 +98,14 @@
         "risk": "Ризик безпеки (R)"
       },
       "graphs": {
-        "title": "Функції приналежності"
+        "title": "Функції приналежності",
+        "axes": {
+          "membershipY": "Y - Ступінь приналежності",
+          "energyX": "X - Шкала споживання енергії (E)",
+          "strengthX": "X - Шкала потужності з'єднання (S)",
+          "responseX": "X - Шкала часу відгуку (T)",
+          "riskX": "X - Шкала ризику безпеки (R)"
+        }
       }
     },
     "intrusion": {
@@ -113,7 +132,14 @@
         "intrusion": "Вторгнення (I)"
       },
       "graphs": {
-        "title": "Функції приналежності"
+        "title": "Функції приналежності",
+        "axes": {
+          "membershipY": "Y - Ступінь приналежності",
+          "packetsX": "X - Шкала числа пакетів (N)",
+          "rateX": "X - Шкала швидкості передавання (R)",
+          "deliveryX": "X - Шкала коефіцієнта доставки (D)",
+          "intrusionX": "X - Шкала вірогідності вторгнення (I)"
+        }
       }
     }
   },
@@ -122,6 +148,11 @@
       "language": "Language",
       "coordinates": "Coordinates",
       "membershipFunctions": "Membership functions",
+      "tooltip": {
+        "xAxis": "X axis",
+        "outputAxis": "Output",
+        "memberships": "Membership values"
+      },
       "languages": {
         "uk": "Українська",
         "en": "English"
@@ -170,7 +201,14 @@
         "trust": "Trust Index (T)"
       },
       "graphs": {
-        "title": "Membership Functions"
+        "title": "Membership Functions",
+        "axes": {
+          "membershipY": "Y - Membership degree",
+          "errorsX": "X - Errors scale (E)",
+          "connectionsX": "X - Connections scale (C)",
+          "bytesX": "X - Bytes scale (B)",
+          "trustX": "X - Trust index scale (T)"
+        }
       },
       "rules": {
         "title": "Rule Base and Result Interpretation",
@@ -204,7 +242,14 @@
         "risk": "Security Risk (R)"
       },
       "graphs": {
-        "title": "Membership Functions"
+        "title": "Membership Functions",
+        "axes": {
+          "membershipY": "Y - Membership degree",
+          "energyX": "X - Energy consumption scale (E)",
+          "strengthX": "X - Connection strength scale (S)",
+          "responseX": "X - Response time scale (T)",
+          "riskX": "X - Security risk scale (R)"
+        }
       }
     },
     "intrusion": {
@@ -231,7 +276,14 @@
         "intrusion": "Intrusion (I)"
       },
       "graphs": {
-        "title": "Membership Functions"
+        "title": "Membership Functions",
+        "axes": {
+          "membershipY": "Y - Membership degree",
+          "packetsX": "X - Packet count scale (N)",
+          "rateX": "X - Transmission rate scale (R)",
+          "deliveryX": "X - Delivery coefficient scale (D)",
+          "intrusionX": "X - Intrusion probability scale (I)"
+        }
       }
     }
   }

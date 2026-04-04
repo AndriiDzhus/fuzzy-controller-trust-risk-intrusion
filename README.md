@@ -1,219 +1,276 @@
-# Fuzzy Logic Security Risk Controller
+# Fuzzy Controllers (Trust, Security, Intrusion)
 
-Система нечіткого виводу для оцінки рівня безпеки на основі трьох вхідних параметрів: сили з'єднання, часу відгуку та споживання енергії.
+Проєкт реалізує 3 нечіткі контролери з єдиною архітектурою:
 
-## Особливості
+- Trust Index: `errors`, `connections`, `bytes` -> `trustIndex`
+- Security Risk: `energy`, `strength`, `response` -> `risk`
+- Intrusion Probability: `packets`, `rate`, `delivery` -> `intrusion`
 
-- **Використання fuzzyIS бібліотеки**: Проект використовує професійну бібліотеку fuzzyIS для реалізації нечіткої логіки
-- **Node.js архітектура**: Серверна частина на Node.js з Express.js
-- **Інтерактивна візуалізація**: Реальний час оновлення графіків функцій приналежності
-- **27 правил нечіткого виводу**: Повна база правил для визначення рівня безпеки
-- **Responsive дизайн**: Адаптивний інтерфейс для різних пристроїв
+## Архітектура
 
-## Технічні характеристики
+### Backend
 
-### Вхідні параметри (0-100):
-- **Сила З'єднання** (Connection Strength)
-- **Час Відгуку** (Response Time)
-- **Споживання Енергії** (Energy Consumption)
+- `server.js` — Express API + static frontend
+- `fuzzyController.js` — наявний trust-контролер (fuzzyIS)
+- `controllers.js` — уніфікований шар для 3 контролерів
 
-### Вихідний параметр (0-100):
-- **Рівень Ризику Безпеки** (Security Risk Level)
+Уніфіковані ендпоінти:
 
-### Лінгвістичні терми:
+- `POST /api/controllers/:controller/calculate`
+- `GET /api/controllers/:controller/membership-functions`
 
-**Для вхідних змінних:**
-- Low (Низький) - трапецоїдальна функція
-- Medium (Середній) - трапецоїдальна функція
-- High (Високий) - трапецоїдальна функція
+де `:controller` in `trust | security | intrusion`.
 
-**Для вихідної змінної:**
-- VeryLow (Дуже Низький) - трикутна функція
-- Low (Низький) - трикутна функція
-- Medium (Середній) - трикутна функція
-- High (Високий) - трикутна функція
-- VeryHigh (Дуже Високий) - трикутна функція
+### Frontend
 
-## Встановлення та запуск
+- `public/fuzzy-page-core.js` — спільний reusable модуль для:
+  - синхронізації input/range
+  - API викликів
+  - рендеру membership-блоків
+  - рендеру графіків
+  - єдиних легенд
+  - tooltips при наведенні
+- `public/script.js`, `public/security.js`, `public/intrusion.js` — thin wrappers з конфігурацією сторінки.
 
-### Вимоги
-- Node.js (версія 14 або вище)
-- npm або yarn
+### i18n
 
-### Кроки встановлення
+- `public/i18n.json` — словник (uk default + en)
+- `public/i18n-helper.js` — завантаження перекладів, switcher мови, подія `languageChanged`
 
-1. **Клонувати репозиторій або завантажити файли**
+## Запуск
 
-2. **Встановити залежності:**
 ```bash
 npm install
-```
-
-3. **Запустити сервер:**
-```bash
 npm start
 ```
 
-4. **Для розробки з автоперезавантаженням:**
-```bash
-npm run dev
-```
+Сервер за замовчуванням: `http://localhost:3002`.
 
-5. **Запуск тестів:**
-```bash
-npm test
-```
+## API schema
 
-6. **Запуск тестів у режимі спостереження:**
-```bash
-npm run test:watch
-```
+## 1) Trust controller
 
-7. **Відкрити браузер:**
-```
-http://localhost:3000
-```
+### Calculate
 
-## Структура проекту
+`POST /api/controllers/trust/calculate`
 
-```
-fuzzy-logic-security-risk/
-├── package.json              # Конфігурація npm
-├── server.js                 # Серверна частина Express
-├── fuzzyController.js        # Логіка нечіткого виводу
-├── jest.config.js            # Конфігурація тестів
-├── .gitignore                # Git виключення
-├── __tests__/                # Тестові файли
-│   ├── fuzzyController.test.js
-│   ├── securityRisk.test.js
-│   └── integration.test.js
-├── public/                   # Клієнтські файли
-│   ├── index.html           # HTML інтерфейс
-│   ├── style.css            # Стилі CSS
-│   └── script.js            # Клієнтський JavaScript
-├── docs/                     # Документація
-│   ├── membership_functions.png
-│   ├── membership_functions.pdf
-│   └── rule_base.png
-└── README.md                # Документація
-```
+Request:
 
-## API Endpoints
-
-### POST /api/calculate
-Обчислює рівень безпеки на основі вхідних параметрів.
-
-**Запит:**
 ```json
 {
-  "connectionStrength": 75.5,
-  "responseTime": 60.0,
-  "energyConsumption": 45.2
+  "errors": 50,
+  "connections": 40,
+  "bytes": 70
 }
 ```
 
-**Відповідь:**
+Response:
+
 ```json
 {
-  "securityRisk": 42.15,
-  "mostActiveTerm": "Medium",
+  "value": 43.27,
+  "dominantTerm": "Medium",
   "membershipData": {
-    "connectionStrength": {...},
-    "responseTime": {...},
-    "energyConsumption": {...},
-    "securityRiskLevel": {...}
+    "errors": { "Low": 0.0, "Medium": 1.0, "High": 0.0 },
+    "connections": { "Low": 0.0, "Medium": 0.5, "High": 0.5 },
+    "bytes": { "Low": 0.0, "Medium": 0.5, "High": 0.5 },
+    "trustIndex": { "VeryLow": 0.0, "Low": 0.27, "Medium": 0.73, "High": 0.0, "VeryHigh": 0.0 }
+  },
+  "ruleOutputs": null,
+  "inputs": {
+    "errors": 50,
+    "connections": 40,
+    "bytes": 70
   }
 }
 ```
 
-### GET /api/membership-functions
-Отримує дані функцій приналежності для побудови графіків.
+### Membership functions
 
-## База правил
+`GET /api/controllers/trust/membership-functions`
 
-Система використовує 27 правил нечіткого виводу:
+Response (shape):
 
-### Правила для низької сили з'єднання:
-- При будь-яких значеннях часу відгуку та споживання енергії → Високий або Дуже Високий рівень ризику
-
-### Правила для середньої сили з'єднання:
-- Рівень ризику залежить від комбінації часу відгуку та споживання енергії
-- Діапазон від Дуже Низького до Дуже Високого
-
-### Правила для високої сили з'єднання:
-- Переважно низький рівень ризику
-- Максимум Низький рівень ризику при найгірших умовах
-
-## Функціональність інтерфейсу
-
-1. **Вхідні параметри**: Слайдери та числові поля для введення значень
-2. **Автоматичний розрахунок**: Результат оновлюється в реальному часі
-3. **Візуалізація**: 4 графіки функцій приналежності з позначенням поточних значень
-4. **Значення приналежності**: Відображення ступеня приналежності для всіх термів
-5. **Виділення активного терма**: Підсвічування найактивнішого вихідного терма
-
-## Технічні деталі
-
-### Методи нечіткого виводу:
-- **Фазифікація**: Обчислення ступеня приналежності вхідних значень
-- **Агрегація**: Операція AND (мінімум)
-- **Імплікація**: Метод Мамдані
-- **Акумуляція**: Операція MAX (максимум)
-- **Дефазифікація**: Метод центру ваги (centroid)
-
-### Бібліотеки:
-- **fuzzyIS**: Основна бібліотека для нечіткої логіки
-- **Express.js**: Веб-сервер
-- **Canvas API**: Візуалізація графіків
-
-## Тестування
-
-Проект покритий комплексними юніт тестами, які перевіряють:
-
-### Типи тестів:
-- **Функції приналежності**: Трапецоїдальні та трикутні функції
-- **Нечіткі обчислення**: Повний цикл fuzzy inference
-- **Граничні випадки**: Мінімальні/максимальні значення
-- **Ключові правила виводу**: Перевірка найважливіших правил
-- **Інтеграційні тести**: End-to-end тестування системи
-
-### Команди тестування:
-```bash
-# Запуск всіх тестів
-npm test
-
-# Запуск з покриттям коду
-npm run test:coverage
-
-# Запуск конкретного тесту
-npm test -- fuzzyController.test.js
-
-# Режим спостереження (автоматичний перезапуск)
-npm run test:watch
+```json
+{
+  "inputs": {
+    "errors": { "Low": [{ "x": 0, "y": 1 }], "Medium": [], "High": [] },
+    "connections": { "Low": [], "Medium": [], "High": [] },
+    "bytes": { "Low": [], "Medium": [], "High": [] }
+  },
+  "output": {
+    "trustIndex": { "VeryLow": [], "Low": [], "Medium": [], "High": [], "VeryHigh": [] }
+  },
+  "meta": {
+    "inputKeys": ["errors", "connections", "bytes"],
+    "outputKey": "trustIndex"
+  }
+}
 ```
 
-### Покриття коду:
-Покриття коду за замовчуванням вимкнено для швидкості розробки.
-Для генерації звіту використовуйте `npm run test:coverage`.
+## 2) Security controller
 
-Звіт про покриття генерується в папці `coverage/`
+### Calculate
 
-## Розробка
+`POST /api/controllers/security/calculate`
 
-### Додавання нових правил:
-Редагуйте масив `fuzzySystem.rules` в `fuzzyController.js`
+Request:
 
-### Зміна функцій приналежності:
-Модифікуйте параметри в `fuzzyController.js` (функції `addTerm`)
+```json
+{
+  "energy": 80,
+  "strength": 20,
+  "response": 90
+}
+```
 
-### Оновлення інтерфейсу:
-Редагуйте файли в папці `public/`
+Response:
 
-## Автори
+```json
+{
+  "value": 88.0,
+  "dominantTerm": "veryHigh",
+  "membershipData": {
+    "energy": { "low": 0.0, "medium": 0.0, "high": 0.6 },
+    "strength": { "low": 0.6, "medium": 0.0, "high": 0.0 },
+    "response": { "low": 0.0, "medium": 0.0, "high": 0.5 },
+    "risk": { "none": 0.0, "veryLow": 0.0, "low": 0.0, "medium": 0.0, "high": 0.0, "veryHigh": 0.5 }
+  },
+  "ruleOutputs": {
+    "none": 0.0,
+    "veryLow": 0.0,
+    "low": 0.0,
+    "medium": 0.0,
+    "high": 0.0,
+    "veryHigh": 0.5
+  },
+  "inputs": {
+    "energy": 80,
+    "strength": 20,
+    "response": 90
+  }
+}
+```
 
-Andrii Dzhus - Розробник  
-Volodymyr Martyniuk - Співрозробник
+### Membership functions
 
-## Ліцензія
+`GET /api/controllers/security/membership-functions`
 
-MIT License
+Response (shape):
+
+```json
+{
+  "inputs": {
+    "energy": { "low": [], "medium": [], "high": [] },
+    "strength": { "low": [], "medium": [], "high": [] },
+    "response": { "low": [], "medium": [], "high": [] }
+  },
+  "output": {
+    "risk": {}
+  },
+  "meta": {
+    "inputKeys": ["energy", "strength", "response"],
+    "outputKey": "risk",
+    "singletonValues": {
+      "none": 0,
+      "veryLow": 20,
+      "low": 40,
+      "medium": 60,
+      "high": 80,
+      "veryHigh": 100
+    }
+  }
+}
+```
+
+## 3) Intrusion controller
+
+### Calculate
+
+`POST /api/controllers/intrusion/calculate`
+
+Request:
+
+```json
+{
+  "packets": 90,
+  "rate": 30,
+  "delivery": 60
+}
+```
+
+Response:
+
+```json
+{
+  "value": 78.36,
+  "dominantTerm": "high",
+  "membershipData": {
+    "packets": { "low": 0.0, "medium": 0.32, "high": 0.71 },
+    "rate": { "low": 0.04, "medium": 0.82, "high": 0.0 },
+    "delivery": { "low": 0.01, "medium": 0.97, "high": 0.0 },
+    "intrusion": { "none": 0.0, "low": 0.18, "medium": 0.22, "high": 0.41 }
+  },
+  "ruleOutputs": {
+    "none": 0.0,
+    "low": 0.18,
+    "medium": 0.22,
+    "high": 0.41
+  },
+  "inputs": {
+    "packets": 90,
+    "rate": 30,
+    "delivery": 60
+  }
+}
+```
+
+### Membership functions
+
+`GET /api/controllers/intrusion/membership-functions`
+
+Response (shape):
+
+```json
+{
+  "inputs": {
+    "packets": { "low": [], "medium": [], "high": [] },
+    "rate": { "low": [], "medium": [], "high": [] },
+    "delivery": { "low": [], "medium": [], "high": [] }
+  },
+  "output": {
+    "intrusion": { "none": [], "low": [], "medium": [], "high": [] }
+  },
+  "meta": {
+    "inputKeys": ["packets", "rate", "delivery"],
+    "outputKey": "intrusion"
+  }
+}
+```
+
+## Validation and errors
+
+Для всіх `POST /api/controllers/:controller/calculate`:
+
+- вхідні значення мають бути числами у діапазоні `[0, 100]`
+- при помилці валідації повертається `400`
+
+Error response:
+
+```json
+{
+  "error": "Invalid input values. All values must be between 0 and 100."
+}
+```
+
+## Тести
+
+```bash
+npm test
+```
+
+Покрито:
+
+- юніт-тести trust/security/intrusion
+- інтеграційні тести API
+- e2e smoke-тест меню, switcher мови і завантаження спільного frontend-модуля

@@ -379,6 +379,34 @@ canvas {
   filter: brightness(1.05);
 }
 
+.graph-legend {
+  margin-top: 10px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+  justify-content: center;
+}
+
+.graph-legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #2c3e50;
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: #f2f6fb;
+  border: 1px solid #dde7f0;
+}
+
+.graph-legend-item i {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
 /* Responsive Design */
 @media (max-width: 768px) {
   .container {
