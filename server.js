@@ -1,6 +1,7 @@
 const express = require("express");
 const path = require("path");
 const fuzzyController = require("./fuzzyController");
+const { controllers } = require("./controllers");
 
 const app = express();
 const PORT = process.env.PORT || 3002;
@@ -81,6 +82,36 @@ app.post("/api/calculate", (req, res) => {
   }
 });
 
+app.post("/api/controllers/:controller/calculate", (req, res) => {
+  try {
+    const controllerName = req.params.controller;
+    const controller = controllers[controllerName];
+
+    if (!controller) {
+      return res.status(404).json({ error: "Controller not found" });
+    }
+
+    const inputs = req.body || {};
+    if (!controller.validate(inputs)) {
+      return res.status(400).json({
+        error: "Invalid input values. All values must be between 0 and 100.",
+      });
+    }
+
+    const result = controller.calculate(inputs);
+    return res.json({
+      value: parseFloat(result.value.toFixed(2)),
+      dominantTerm: result.dominantTerm,
+      membershipData: result.membershipData,
+      ruleOutputs: result.ruleOutputs,
+      inputs,
+    });
+  } catch (error) {
+    console.error("Error in unified calculation:", error);
+    return res.status(500).json({ error: "Internal server error: " + error.message });
+  }
+});
+
 // API endpoint для отримання даних функцій приналежності
 app.get("/api/membership-functions", (req, res) => {
   try {
@@ -98,6 +129,22 @@ app.get("/api/membership-functions", (req, res) => {
   } catch (error) {
     console.error("Error getting membership functions:", error);
     res.status(500).json({ error: "Internal server error: " + error.message });
+  }
+});
+
+app.get("/api/controllers/:controller/membership-functions", (req, res) => {
+  try {
+    const controllerName = req.params.controller;
+    const controller = controllers[controllerName];
+
+    if (!controller) {
+      return res.status(404).json({ error: "Controller not found" });
+    }
+
+    return res.json(controller.membershipFunctions());
+  } catch (error) {
+    console.error("Error getting unified membership functions:", error);
+    return res.status(500).json({ error: "Internal server error: " + error.message });
   }
 });
 
@@ -206,15 +253,19 @@ app.get("/api/system-info", (req, res) => {
   });
 });
 
-app.listen(PORT, () => {
-  console.log(`Fuzzy Controller Server running on http://localhost:${PORT}`);
-  console.log(`Using FuzzyIS library for fuzzy inference`);
-  console.log(`Total fuzzy rules: ${fuzzyController.fuzzySystem.rules.length}`);
-  console.log("System configuration:");
-  console.log(
-    "- Input variables: errors (0-100), connections (0-100), bytes (0-100)"
-  );
-  console.log("- Output variable: trustIndex (0-100)");
-  console.log("- Inference method: Mamdani");
-  console.log("Ready to process fuzzy logic calculations!");
-});
+if (require.main === module) {
+  app.listen(PORT, () => {
+    console.log(`Fuzzy Controller Server running on http://localhost:${PORT}`);
+    console.log(`Using FuzzyIS library for fuzzy inference`);
+    console.log(`Total fuzzy rules: ${fuzzyController.fuzzySystem.rules.length}`);
+    console.log("System configuration:");
+    console.log(
+      "- Input variables: errors (0-100), connections (0-100), bytes (0-100)"
+    );
+    console.log("- Output variable: trustIndex (0-100)");
+    console.log("- Inference method: Mamdani");
+    console.log("Ready to process fuzzy logic calculations!");
+  });
+}
+
+module.exports = app;
