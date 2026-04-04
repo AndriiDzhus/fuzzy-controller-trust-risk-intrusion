@@ -271,16 +271,11 @@ function updateMembershipSection(elementId, data) {
   }
 }
 
-// Функція для перекладу термів
 function translateTerm(term) {
-  const translations = {
-    Low: "Низький",
-    Medium: "Середній",
-    High: "Високий",
-    VeryLow: "Дуже Низький",
-    VeryHigh: "Дуже Високий",
-  };
-  return translations[term] || term;
+  if (window.i18nHelper) {
+    return window.i18nHelper.t(`common.terms.${term}`, term);
+  }
+  return term;
 }
 
 // Функція для знаходження найактивнішого терма з даних приналежності
@@ -519,18 +514,9 @@ function drawTermLabel(ctx, termName, color, padding, graphWidth) {
 
   const position = positions[termName] || 0.5;
   const x = padding + graphWidth * position;
-  
-  // Спеціальне відображення для довгих термів
-  if (termName === "VeryLow") {
-    ctx.fillText("Дуже", x, padding - 20);
-    ctx.fillText("Низький", x, padding - 8);
-  } else if (termName === "VeryHigh") {
-    ctx.fillText("Дуже", x, padding - 20);
-    ctx.fillText("Високий", x, padding - 8);
-  } else {
-    const y = padding - 10;
-    ctx.fillText(translateTerm(termName), x, y);
-  }
+
+  const y = padding - 10;
+  ctx.fillText(translateTerm(termName), x, y);
 }
 
 function drawCurrentValueMarker(ctx, value, padding, graphWidth, graphHeight, maxRange = 100) {
@@ -682,7 +668,7 @@ function getMembershipInfoAtX(variableName, xValue) {
   if (!membershipFunctionsData) return null;
 
   const variableData =
-    variableName === "securityRiskLevel"
+    variableName === "trustIndex"
       ? membershipFunctionsData.output[variableName]
       : membershipFunctionsData.inputs[variableName];
 
@@ -718,12 +704,19 @@ function getMembershipInfoAtX(variableName, xValue) {
 function showTooltip(tooltip, mouseX, mouseY, xValue, membershipInfo) {
   if (!tooltip) return;
 
-  let content = `<strong>Координати:</strong><br>X: ${xValue.toFixed(1)}<br>`;
+  const coordsLabel = window.i18nHelper
+    ? window.i18nHelper.t("common.coordinates", "Coordinates")
+    : "Coordinates";
+  const mfLabel = window.i18nHelper
+    ? window.i18nHelper.t("common.membershipFunctions", "Membership functions")
+    : "Membership functions";
+
+  let content = `<strong>${coordsLabel}:</strong><br>X: ${xValue.toFixed(1)}<br>`;
 
   if (membershipInfo) {
     content +=
       '<hr style="margin: 6px 0; border: none; border-top: 1px solid rgba(255,255,255,0.3);">';
-    content += "<strong>Функції приналежності:</strong><br>";
+    content += `<strong>${mfLabel}:</strong><br>`;
 
     // Сортуємо терми за значенням приналежності
     const sortedTerms = Object.entries(membershipInfo).sort(
@@ -844,6 +837,11 @@ document.addEventListener("DOMContentLoaded", async () => {
   }
 
   try {
+    if (window.i18nHelper) {
+      await window.i18nHelper.init();
+      window.i18nHelper.bindSwitcher();
+    }
+
     // Завантажити дані функцій приналежності з сервера
     console.log("📡 Завантаження функцій приналежності...");
     await loadMembershipFunctions();
@@ -867,4 +865,19 @@ document.addEventListener("DOMContentLoaded", async () => {
     console.error("❌ Помилка ініціалізації:", error);
     showError("Помилка ініціалізації додатку: " + error.message);
   }
+});
+
+window.addEventListener("languageChanged", () => {
+  if (!currentCalculation) return;
+
+  activeOutputTermSpan.textContent = translateTerm(currentCalculation.mostActiveTerm);
+  updateMembershipDisplay(currentCalculation.membershipData);
+
+  drawAllGraphs(
+    parseFloat(errorsInput.value),
+    parseFloat(connectionsInput.value),
+    parseFloat(bytesInput.value),
+    currentCalculation.trustIndex,
+    currentCalculation.mostActiveTerm
+  );
 });

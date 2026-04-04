@@ -1,0 +1,238 @@
+{
+  "uk": {
+    "common": {
+      "language": "Мова",
+      "coordinates": "Координати",
+      "membershipFunctions": "Функції приналежності",
+      "languages": {
+        "uk": "Українська",
+        "en": "English"
+      },
+      "terms": {
+        "Low": "Низький",
+        "Medium": "Середній",
+        "High": "Високий",
+        "VeryLow": "Дуже низький",
+        "VeryHigh": "Дуже високий",
+        "none": "Немає",
+        "veryLow": "Дуже малий",
+        "low": "Малий",
+        "medium": "Середній",
+        "high": "Великий",
+        "veryHigh": "Дуже великий"
+      }
+    },
+    "navigation": {
+      "main": "Індекс довіри",
+      "security": "Безпека системи",
+      "intrusion": "Вторгнення системи"
+    },
+    "index": {
+      "title": "Нечіткий контролер для оцінки індексу довіри системи",
+      "description": "Система нечіткого виводу для оцінки індексу довіри на основі кількості помилок (E), кількості з'єднань (C) та кількості байтів (B). Результат: індекс довіри (T).",
+      "inputs": {
+        "errors": "Кількість Помилок (E) (0-100):",
+        "connections": "Кількість З'єднань (C) (0-100):",
+        "bytes": "Кількість Байтів (B) (0-100):"
+      },
+      "buttons": {
+        "calculate": "Обчислити Індекс Довіри"
+      },
+      "results": {
+        "title": "Результат Обчислення",
+        "value": "Trust Index value:",
+        "level": "Level of Trust:",
+        "explanation": "Домінуючий лінгвістичний терм для обчисленого значення"
+      },
+      "membership": {
+        "title": "Значення Приналежності для Поточних Входів",
+        "errors": "Кількість Помилок (E)",
+        "connections": "Кількість З'єднань (C)",
+        "bytes": "Кількість Байтів (B)",
+        "trust": "Індекс Довіри (T)"
+      },
+      "graphs": {
+        "title": "Функції Приналежності"
+      },
+      "rules": {
+        "title": "База Правил та Інтерпретація Результатів",
+        "description": "Система використовує 27 правил нечіткого виводу для визначення індексу довіри на основі комбінацій вхідних параметрів: E (Errors), C (Connections), B (Bytes) → T (Trust Index).",
+        "category1": "Мала кількість помилок (E): високий рівень довіри в більшості випадків.",
+        "category2": "Середня кількість помилок (E): рівень довіри залежить від з'єднань та байтів.",
+        "category3": "Велика кількість помилок (E): низький рівень довіри незалежно від інших параметрів."
+      }
+    },
+    "security": {
+      "title": "Нечіткий контролер ризику безпеки системи зв'язку",
+      "description": "Оцінка ризику безпеки R на основі споживання енергії (E), потужності з'єднання (S) та часу відгуку (T).",
+      "inputs": {
+        "energy": "Споживання енергії (E) (0-100):",
+        "strength": "Потужність з'єднання (S) (0-100):",
+        "response": "Час очікування відгуку (T) (0-100):"
+      },
+      "buttons": {
+        "calculate": "Обчислити ризик безпеки"
+      },
+      "results": {
+        "title": "Результат обчислення",
+        "value": "Значення ризику (R):",
+        "level": "Рівень ризику:"
+      },
+      "membership": {
+        "title": "Значення приналежності",
+        "energy": "Споживання енергії (E)",
+        "strength": "Потужність з'єднання (S)",
+        "response": "Час відгуку (T)",
+        "risk": "Ризик безпеки (R)"
+      },
+      "graphs": {
+        "title": "Функції приналежності"
+      }
+    },
+    "intrusion": {
+      "title": "Нечіткий контролер вірогідності вторгнення",
+      "description": "Оцінка вірогідності вторгнення I на основі числа пакетів (N), швидкості передавання (R) та коефіцієнта доставки (D).",
+      "inputs": {
+        "packets": "Число пакетів (N) (0-100):",
+        "rate": "Швидкість передавання (R) (0-100):",
+        "delivery": "Коефіцієнт доставки (D) (0-100):"
+      },
+      "buttons": {
+        "calculate": "Обчислити вірогідність вторгнення"
+      },
+      "results": {
+        "title": "Результат обчислення",
+        "value": "Значення вторгнення (I):",
+        "level": "Рівень вторгнення:"
+      },
+      "membership": {
+        "title": "Значення приналежності",
+        "packets": "Число пакетів (N)",
+        "rate": "Швидкість передавання (R)",
+        "delivery": "Коефіцієнт доставки (D)",
+        "intrusion": "Вторгнення (I)"
+      },
+      "graphs": {
+        "title": "Функції приналежності"
+      }
+    }
+  },
+  "en": {
+    "common": {
+      "language": "Language",
+      "coordinates": "Coordinates",
+      "membershipFunctions": "Membership functions",
+      "languages": {
+        "uk": "Українська",
+        "en": "English"
+      },
+      "terms": {
+        "Low": "Low",
+        "Medium": "Medium",
+        "High": "High",
+        "VeryLow": "Very Low",
+        "VeryHigh": "Very High",
+        "none": "None",
+        "veryLow": "Very Low",
+        "low": "Low",
+        "medium": "Medium",
+        "high": "High",
+        "veryHigh": "Very High"
+      }
+    },
+    "navigation": {
+      "main": "Trust Index",
+      "security": "System Security",
+      "intrusion": "System Intrusion"
+    },
+    "index": {
+      "title": "Fuzzy Controller for System Trust Index Assessment",
+      "description": "A fuzzy inference system for evaluating trust index using error count (E), connection count (C), and bytes count (B). Output: trust index (T).",
+      "inputs": {
+        "errors": "Error Count (E) (0-100):",
+        "connections": "Connection Count (C) (0-100):",
+        "bytes": "Bytes Count (B) (0-100):"
+      },
+      "buttons": {
+        "calculate": "Calculate Trust Index"
+      },
+      "results": {
+        "title": "Calculation Result",
+        "value": "Trust Index value:",
+        "level": "Level of Trust:",
+        "explanation": "Dominant linguistic term for the computed value"
+      },
+      "membership": {
+        "title": "Membership Values for Current Inputs",
+        "errors": "Error Count (E)",
+        "connections": "Connection Count (C)",
+        "bytes": "Bytes Count (B)",
+        "trust": "Trust Index (T)"
+      },
+      "graphs": {
+        "title": "Membership Functions"
+      },
+      "rules": {
+        "title": "Rule Base and Result Interpretation",
+        "description": "The system uses 27 fuzzy inference rules to determine trust index based on input combinations: E (Errors), C (Connections), B (Bytes) → T (Trust Index).",
+        "category1": "Low error count (E): high trust level in most cases.",
+        "category2": "Medium error count (E): trust level depends on connections and bytes.",
+        "category3": "High error count (E): low trust level regardless of other parameters."
+      }
+    },
+    "security": {
+      "title": "Fuzzy Controller for Communication Security Risk",
+      "description": "Evaluates security risk R based on energy consumption (E), connection strength (S), and response time (T).",
+      "inputs": {
+        "energy": "Energy Consumption (E) (0-100):",
+        "strength": "Connection Strength (S) (0-100):",
+        "response": "Response Waiting Time (T) (0-100):"
+      },
+      "buttons": {
+        "calculate": "Calculate Security Risk"
+      },
+      "results": {
+        "title": "Calculation Result",
+        "value": "Security risk value (R):",
+        "level": "Risk level:"
+      },
+      "membership": {
+        "title": "Membership Values",
+        "energy": "Energy Consumption (E)",
+        "strength": "Connection Strength (S)",
+        "response": "Response Time (T)",
+        "risk": "Security Risk (R)"
+      },
+      "graphs": {
+        "title": "Membership Functions"
+      }
+    },
+    "intrusion": {
+      "title": "Fuzzy Intrusion Probability Controller",
+      "description": "Evaluates intrusion probability I based on packet count (N), transmission rate (R), and delivery coefficient (D).",
+      "inputs": {
+        "packets": "Packet Count (N) (0-100):",
+        "rate": "Transmission Rate (R) (0-100):",
+        "delivery": "Delivery Coefficient (D) (0-100):"
+      },
+      "buttons": {
+        "calculate": "Calculate Intrusion Probability"
+      },
+      "results": {
+        "title": "Calculation Result",
+        "value": "Intrusion value (I):",
+        "level": "Intrusion level:"
+      },
+      "membership": {
+        "title": "Membership Values",
+        "packets": "Packet Count (N)",
+        "rate": "Transmission Rate (R)",
+        "delivery": "Delivery Coefficient (D)",
+        "intrusion": "Intrusion (I)"
+      },
+      "graphs": {
+        "title": "Membership Functions"
+      }
+    }
+  }
+}
