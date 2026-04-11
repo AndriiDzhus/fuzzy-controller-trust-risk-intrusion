@@ -34,6 +34,30 @@ function maxTerm(memberships) {
   return entries.sort((a, b) => b[1] - a[1])[0][0];
 }
 
+function nearestSingletonTerm(singletons, value) {
+  const entries = Object.entries(singletons);
+  if (!entries.length) return "N/A";
+  const tieBreakPriority = ["medium", "low", "high", "veryLow", "veryHigh", "none"];
+  const priority = (term) => {
+    const idx = tieBreakPriority.indexOf(term);
+    return idx === -1 ? Number.MAX_SAFE_INTEGER : idx;
+  };
+
+  let bestTerm = entries[0][0];
+  let bestDist = Math.abs(entries[0][1] - value);
+
+  for (let i = 1; i < entries.length; i += 1) {
+    const [term, termValue] = entries[i];
+    const dist = Math.abs(termValue - value);
+    if (dist < bestDist || (dist === bestDist && priority(term) < priority(bestTerm))) {
+      bestDist = dist;
+      bestTerm = term;
+    }
+  }
+
+  return bestTerm;
+}
+
 const securityDef = {
   singletons: {
     none: 0,
@@ -216,7 +240,12 @@ function calculateSecurity(inputs) {
     denominator += mu;
   });
 
-  const value = denominator === 0 ? 0 : numerator / denominator;
+  // The assignment defines only 6 sparse rules; uncovered combinations should map
+  // to a neutral midpoint instead of collapsing risk to zero.
+  const value = denominator === 0 ? 50 : numerator / denominator;
+  const dominantTerm = denominator === 0
+    ? nearestSingletonTerm(securityDef.singletons, value)
+    : maxTerm(ruleOutputs);
 
   const membershipData = {
     energy: fuzzy.energy,
@@ -227,7 +256,7 @@ function calculateSecurity(inputs) {
 
   return {
     value,
-    dominantTerm: maxTerm(ruleOutputs),
+    dominantTerm,
     membershipData,
     ruleOutputs,
   };
