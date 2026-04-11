@@ -20,4 +20,10 @@ describe("Security controller logic", () => {
     const b = calculateSecurity({ energy: 55.5, strength: 33.3, response: 77.7 }).value;
     expect(a).toBeCloseTo(b, 10);
   });
+
+  test("sparse-rule gap uses neutral fallback risk", () => {
+    const result = calculateSecurity({ energy: 25, strength: 50, response: 75 });
+    expect(result.value).toBeCloseTo(50, 10);
+    expect(result.dominantTerm).toBe("medium");
+  });
 });
