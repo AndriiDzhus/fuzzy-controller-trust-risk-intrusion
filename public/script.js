@@ -3,9 +3,9 @@ document.addEventListener("DOMContentLoaded", async () => {
     controller: "trust",
     calculateButtonId: "calculateBtn",
     inputs: [
-      { key: "errors", numberId: "errors", valueId: "eValue" },
-      { key: "connections", numberId: "connections", valueId: "cValue" },
-      { key: "bytes", numberId: "bytes", valueId: "bValue" },
+      { key: "errors", sliderId: "errorsSlider", numberId: "errors", valueId: "eValue" },
+      { key: "connections", sliderId: "connectionsSlider", numberId: "connections", valueId: "cValue" },
+      { key: "bytes", sliderId: "bytesSlider", numberId: "bytes", valueId: "bValue" },
     ],
     output: {
       valueId: "trustIndexOutput",
