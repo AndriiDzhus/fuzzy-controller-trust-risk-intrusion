@@ -1,15 +1,15 @@
-// Приклад коригування функцій приналежності відповідно до ТЗ
+// Example of adjusting membership functions according to the specification
 
-// === ВАРІАНТ 1: Більш рівномірний розподіл ===
+// === OPTION 1: More even distribution ===
 
-// В fuzzyController.js, рядки 19-34, замініть:
+// In fuzzyController.js, lines 19-34, replace with:
 /*
 connectionStrength.addTerm(new Term("Low", "trapeze", [0, 0, 30, 50]));
 connectionStrength.addTerm(new Term("Medium", "trapeze", [25, 45, 55, 75]));
 connectionStrength.addTerm(new Term("High", "trapeze", [50, 70, 100, 100]));
 */
 
-// В membershipParams, рядки 110-130, замініть:
+// In membershipParams, lines 110-130, replace with:
 /*
 connectionStrength: {
   Low: { type: "trapeze", params: [0, 0, 30, 50] },
@@ -18,7 +18,7 @@ connectionStrength: {
 },
 */
 
-// В calculateMembershipValues, рядки 156-166, замініть:
+// In calculateMembershipValues, lines 156-166, replace with:
 /*
 if (variable === "connectionStrength") {
   memberships.Low = trapezoidalMF(value, 0, 0, 30, 50);
@@ -27,18 +27,18 @@ if (variable === "connectionStrength") {
 }
 */
 
-// === ВАРІАНТ 2: Згідно з технічним завданням ===
-// Якщо у вашому ТЗ вказані конкретні значення, використайте їх
-// Наприклад, якщо ТЗ вимагає:
+// === OPTION 2: Based on the technical specification ===
+// If the specification defines concrete values, use them instead.
+// For example, if the spec requires:
 
-// Входи - більш чіткі межі:
+// Inputs - sharper boundaries:
 /*
 Low: [0, 0, 25, 45]
 Medium: [20, 40, 60, 80] 
 High: [55, 75, 100, 100]
 */
 
-// Виходи - п'ять рівномірних рівнів:
+// Outputs - five evenly spaced levels:
 /*
 VeryLow: [0, 0, 15]
 Low: [10, 25, 40]
@@ -47,22 +47,22 @@ High: [60, 75, 90]
 VeryHigh: [85, 100, 100]
 */
 
-// === КРОКИ ДЛЯ ЗАСТОСУВАННЯ ЗМІН ===
+// === STEPS TO APPLY CHANGES ===
 /*
-1. Відредагуйте fuzzyController.js у трьох місцях:
-   - Рядки термів для fuzzyis (19-34)
-   - Об'єкт membershipParams (110-130)
-   - Функція calculateMembershipValues (156-166)
+1. Edit fuzzyController.js in three places:
+   - fuzzyis term definitions (lines 19-34)
+   - membershipParams object (lines 110-130)
+   - calculateMembershipValues function (lines 156-166)
 
-2. Перезапустіть сервер:
+2. Restart the server:
    pkill -f "node server.js"
    npm start
 
-3. Перевірте результат:
+3. Verify the result:
    curl "http://localhost:3000/api/membership-functions"
 
-4. Перегляньте графіки у браузері:
+4. Review the charts in the browser:
    http://localhost:3000
 */
 
-console.log("Цей файл містить приклади коригування функцій приналежності");
+console.log("This file contains examples for adjusting membership functions");

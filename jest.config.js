@@ -1,6 +1,6 @@
 module.exports = {
   testEnvironment: 'node',
-  collectCoverage: false, // За замовчуванням вимкнено для швидкості
+  collectCoverage: false, // Disabled by default for faster runs
   coverageDirectory: 'coverage',
   testMatch: [
     '**/__tests__/**/*.test.js'
@@ -12,7 +12,7 @@ module.exports = {
     '!coverage/**',
     '!membership_adjustment_example.js'
   ],
-  // Прибрали жорсткі coverageThreshold - не блокують розробку
-  verbose: false, // Менше виводу для чистоти
-  testTimeout: 5000 // Зменшили таймаут
+  // Removed strict coverageThreshold so tests do not block development
+  verbose: false, // Less output for cleaner test runs
+  testTimeout: 5000 // Reduced timeout
 };

@@ -10,7 +10,7 @@ const PORT = process.env.PORT || 3002;
 app.use(express.static("public"));
 app.use(express.json());
 
-// API endpoint для обчислення результату
+// API endpoint for calculation
 app.post("/api/calculate", (req, res) => {
   try {
     const {
@@ -19,7 +19,7 @@ app.post("/api/calculate", (req, res) => {
       bytes: b,
     } = req.body;
 
-    // Валідація вхідних даних
+    // Validate input values
     if (
       isNaN(e) ||
       isNaN(c) ||
@@ -36,10 +36,10 @@ app.post("/api/calculate", (req, res) => {
       });
     }
 
-    // Виконуємо нечіткий вивід за допомогою fuzzyController
+    // Run fuzzy inference via fuzzyController
     const trustIndex = fuzzyController.calculateTrustIndex(e, c, b);
 
-    // Обчислюємо ступені приналежності для вхідних та вихідних значень
+    // Calculate membership degrees for input and output values
     const inputMemberships = {
       errors: fuzzyController.calculateMembershipValues(
         "errors",
@@ -61,7 +61,7 @@ app.post("/api/calculate", (req, res) => {
     );
     const mostActiveTerm = fuzzyController.getMostActiveTerm(outputMemberships);
 
-    // Формуємо дані про приналежність
+    // Build membership data payload
     const membershipData = {
       errors: inputMemberships.errors,
       connections: inputMemberships.connections,
@@ -69,7 +69,7 @@ app.post("/api/calculate", (req, res) => {
       trustIndex: outputMemberships,
     };
 
-    // Повертаємо результат
+    // Return the result
     res.json({
       trustIndex: parseFloat(trustIndex.toFixed(2)),
       mostActiveTerm: mostActiveTerm,
@@ -112,7 +112,7 @@ app.post("/api/controllers/:controller/calculate", (req, res) => {
   }
 });
 
-// API endpoint для отримання даних функцій приналежності
+// API endpoint for membership function data
 app.get("/api/membership-functions", (req, res) => {
   try {
     const data = {
@@ -148,11 +148,11 @@ app.get("/api/controllers/:controller/membership-functions", (req, res) => {
   }
 });
 
-// Функція для генерації даних функцій приналежності
+// Generate membership function chart data
 function generateMembershipData(variableName, maxRange = 100) {
   const data = {};
   const params = fuzzyController.membershipParams[variableName];
-  const step = 2; // Генеруємо точки через кожні 2 одиниці для більш читабельного графіка
+  const step = 2; // Sample every 2 units for a cleaner chart
 
   for (const termName in params) {
     data[termName] = [];
@@ -180,18 +180,18 @@ function generateMembershipData(variableName, maxRange = 100) {
   return data;
 }
 
-// Головна сторінка
+// Home page
 app.get("/", (req, res) => {
   res.sendFile(path.join(__dirname, "public", "index.html"));
 });
 
-// API endpoint для отримання інформації про правила
+// API endpoint for rule metadata
 app.get("/api/rules", (req, res) => {
   try {
     res.json({
       totalRules: fuzzyController.fuzzySystem.rules.length,
       rules: fuzzyController.fuzzySystem.rules.map((rule, index) => {
-        // Правильна структура для fuzzyis - використовуємо conditions і conclusions
+        // fuzzyis rule shape: conditions and conclusions
         const conditions = rule.conditions || [];
         const conclusions = rule.conclusions || [];
 
@@ -220,7 +220,7 @@ app.get("/api/rules", (req, res) => {
   }
 });
 
-// API endpoint для отримання інформації про систему
+// API endpoint for system information
 app.get("/api/system-info", (req, res) => {
   res.json({
     systemName: fuzzyController.fuzzySystem.name,

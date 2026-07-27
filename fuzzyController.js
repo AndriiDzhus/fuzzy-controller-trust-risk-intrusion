@@ -1,53 +1,53 @@
 const fuzzyis = require("fuzzyis");
 
-// Импортируем необходимые компоненты из fuzzyis
+// Import required components from fuzzyis
 const { LinguisticVariable, Term, Rule, FIS } = fuzzyis;
 
 // --- Fuzzy Logic Controller Implementation using FuzzyIS ---
 
-// Створюємо нову систему нечіткого виводу
+// Create a new fuzzy inference system
 const fuzzySystem = new FIS("Trust Index Controller");
 
-// Створюємо вхідні лінгвістичні змінні
+// Create input linguistic variables
 const errors = new LinguisticVariable("errors", [0, 100]);
 const connections = new LinguisticVariable("connections", [0, 100]);
 const bytes = new LinguisticVariable("bytes", [0, 100]);
 
-// Створюємо вихідну лінгвістичну змінну
+// Create output linguistic variable
 const trustIndex = new LinguisticVariable("trustIndex", [0, 100]);
 
-// Додаємо терми для Errors (E) - Кількість помилок
+// Add terms for Errors (E) - error count
 errors.addTerm(new Term("Low", "trapeze", [0, 0, 30, 50]));
 errors.addTerm(new Term("Medium", "trapeze", [30, 50, 70, 90]));
 errors.addTerm(new Term("High", "trapeze", [70, 90, 100, 100]));
 
-// Додаємо терми для Connections (C) - Кількість з'єднань
+// Add terms for Connections (C) - connection count
 connections.addTerm(new Term("Low", "trapeze", [0, 0, 10, 30]));
 connections.addTerm(new Term("Medium", "trapeze", [10, 30, 50, 70]));
 connections.addTerm(new Term("High", "trapeze", [50, 70, 100, 100]));
 
-// Додаємо терми для Bytes (B) - Кількість байтів
+// Add terms for Bytes (B) - byte count
 bytes.addTerm(new Term("Low", "trapeze", [0, 0, 20, 40]));
 bytes.addTerm(new Term("Medium", "trapeze", [20, 40, 60, 80]));
 bytes.addTerm(new Term("High", "trapeze", [60, 80, 100, 100]));
 
-// Додаємо терми для Trust Index (T) - Індекс довіри
+// Add terms for Trust Index (T)
 trustIndex.addTerm(new Term("VeryLow", "triangle", [0, 0, 25]));
 trustIndex.addTerm(new Term("Low", "triangle", [0, 25, 50]));
 trustIndex.addTerm(new Term("Medium", "triangle", [25, 50, 75]));
 trustIndex.addTerm(new Term("High", "triangle", [50, 75, 100]));
 trustIndex.addTerm(new Term("VeryHigh", "triangle", [75, 100, 100]));
 
-// Додаємо змінні до системи
+// Add variables to the system
 fuzzySystem.addInput(errors);
 fuzzySystem.addInput(connections);
 fuzzySystem.addInput(bytes);
 fuzzySystem.addOutput(trustIndex);
 
-// Створюємо правила нечіткого виводу на основі таблиці правил
-// Порядок: [E, C, B] -> [T]
+// Create fuzzy inference rules based on the rule table
+// Order: [E, C, B] -> [T]
 fuzzySystem.rules = [
-  // E = Low (Мала)
+  // E = Low
   new Rule(["Low", "Low", "Low"], ["VeryHigh"], "and"),        // 1
   new Rule(["Low", "Low", "Medium"], ["VeryHigh"], "and"),     // 2
   new Rule(["Low", "Low", "High"], ["VeryHigh"], "and"),       // 3
@@ -58,7 +58,7 @@ fuzzySystem.rules = [
   new Rule(["Low", "High", "Medium"], ["High"], "and"),        // 8
   new Rule(["Low", "High", "High"], ["High"], "and"),          // 9
 
-  // E = Medium (Середня)
+  // E = Medium
   new Rule(["Medium", "Low", "Low"], ["High"], "and"),         // 10
   new Rule(["Medium", "Low", "Medium"], ["High"], "and"),      // 11
   new Rule(["Medium", "Low", "High"], ["Medium"], "and"),      // 12
@@ -69,7 +69,7 @@ fuzzySystem.rules = [
   new Rule(["Medium", "High", "Medium"], ["Low"], "and"),      // 17
   new Rule(["Medium", "High", "High"], ["Low"], "and"),        // 18
 
-  // E = High (Велика)
+  // E = High
   new Rule(["High", "Low", "Low"], ["Low"], "and"),            // 19
   new Rule(["High", "Low", "Medium"], ["Low"], "and"),         // 20
   new Rule(["High", "Low", "High"], ["Low"], "and"),           // 21
@@ -81,7 +81,7 @@ fuzzySystem.rules = [
   new Rule(["High", "High", "High"], ["VeryLow"], "and"),      // 27
 ];
 
-// Функції для роботи з даними функцій приналежності (для візуалізації)
+// Membership function helpers for visualization data
 function trapezoidalMF(x, a, b, c, d) {
   if (x < a || x > d) return 0;
   if (x >= b && x <= c) return 1;
@@ -93,20 +93,20 @@ function trapezoidalMF(x, a, b, c, d) {
 function triangularMF(x, a, b, c) {
   if (x < a || x > c) return 0;
   if (a === b) {
-    // Випадок лівого прямокутного трикутника (VeryLow)
+    // Left-angled triangle case (VeryLow)
     if (x >= a && x <= c) return (c - x) / (c - a);
   } else if (b === c) {
-    // Випадок правого прямокутного трикутника (VeryHigh)
+    // Right-angled triangle case (VeryHigh)
     if (x >= a && x <= b) return (x - a) / (b - a);
   } else {
-    // Звичайний трикутник
+    // Standard triangle
     if (x >= a && x <= b) return (x - a) / (b - a);
     if (x > b && x <= c) return (c - x) / (c - b);
   }
   return 0;
 }
 
-// Визначаємо параметри функцій приналежності для візуалізації
+// Membership function parameters for visualization
 const membershipParams = {
   errors: {
     Low: { type: "trapeze", params: [0, 0, 30, 50] },
@@ -132,24 +132,24 @@ const membershipParams = {
   },
 };
 
-// Функція для обчислення індексу довіри
+// Calculate the trust index
 function calculateTrustIndex(errorsVal, connectionsVal, bytesVal) {
   try {
-    // Виконуємо нечіткий вивід за допомогою fuzzyis
+    // Run fuzzy inference with fuzzyis
     const result = fuzzySystem.getPreciseOutput([
       errorsVal,
       connectionsVal,
       bytesVal,
     ]);
     
-    return result[0]; // Повертаємо перше (і єдине) значення з масиву результатів
+    return result[0]; // Return the first (and only) value from the result array
   } catch (error) {
     console.error("Error in fuzzy inference:", error);
     throw error;
   }
 }
 
-// Функція для обчислення ступенів приналежності
+// Calculate membership degrees
 function calculateMembershipValues(variable, value) {
   const memberships = {};
   
@@ -176,7 +176,7 @@ function calculateMembershipValues(variable, value) {
   return memberships;
 }
 
-// Функція для знаходження найактивнішого терма
+// Find the most active linguistic term
 function getMostActiveTerm(memberships) {
   let maxMembership = -1;
   let mostActiveTerm = "N/A";
@@ -191,7 +191,7 @@ function getMostActiveTerm(memberships) {
   return mostActiveTerm;
 }
 
-// Експорт функцій та даних
+// Export functions and data
 module.exports = {
   fuzzySystem,
   calculateTrustIndex,
