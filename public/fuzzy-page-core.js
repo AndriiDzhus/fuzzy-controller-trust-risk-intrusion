@@ -407,6 +407,44 @@ function setupTooltips(config, state) {
   });
 }
 
+function normalizeCalculateResult(result, payload) {
+  return {
+    value: parseFloat(result.value.toFixed(2)),
+    dominantTerm: result.dominantTerm,
+    membershipData: result.membershipData,
+    ruleOutputs: result.ruleOutputs ?? null,
+    inputs: payload,
+  };
+}
+
+async function calculateController(controller, payload) {
+  const local = window.fuzzyControllers?.[controller];
+  if (local) {
+    if (!local.validate(payload)) return null;
+    return normalizeCalculateResult(local.calculate(payload), payload);
+  }
+
+  const response = await fetch(`/api/controllers/${controller}/calculate`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+
+  if (!response.ok) return null;
+  return response.json();
+}
+
+async function loadMembershipFunctions(controller) {
+  const local = window.fuzzyControllers?.[controller];
+  if (local) {
+    return local.membershipFunctions();
+  }
+
+  const response = await fetch(`/api/controllers/${controller}/membership-functions`);
+  if (!response.ok) return null;
+  return response.json();
+}
+
 async function createFuzzyPage(config) {
   if (window.i18nHelper) {
     await window.i18nHelper.init();
@@ -433,15 +471,9 @@ async function createFuzzyPage(config) {
 
   const recalc = async () => {
     const payload = buildMapFromSpecs(config.inputs);
-    const response = await fetch(`/api/controllers/${config.controller}/calculate`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    });
+    const data = await calculateController(config.controller, payload);
+    if (!data) return;
 
-    if (!response.ok) return;
-
-    const data = await response.json();
     state.result = data;
 
     document.getElementById(config.output.valueId).textContent = formatNumber(data.value, {
@@ -510,10 +542,7 @@ async function createFuzzyPage(config) {
   const calcBtn = document.getElementById(config.calculateButtonId);
   if (calcBtn) calcBtn.addEventListener("click", recalc);
 
-  const mfResponse = await fetch(`/api/controllers/${config.controller}/membership-functions`);
-  if (mfResponse.ok) {
-    state.mfData = await mfResponse.json();
-  }
+  state.mfData = await loadMembershipFunctions(config.controller);
 
   setupTooltips(config, state);
 
