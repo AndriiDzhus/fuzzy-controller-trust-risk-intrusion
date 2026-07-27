@@ -31,7 +31,15 @@ class I18nHelper {
   applyTranslations(root = document) {
     root.querySelectorAll("[data-i18n]").forEach((el) => {
       const key = el.getAttribute("data-i18n");
-      el.textContent = this.t(key, el.textContent);
+      const translated = this.t(key, el.textContent);
+
+      if (el.tagName === "TITLE") {
+        el.textContent = translated;
+        document.title = translated;
+        return;
+      }
+
+      el.textContent = translated;
     });
 
     root.querySelectorAll("[data-i18n-placeholder]").forEach((el) => {

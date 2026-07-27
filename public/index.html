@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Fuzzy Logic Security Risk Controller</title>
+    <title data-i18n="index.pageTitle"></title>
     <link rel="stylesheet" href="style.css" />
     <link rel="stylesheet" href="navigation.css" />
   </head>
@@ -25,80 +25,76 @@
         </div>
       </div>
 
-      <h1 data-i18n="index.title">Нечіткий контролер для оцінки індексу довіри системи</h1>
-      <p class="description" data-i18n="index.description">
-        Система нечіткого виводу для оцінки індексу довіри на основі кількості помилок (E),
-        кількості з'єднань (C) та кількості байтів (B).
-        Результат: індекс довіри (T).
-      </p>
+      <h1 data-i18n="index.title"></h1>
+      <p class="description" data-i18n="index.description"></p>
 
       <div class="input-section">
         <div class="input-group">
-          <label for="errorsSlider" data-i18n="index.inputs.errors">Кількість Помилок (E) (0-100):</label>
+          <label for="errorsSlider" data-i18n="index.inputs.errors"></label>
           <input type="range" id="errorsSlider" min="0" max="100" step="0.1" value="50" />
           <input type="number" id="errors" min="0" max="100" step="0.1" value="50" />
           <span class="input-value" id="eValue">50.0</span>
         </div>
 
         <div class="input-group">
-          <label for="connectionsSlider" data-i18n="index.inputs.connections">Кількість З'єднань (C) (0-100):</label>
+          <label for="connectionsSlider" data-i18n="index.inputs.connections"></label>
           <input type="range" id="connectionsSlider" min="0" max="100" step="0.1" value="50" />
           <input type="number" id="connections" min="0" max="100" step="0.1" value="50" />
           <span class="input-value" id="cValue">50.0</span>
         </div>
 
         <div class="input-group">
-          <label for="bytesSlider" data-i18n="index.inputs.bytes">Кількість Байтів (B) (0-100):</label>
+          <label for="bytesSlider" data-i18n="index.inputs.bytes"></label>
           <input type="range" id="bytesSlider" min="0" max="100" step="0.1" value="50" />
           <input type="number" id="bytes" min="0" max="100" step="0.1" value="50" />
           <span class="input-value" id="bValue">50.0</span>
         </div>
 
-        <button id="calculateBtn" data-i18n="index.buttons.calculate">Обчислити Індекс Довіри</button>
+        <button id="calculateBtn" data-i18n="index.buttons.calculate"></button>
       </div>
 
       <div class="output-section">
-        <h2 data-i18n="index.results.title">Результат Обчислення</h2>
+        <h2 data-i18n="index.results.title"></h2>
         <div class="result-display">
           <div class="result-item">
-            <span class="result-label" data-i18n="index.results.value">Trust Index value:</span>
+            <span class="result-label" data-i18n="index.results.value"></span>
             <span class="result-value" id="trustIndexOutput">--</span>
           </div>
           <div class="result-item">
-            <span class="result-label" data-i18n="index.results.level">Level of Trust:</span>
+            <span class="result-label" data-i18n="index.results.level"></span>
             <span class="result-term" id="activeOutputTerm">--</span>
-            <small class="result-explanation" data-i18n="index.results.explanation">Домінуючий лінгвістичний терм для обчисленого значення</small>
+            <small class="result-explanation" data-i18n="index.results.explanation"></small>
           </div>
         </div>
       </div>
 
       <div class="membership-display">
-        <h3 data-i18n="index.membership.title">Значення Приналежності для Поточних Входів</h3>
+        <h3 data-i18n="index.membership.title"></h3>
         <div class="membership-grid">
           <div class="membership-section">
-            <h4 data-i18n="index.membership.errors">Кількість Помилок (E)</h4>
+            <h4 data-i18n="index.membership.errors"></h4>
             <div id="eMembership" class="membership-values"></div>
           </div>
           <div class="membership-section">
-            <h4 data-i18n="index.membership.connections">Кількість З'єднань (C)</h4>
+            <h4 data-i18n="index.membership.connections"></h4>
             <div id="cMembership" class="membership-values"></div>
           </div>
           <div class="membership-section">
-            <h4 data-i18n="index.membership.bytes">Кількість Байтів (B)</h4>
+            <h4 data-i18n="index.membership.bytes"></h4>
             <div id="bMembership" class="membership-values"></div>
           </div>
           <div class="membership-section">
-            <h4 data-i18n="index.membership.trust">Індекс Довіри (T)</h4>
+            <h4 data-i18n="index.membership.trust"></h4>
             <div id="tMembership" class="membership-values"></div>
           </div>
         </div>
       </div>
 
       <div class="graphs-section">
-        <h3 data-i18n="index.graphs.title">Функції Приналежності</h3>
+        <h3 data-i18n="index.graphs.title"></h3>
         <div class="graph-row">
           <div class="graph-container">
-            <h4 data-i18n="index.membership.errors">Кількість Помилок (E)</h4>
+            <h4 data-i18n="index.membership.errors"></h4>
             <canvas
               id="errorsCanvas"
               width="400"
@@ -107,14 +103,14 @@
             <div id="eTooltip" class="graph-tooltip"></div>
           </div>
           <div class="graph-container">
-            <h4 data-i18n="index.membership.connections">Кількість З'єднань (C)</h4>
+            <h4 data-i18n="index.membership.connections"></h4>
             <canvas id="connectionsCanvas" width="400" height="250"></canvas>
             <div id="cTooltip" class="graph-tooltip"></div>
           </div>
         </div>
         <div class="graph-row">
           <div class="graph-container">
-            <h4 data-i18n="index.membership.bytes">Кількість Байтів (B)</h4>
+            <h4 data-i18n="index.membership.bytes"></h4>
             <canvas
               id="bytesCanvas"
               width="400"
@@ -123,7 +119,7 @@
             <div id="bTooltip" class="graph-tooltip"></div>
           </div>
           <div class="graph-container">
-            <h4 data-i18n="index.membership.trust">Індекс Довіри (T)</h4>
+            <h4 data-i18n="index.membership.trust"></h4>
             <canvas id="trustIndexCanvas" width="400" height="250"></canvas>
             <div id="tTooltip" class="graph-tooltip"></div>
           </div>
@@ -131,10 +127,8 @@
       </div>
 
       <div class="rules-section">
-        <h3 data-i18n="index.rules.title">База Правил та Інтерпретація Результатів</h3>
-        <p data-i18n="index.rules.description">
-          Система використовує 27 правил нечіткого виводу для визначення індексу довіри на основі комбінацій вхідних параметрів: E, C, B → T.
-        </p>
+        <h3 data-i18n="index.rules.title"></h3>
+        <p data-i18n="index.rules.description"></p>
         <div class="rules-summary">
           <div class="rule-category" data-i18n="index.rules.category1"></div>
           <div class="rule-category" data-i18n="index.rules.category2"></div>

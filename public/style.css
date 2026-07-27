@@ -324,7 +324,7 @@ canvas {
   font-weight: bold;
 }
 
-/* Tooltip стилі для графіків */
+/* Graph tooltip styles */
 .graph-tooltip {
   position: fixed;
   background: rgba(44, 62, 80, 0.95);

@@ -326,7 +326,7 @@ function bindCanvasTooltip(canvasId, state, getTooltipModel) {
 
     const x = ((px - pad) / (canvas.width - 2 * pad)) * 100;
     const formattedX = formatNumber(x, { minimumFractionDigits: 1, maximumFractionDigits: 1 });
-    const membershipsLabel = i18nText("common.tooltip.memberships", "Memberships");
+    const membershipsLabel = i18nText("common.tooltip.memberships");
 
     if (model.type === "curve") {
       const rows = Object.entries(model.series).map(([term, points], idx) => {
@@ -340,7 +340,7 @@ function bindCanvasTooltip(canvasId, state, getTooltipModel) {
 
       rows.sort((a, b) => b.value - a.value);
       tooltip.innerHTML = `
-        <strong>${i18nText("common.tooltip.xAxis", "X")}: ${formattedX}</strong>
+        <strong>${i18nText("common.tooltip.xAxis")}: ${formattedX}</strong>
         <div>${membershipsLabel}</div>
         <hr />
         ${rows
@@ -359,7 +359,7 @@ function bindCanvasTooltip(canvasId, state, getTooltipModel) {
 
       rows.sort((a, b) => b.value - a.value);
       tooltip.innerHTML = `
-        <strong>${i18nText("common.tooltip.outputAxis", "Output")}: ${formatNumber(model.resultValue, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong>
+        <strong>${i18nText("common.tooltip.outputAxis")}: ${formatNumber(model.resultValue, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong>
         <div>${membershipsLabel}</div>
         <hr />
         ${rows
