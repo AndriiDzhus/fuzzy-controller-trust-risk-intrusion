@@ -76,6 +76,10 @@ typings/
 # DynamoDB Local files
 .dynamodb/
 
+# GitHub Pages build output
+dist/
+public/controllers-bundle.js
+
 # OS generated files
 .DS_Store
 .DS_Store?

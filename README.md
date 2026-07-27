@@ -46,6 +46,43 @@ npm start
 
 Сервер за замовчуванням: `http://localhost:3002`.
 
+## Розгортання на GitHub Pages
+
+GitHub Pages обслуговує лише статичні файли, тому для публічного демо використовується
+статична збірка з локальними обчисленнями контролерів у браузері.
+
+### 1. Увімкнути GitHub Pages
+
+1. Відкрийте репозиторій на GitHub: `AndriiDzhus/fuzzy-logic-security-risk`
+2. Перейдіть у **Settings → Pages**
+3. У полі **Build and deployment → Source** оберіть **GitHub Actions**
+
+### 2. Запустити деплой
+
+Після push у гілку `main` або `master` workflow **Deploy to GitHub Pages** автоматично:
+
+- запускає тести;
+- збирає статичну версію (`npm run build:pages`);
+- публікує її на GitHub Pages.
+
+Також можна запустити деплой вручну: **Actions → Deploy to GitHub Pages → Run workflow**.
+
+### 3. Посилання на демо
+
+Після успішного деплою додаток буде доступний за адресою:
+
+`https://andriidzhus.github.io/fuzzy-logic-security-risk/`
+
+### Локальна перевірка статичної версії
+
+```bash
+npm install
+npm run build:pages
+npx serve dist
+```
+
+Локальний запуск через `npm start` як і раніше використовує Express API.
+
 ## API schema
 
 ## 1) Trust controller
