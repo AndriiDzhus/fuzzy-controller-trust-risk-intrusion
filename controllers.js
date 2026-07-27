@@ -28,6 +28,24 @@ function sampleMF(fn, step = 1, max = 100) {
   return out;
 }
 
+function sampleSingletonPeaks(singletons, halfWidth = 10) {
+  const out = {};
+
+  Object.entries(singletons).forEach(([term, center]) => {
+    out[term] = sampleMF((x) => {
+      if (center <= 0) {
+        return triangularMF(x, 0, 0, halfWidth * 2);
+      }
+      if (center >= 100) {
+        return triangularMF(x, 100 - halfWidth * 2, 100, 100);
+      }
+      return triangularMF(x, center - halfWidth, center, center + halfWidth);
+    }, 1, 100);
+  });
+
+  return out;
+}
+
 function maxTerm(memberships) {
   const entries = Object.entries(memberships);
   if (!entries.length) return "N/A";
@@ -282,7 +300,7 @@ function securityMembershipFunctions() {
       },
     },
     output: {
-      risk: {},
+      risk: sampleSingletonPeaks(securityDef.singletons),
     },
     meta: {
       inputKeys: ["energy", "strength", "response"],
