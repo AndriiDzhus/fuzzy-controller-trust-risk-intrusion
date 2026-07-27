@@ -1,10 +1,12 @@
-# Fuzzy Controllers (Trust, Security, Intrusion)
+# Multi-Controller Fuzzy Inference Platform for System Security Assessment
 
-Проєкт реалізує 3 нечіткі контролери з єдиною архітектурою:
+**Fuzzy Trust · Risk · Intrusion Controllers** — платформа з трьома нечіткими контролерами та єдиним UI:
 
 - Trust Index: `errors`, `connections`, `bytes` -> `trustIndex`
 - Security Risk: `energy`, `strength`, `response` -> `risk`
 - Intrusion Probability: `packets`, `rate`, `delivery` -> `intrusion`
+
+Package npm: `fuzzy-trust-risk-intrusion-controller`
 
 ## Архітектура
 

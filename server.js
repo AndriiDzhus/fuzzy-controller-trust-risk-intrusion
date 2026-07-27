@@ -1,5 +1,6 @@
 const express = require("express");
 const path = require("path");
+const pkg = require("./package.json");
 const fuzzyController = require("./fuzzyController");
 const { controllers } = require("./controllers");
 
@@ -255,16 +256,12 @@ app.get("/api/system-info", (req, res) => {
 
 if (require.main === module) {
   app.listen(PORT, () => {
-    console.log(`Fuzzy Controller Server running on http://localhost:${PORT}`);
+    console.log(pkg.description);
+    console.log(`${pkg.name} v${pkg.version}`);
+    console.log(`Server running on http://localhost:${PORT}`);
+    console.log("Controllers: trust, security, intrusion");
     console.log(`Using FuzzyIS library for fuzzy inference`);
-    console.log(`Total fuzzy rules: ${fuzzyController.fuzzySystem.rules.length}`);
-    console.log("System configuration:");
-    console.log(
-      "- Input variables: errors (0-100), connections (0-100), bytes (0-100)"
-    );
-    console.log("- Output variable: trustIndex (0-100)");
-    console.log("- Inference method: Mamdani");
-    console.log("Ready to process fuzzy logic calculations!");
+    console.log(`Total trust rules: ${fuzzyController.fuzzySystem.rules.length}`);
   });
 }
 

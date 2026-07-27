@@ -1,7 +1,7 @@
 {
-  "name": "fuzzy-security-controller",
+  "name": "fuzzy-trust-risk-intrusion-controller",
   "version": "1.0.0",
-  "description": "Fuzzy Logic Security Risk Controller using fuzzyIS library",
+  "description": "Multi-Controller Fuzzy Inference Platform for System Security Assessment",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
@@ -15,6 +15,9 @@
     "fuzzy",
     "logic",
     "security",
+    "trust index",
+    "risk assessment",
+    "intrusion detection",
     "controller",
     "nodejs"
   ],
