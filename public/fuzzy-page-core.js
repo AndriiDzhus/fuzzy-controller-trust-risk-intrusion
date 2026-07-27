@@ -231,13 +231,25 @@ function drawSingletonGraph(canvasId, singletonValues, ruleOutputs, resultValue,
     const x = singletonValues[term];
     const activation = ruleOutputs?.[term] || 0;
     const px = p + (x / 100) * (w - 2 * p);
+    const color = termColor(term, idx);
 
-    ctx.strokeStyle = termColor(term, idx);
-    ctx.lineWidth = 1 + activation * 6;
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 1;
+    ctx.globalAlpha = 0.35;
     ctx.beginPath();
     ctx.moveTo(px, h - p);
-    ctx.lineTo(px, h - p - activation * (h - 2 * p));
+    ctx.lineTo(px, h - p - (h - 2 * p) * 0.12);
     ctx.stroke();
+    ctx.globalAlpha = 1;
+
+    if (activation > 0) {
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 2 + activation * 8;
+      ctx.beginPath();
+      ctx.moveTo(px, h - p);
+      ctx.lineTo(px, h - p - activation * (h - 2 * p));
+      ctx.stroke();
+    }
   });
 
   const rx = p + (resultValue / 100) * (w - 2 * p);
@@ -503,8 +515,17 @@ async function createFuzzyPage(config) {
 
     const outputKey = config.graphs.output.key;
     const outputCanvasId = config.graphs.output.canvasId;
+    const outputSeries = state.mfData.output?.[outputKey];
+    const hasOutputCurves = outputSeries && Object.keys(outputSeries).length > 0;
 
-    if (state.mfData.meta?.singletonValues) {
+    if (hasOutputCurves) {
+      drawCurveGraph(
+        outputCanvasId,
+        outputSeries,
+        state.result.value,
+        getGraphOptions(config.graphs.output)
+      );
+    } else if (state.mfData.meta?.singletonValues) {
       drawSingletonGraph(
         outputCanvasId,
         state.mfData.meta.singletonValues,

@@ -26,4 +26,20 @@ describe("Security controller logic", () => {
     expect(result.value).toBeCloseTo(50, 10);
     expect(result.dominantTerm).toBe("medium");
   });
+
+  test("membership functions include risk output curves for chart rendering", () => {
+    const { controllers } = require("../controllers");
+    const mf = controllers.security.membershipFunctions();
+
+    expect(Object.keys(mf.output.risk)).toEqual([
+      "none",
+      "veryLow",
+      "low",
+      "medium",
+      "high",
+      "veryHigh",
+    ]);
+    expect(mf.output.risk.low.length).toBeGreaterThan(0);
+    expect(mf.output.risk.low.some((point) => point.y > 0)).toBe(true);
+  });
 });
