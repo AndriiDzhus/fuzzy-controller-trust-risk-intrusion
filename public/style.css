@@ -1,7 +1,13 @@
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
 body {
   font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
   margin: 0;
-  padding: 20px;
+  padding: clamp(8px, 2vw, 20px);
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   min-height: 100vh;
   color: #333;
@@ -11,7 +17,7 @@ body {
   max-width: 1200px;
   margin: auto;
   background: #fff;
-  padding: 30px;
+  padding: clamp(16px, 3vw, 30px);
   border-radius: 15px;
   box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
 }
@@ -20,15 +26,16 @@ h1 {
   color: #2c3e50;
   text-align: center;
   margin-bottom: 10px;
-  font-size: 2.5em;
+  font-size: clamp(1.35rem, 4vw, 2.5rem);
   font-weight: 300;
+  line-height: 1.25;
 }
 
 .description {
   text-align: center;
   color: #7f8c8d;
-  margin-bottom: 30px;
-  font-size: 1.1em;
+  margin-bottom: clamp(16px, 3vw, 30px);
+  font-size: clamp(0.9rem, 2.5vw, 1.1rem);
   line-height: 1.6;
 }
 
@@ -49,37 +56,49 @@ h3 {
 .graphs-section,
 .membership-display,
 .rules-section {
-  margin-bottom: 30px;
-  padding: 25px;
+  margin-bottom: clamp(16px, 3vw, 30px);
+  padding: clamp(14px, 3vw, 25px);
   border: 1px solid #ecf0f1;
   border-radius: 10px;
   background-color: #f8f9fa;
 }
 
 .input-group {
-  display: flex;
+  display: grid;
+  gap: 8px 12px;
   align-items: center;
-  margin-bottom: 20px;
-  gap: 15px;
-  flex-wrap: wrap;
+  margin-bottom: 16px;
+  grid-template-columns: minmax(140px, 200px) minmax(0, 1fr) auto;
+  grid-template-areas: "label slider number";
 }
 
 .input-group label {
-  flex: 0 0 200px;
+  grid-area: label;
   font-weight: 600;
   color: #2c3e50;
+  font-size: clamp(0.85rem, 2.2vw, 1rem);
+  line-height: 1.3;
 }
 
 .input-group input[type="range"] {
-  flex: 1 1 260px;
+  grid-area: slider;
+  width: 100%;
+  min-width: 0;
+  height: 28px;
+  margin: 0;
+  cursor: pointer;
+  accent-color: #3498db;
 }
 
 .input-group input[type="number"] {
-  flex: 0 0 120px;
-  padding: 12px;
+  grid-area: number;
+  width: 4.75rem;
+  min-width: 4.75rem;
+  padding: 6px 8px;
   border: 2px solid #bdc3c7;
   border-radius: 8px;
-  font-size: 16px;
+  font-size: 0.875rem;
+  text-align: center;
   transition: border-color 0.3s ease;
 }
 
@@ -90,40 +109,22 @@ h3 {
 }
 
 .input-value {
-  flex: 0 0 60px;
-  text-align: center;
-  font-weight: bold;
-  color: #3498db;
-  font-size: 18px;
-}
-
-@media (max-width: 768px) {
-  .input-group label {
-    flex: 1 1 100%;
-  }
-
-  .input-group input[type="range"] {
-    flex: 1 1 100%;
-  }
-
-  .input-group input[type="number"] {
-    flex: 1 1 120px;
-  }
+  display: none;
 }
 
 #calculateBtn {
   width: 100%;
-  padding: 15px;
+  padding: clamp(10px, 2.5vw, 15px);
   background: linear-gradient(135deg, #3498db, #2980b9);
   color: white;
   border: none;
   border-radius: 8px;
   cursor: pointer;
-  font-size: 18px;
+  font-size: clamp(0.9rem, 2.5vw, 1.125rem);
   font-weight: 600;
   transition: all 0.3s ease;
   text-transform: uppercase;
-  letter-spacing: 1px;
+  letter-spacing: 0.5px;
 }
 
 #calculateBtn:hover {
@@ -134,13 +135,13 @@ h3 {
 
 .result-display {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 20px;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr));
+  gap: clamp(12px, 2.5vw, 20px);
 }
 
 .result-item {
   background: white;
-  padding: 20px;
+  padding: clamp(14px, 2.5vw, 20px);
   border-radius: 8px;
   text-align: center;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
@@ -155,14 +156,14 @@ h3 {
 
 .result-value {
   display: block;
-  font-size: 2em;
+  font-size: clamp(1.5rem, 4vw, 2rem);
   font-weight: bold;
   color: #e74c3c;
 }
 
 .result-term {
   display: block;
-  font-size: 1.5em;
+  font-size: clamp(1.1rem, 3vw, 1.5rem);
   font-weight: bold;
   color: #f39c12;
   text-transform: uppercase;
@@ -170,13 +171,13 @@ h3 {
 
 .membership-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-  gap: 20px;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr));
+  gap: clamp(12px, 2.5vw, 20px);
 }
 
 .membership-section {
   background: white;
-  padding: 20px;
+  padding: clamp(14px, 2.5vw, 20px);
   border-radius: 8px;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
 }
@@ -225,19 +226,20 @@ h3 {
 
 .graph-row {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
-  gap: 30px;
-  margin-bottom: 30px;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr));
+  gap: clamp(16px, 3vw, 30px);
+  margin-bottom: clamp(16px, 3vw, 30px);
 }
 
 .graph-container {
   background: white;
   border: 1px solid #ecf0f1;
-  padding: 20px;
+  padding: clamp(12px, 2.5vw, 20px);
   border-radius: 10px;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
   text-align: center;
   position: relative;
+  min-width: 0;
 }
 
 .graph-container h4 {
@@ -250,6 +252,8 @@ canvas {
   background-color: #fff;
   border: 1px solid #ecf0f1;
   border-radius: 5px;
+  display: block;
+  width: 100%;
   max-width: 100%;
   height: auto;
   cursor: crosshair;
@@ -261,14 +265,14 @@ canvas {
 
 .rules-summary {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-  gap: 20px;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr));
+  gap: clamp(12px, 2.5vw, 20px);
   margin-top: 20px;
 }
 
 .rule-category {
   background: white;
-  padding: 20px;
+  padding: clamp(14px, 2.5vw, 20px);
   border-radius: 8px;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
   border-left: 4px solid #3498db;
@@ -408,36 +412,50 @@ canvas {
 }
 
 /* Responsive Design */
+@media (max-width: 900px) {
+  .input-group {
+    grid-template-columns: 1fr auto;
+    grid-template-areas:
+      "label label"
+      "slider number";
+  }
+}
+
 @media (max-width: 768px) {
+  .input-group input[type="number"] {
+    width: 4.25rem;
+    min-width: 4.25rem;
+    padding: 5px 6px;
+    font-size: 0.8125rem;
+  }
+
+  .membership-item {
+    padding: 6px 10px;
+    font-size: 0.875rem;
+  }
+
+  .graph-legend-item {
+    font-size: 11px;
+    padding: 2px 6px;
+  }
+}
+
+@media (max-width: 480px) {
   .container {
-    padding: 20px;
-    margin: 10px;
+    border-radius: 10px;
+  }
+
+  .input-section,
+  .output-section,
+  .graphs-section,
+  .membership-display,
+  .rules-section {
+    padding: 12px;
   }
 
   .input-group {
-    flex-direction: column;
-    align-items: stretch;
-  }
-
-  .input-group label {
-    flex: none;
-    margin-bottom: 5px;
-  }
-
-  .result-display {
-    grid-template-columns: 1fr;
-  }
-
-  .graph-row {
-    grid-template-columns: 1fr;
-  }
-
-  .membership-grid {
-    grid-template-columns: 1fr;
-  }
-
-  h1 {
-    font-size: 2em;
+    gap: 6px 8px;
+    margin-bottom: 14px;
   }
 }
 
