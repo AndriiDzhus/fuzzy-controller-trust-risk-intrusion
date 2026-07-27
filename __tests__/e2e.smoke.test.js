@@ -29,12 +29,41 @@ describe("E2E smoke: navigation and i18n", () => {
   test("i18n dictionary has uk/en navigation labels", async () => {
     const res = await request(app).get("/i18n.json");
     expect(res.status).toBe(200);
+    expect(res.body).toHaveProperty("uk.app.name");
+    expect(res.body).toHaveProperty("uk.app.tagline");
     expect(res.body).toHaveProperty("uk.navigation.main");
     expect(res.body).toHaveProperty("uk.navigation.security");
     expect(res.body).toHaveProperty("uk.navigation.intrusion");
     expect(res.body).toHaveProperty("en.navigation.main");
     expect(res.body).toHaveProperty("en.navigation.security");
     expect(res.body).toHaveProperty("en.navigation.intrusion");
+  });
+
+  test("all pages include platform branding", async () => {
+    const pages = ["/index.html", "/security.html", "/intrusion.html"];
+
+    for (const page of pages) {
+      const res = await request(app).get(page);
+      expect(res.status).toBe(200);
+      expect(res.text).toContain('data-i18n="app.name"');
+      expect(res.text).toContain('data-i18n="app.tagline"');
+    }
+  });
+
+  test("all pages include rules interpretation section", async () => {
+    const pages = [
+      { path: "/index.html", prefix: "index" },
+      { path: "/security.html", prefix: "security" },
+      { path: "/intrusion.html", prefix: "intrusion" },
+    ];
+
+    for (const { path, prefix } of pages) {
+      const res = await request(app).get(path);
+      expect(res.status).toBe(200);
+      expect(res.text).toContain('class="rules-section"');
+      expect(res.text).toContain(`data-i18n="${prefix}.rules.title"`);
+      expect(res.text).toContain(`data-i18n="${prefix}.rules.category1"`);
+    }
   });
 
   test("shared graph core and i18n helper are loaded on all pages", async () => {

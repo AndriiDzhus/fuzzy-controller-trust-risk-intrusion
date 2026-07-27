@@ -1,5 +1,9 @@
 {
   "uk": {
+    "app": {
+      "name": "Платформа нечіткого виводу для оцінки безпеки систем",
+      "tagline": "Індекс довіри · Ризик безпеки · Вторгнення"
+    },
     "common": {
       "language": "Мова",
       "coordinates": "Координати",
@@ -33,7 +37,7 @@
       "intrusion": "Вторгнення системи"
     },
     "index": {
-      "pageTitle": "Нечіткий контролер індексу довіри",
+      "pageTitle": "Індекс довіри | Платформа нечіткого виводу",
       "title": "Нечіткий контролер для оцінки індексу довіри системи",
       "description": "Система нечіткого виводу для оцінки індексу довіри на основі кількості помилок (E), кількості з'єднань (C) та кількості байтів (B). Результат: індекс довіри (T).",
       "inputs": {
@@ -76,7 +80,7 @@
       }
     },
     "security": {
-      "pageTitle": "Контролер ризику безпеки",
+      "pageTitle": "Ризик безпеки | Платформа нечіткого виводу",
       "title": "Нечіткий контролер ризику безпеки системи зв'язку",
       "description": "Оцінка ризику безпеки R на основі споживання енергії (E), потужності з'єднання (S) та часу відгуку (T).",
       "inputs": {
@@ -108,10 +112,17 @@
           "responseX": "X - Шкала часу відгуку (T)",
           "riskX": "X - Шкала ризику безпеки (R)"
         }
+      },
+      "rules": {
+        "title": "База Правил та Інтерпретація Результатів",
+        "description": "Система використовує 6 правил нечіткого виводу для визначення ризику безпеки на основі комбінацій вхідних параметрів: E (Energy), S (Strength), T (Response) → R (Security Risk).",
+        "category1": "Низьке споживання енергії (E): мінімальний ризик за сильного з'єднання та швидкого відгуку.",
+        "category2": "Середнє споживання енергії (E): рівень ризику залежить від потужності з'єднання та часу відгуку.",
+        "category3": "Високе споживання енергії (E): підвищений ризик, особливо при слабкому з'єднанні та повільному відгуку."
       }
     },
     "intrusion": {
-      "pageTitle": "Контролер вірогідності вторгнення",
+      "pageTitle": "Вторгнення | Платформа нечіткого виводу",
       "title": "Нечіткий контролер вірогідності вторгнення",
       "description": "Оцінка вірогідності вторгнення I на основі числа пакетів (N), швидкості передавання (R) та коефіцієнта доставки (D).",
       "inputs": {
@@ -143,10 +154,21 @@
           "deliveryX": "X - Шкала коефіцієнта доставки (D)",
           "intrusionX": "X - Шкала вірогідності вторгнення (I)"
         }
+      },
+      "rules": {
+        "title": "База Правил та Інтерпретація Результатів",
+        "description": "Система використовує 12 правил нечіткого виводу для визначення вірогідності вторгнення на основі комбінацій вхідних параметрів: N (Packets), R (Rate), D (Delivery) → I (Intrusion).",
+        "category1": "Мала кількість пакетів (N): низька вірогідність вторгнення в більшості випадків.",
+        "category2": "Середня кількість пакетів (N): рівень вторгнення залежить від швидкості передавання та коефіцієнта доставки.",
+        "category3": "Велика кількість пакетів (N): висока вірогідність вторгнення, особливо при високій швидкості та низькій доставці."
       }
     }
   },
   "en": {
+    "app": {
+      "name": "Multi-Controller Fuzzy Inference Platform for System Security Assessment",
+      "tagline": "Trust Index · Security Risk · Intrusion"
+    },
     "common": {
       "language": "Language",
       "coordinates": "Coordinates",
@@ -180,7 +202,7 @@
       "intrusion": "System Intrusion"
     },
     "index": {
-      "pageTitle": "Fuzzy Trust Index Controller",
+      "pageTitle": "Trust Index | Fuzzy Security Platform",
       "title": "Fuzzy Controller for System Trust Index Assessment",
       "description": "A fuzzy inference system for evaluating trust index using error count (E), connection count (C), and bytes count (B). Output: trust index (T).",
       "inputs": {
@@ -223,7 +245,7 @@
       }
     },
     "security": {
-      "pageTitle": "Security Risk Controller",
+      "pageTitle": "Security Risk | Fuzzy Security Platform",
       "title": "Fuzzy Controller for Communication Security Risk",
       "description": "Evaluates security risk R based on energy consumption (E), connection strength (S), and response time (T).",
       "inputs": {
@@ -255,10 +277,17 @@
           "responseX": "X - Response time scale (T)",
           "riskX": "X - Security risk scale (R)"
         }
+      },
+      "rules": {
+        "title": "Rule Base and Result Interpretation",
+        "description": "The system uses 6 fuzzy inference rules to determine security risk based on input combinations: E (Energy), S (Strength), T (Response) → R (Security Risk).",
+        "category1": "Low energy consumption (E): minimal risk when connection is strong and response is fast.",
+        "category2": "Medium energy consumption (E): risk level depends on connection strength and response time.",
+        "category3": "High energy consumption (E): elevated risk, especially with weak connection and slow response."
       }
     },
     "intrusion": {
-      "pageTitle": "Intrusion Probability Controller",
+      "pageTitle": "Intrusion | Fuzzy Security Platform",
       "title": "Fuzzy Intrusion Probability Controller",
       "description": "Evaluates intrusion probability I based on packet count (N), transmission rate (R), and delivery coefficient (D).",
       "inputs": {
@@ -290,6 +319,13 @@
           "deliveryX": "X - Delivery coefficient scale (D)",
           "intrusionX": "X - Intrusion probability scale (I)"
         }
+      },
+      "rules": {
+        "title": "Rule Base and Result Interpretation",
+        "description": "The system uses 12 fuzzy inference rules to determine intrusion probability based on input combinations: N (Packets), R (Rate), D (Delivery) → I (Intrusion).",
+        "category1": "Low packet count (N): low intrusion probability in most cases.",
+        "category2": "Medium packet count (N): intrusion level depends on transmission rate and delivery coefficient.",
+        "category3": "High packet count (N): high intrusion probability, especially with high rate and low delivery."
       }
     }
   }

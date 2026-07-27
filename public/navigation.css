@@ -1,3 +1,23 @@
+.app-brand {
+  text-align: center;
+  margin-bottom: clamp(12px, 2.5vw, 18px);
+}
+
+.app-brand-name {
+  margin: 0;
+  color: #2c3e50;
+  font-size: clamp(0.95rem, 2.6vw, 1.15rem);
+  font-weight: 600;
+  line-height: 1.35;
+}
+
+.app-brand-tagline {
+  margin: 6px 0 0;
+  color: #7f8c8d;
+  font-size: clamp(0.8rem, 2.2vw, 0.95rem);
+  line-height: 1.4;
+}
+
 .top-bar {
   display: flex;
   align-items: center;

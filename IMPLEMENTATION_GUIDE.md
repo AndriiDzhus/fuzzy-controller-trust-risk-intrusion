@@ -1,4 +1,4 @@
-# Інструкція з імплементації нових контролерів
+# Multi-Controller Fuzzy Inference Platform for System Security Assessment
 
 ## Підготовка завершена ✅
 
