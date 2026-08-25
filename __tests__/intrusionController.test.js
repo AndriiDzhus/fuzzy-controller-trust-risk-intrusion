@@ -5,7 +5,15 @@ describe("Intrusion controller logic", () => {
     const result = calculateIntrusion({ packets: 15, rate: 55, delivery: 20 });
     expect(result.value).toBeGreaterThanOrEqual(0);
     expect(result.value).toBeLessThanOrEqual(100);
-    expect(["none", "low", "medium"]).toContain(result.dominantTerm);
+    expect(result.dominantTerm).toBe("low");
+  });
+
+  test("intrusion level matches I membership at the defuzzified value", () => {
+    const result = calculateIntrusion({ packets: 15, rate: 55, delivery: 20 });
+    expect(result.value).toBeGreaterThan(15);
+    expect(result.value).toBeLessThan(50);
+    expect(result.ruleOutputs.none).toBeGreaterThan(result.ruleOutputs.low);
+    expect(result.dominantTerm).toBe("low");
   });
 
   test("high packet risky scenario should incline to high intrusion", () => {
