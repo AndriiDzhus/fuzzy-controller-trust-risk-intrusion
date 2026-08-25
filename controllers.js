@@ -353,6 +353,13 @@ function calculateIntrusion(inputs) {
 
   const value = denominator === 0 ? 0 : numerator / denominator;
 
+  const outputMemberships = {
+    none: intrusionDef.mfs.I.none(value),
+    low: intrusionDef.mfs.I.low(value),
+    medium: intrusionDef.mfs.I.medium(value),
+    high: intrusionDef.mfs.I.high(value),
+  };
+
   const membershipData = {
     packets: fuzzy.packets,
     rate: fuzzy.rate,
@@ -362,7 +369,7 @@ function calculateIntrusion(inputs) {
 
   return {
     value,
-    dominantTerm: maxTerm(ruleOutputs),
+    dominantTerm: maxTerm(outputMemberships),
     membershipData,
     ruleOutputs,
   };
