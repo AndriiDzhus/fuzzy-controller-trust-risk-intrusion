@@ -182,6 +182,7 @@ function calculateTrust(inputs) {
     dominantTerm: trustController.getMostActiveTerm(membershipData.trustIndex),
     membershipData,
     ruleOutputs: null,
+    aggregatedOutput: trustController.getAggregatedOutput(),
   };
 }
 
@@ -342,11 +343,13 @@ function calculateIntrusion(inputs) {
 
   let numerator = 0;
   let denominator = 0;
+  const aggregatedOutput = [];
   for (let x = 0; x <= 100; x += 0.2) {
     let mu = 0;
     Object.entries(ruleOutputs).forEach(([term, alpha]) => {
       mu = Math.max(mu, Math.min(alpha, intrusionDef.mfs.I[term](x)));
     });
+    aggregatedOutput.push({ x, y: mu });
     numerator += x * mu;
     denominator += mu;
   }
@@ -372,6 +375,7 @@ function calculateIntrusion(inputs) {
     dominantTerm: maxTerm(outputMemberships),
     membershipData,
     ruleOutputs,
+    aggregatedOutput,
   };
 }
 

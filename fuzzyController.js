@@ -1,4 +1,6 @@
 const fuzzyis = require("fuzzyis");
+const CorrectedTerm = require("fuzzyis/lib/CorrectedTerm");
+const UnionOfTerms = require("fuzzyis/lib/UnionOfTerms");
 
 // Import required components from fuzzyis
 const { LinguisticVariable, Term, Rule, FIS } = fuzzyis;
@@ -149,6 +151,37 @@ function calculateTrustIndex(errorsVal, connectionsVal, bytesVal) {
   }
 }
 
+function buildOutputUnion() {
+  const output = fuzzySystem.outputs[0];
+  const corrected = fuzzySystem.rules.map((rule) => {
+    const term = output.findTerm(rule.conclusions[0]);
+    return new CorrectedTerm(term, rule.beliefDegree || 0);
+  });
+  return new UnionOfTerms(corrected);
+}
+
+function sampleAggregatedOutput(union, range, points = 100) {
+  const [start, end] = range;
+  const series = [];
+  for (let i = 0; i <= points; i += 1) {
+    const x = start + (i / points) * (end - start);
+    series.push({ x, y: union.valueAt(x) });
+  }
+  return series;
+}
+
+function getAggregatedOutput(errorsVal, connectionsVal, bytesVal) {
+  if (
+    Number.isFinite(errorsVal) &&
+    Number.isFinite(connectionsVal) &&
+    Number.isFinite(bytesVal)
+  ) {
+    calculateTrustIndex(errorsVal, connectionsVal, bytesVal);
+  }
+  const union = buildOutputUnion();
+  return sampleAggregatedOutput(union, fuzzySystem.outputs[0].range, 100);
+}
+
 // Calculate membership degrees
 function calculateMembershipValues(variable, value) {
   const memberships = {};
@@ -195,6 +228,7 @@ function getMostActiveTerm(memberships) {
 module.exports = {
   fuzzySystem,
   calculateTrustIndex,
+  getAggregatedOutput,
   calculateMembershipValues,
   getMostActiveTerm,
   membershipParams,

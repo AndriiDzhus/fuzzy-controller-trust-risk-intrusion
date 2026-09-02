@@ -51,7 +51,6 @@
           <input type="number" id="deliveryNumber" min="0" max="100" step="0.1" value="50" />
           <span class="input-value" id="deliveryValue">50.0</span>
         </div>
-        <button id="calculateBtn" data-i18n="intrusion.buttons.calculate"></button>
       </div>
 
       <div class="output-section">
@@ -110,6 +109,12 @@
           <div class="graph-container">
             <h4 data-i18n="intrusion.membership.intrusion"></h4>
             <canvas id="intrusionCanvas" width="400" height="250"></canvas>
+          </div>
+        </div>
+        <div class="graph-row graph-row-full">
+          <div class="graph-container">
+            <h4 data-i18n="intrusion.membership.aggregated"></h4>
+            <canvas id="intrusionAggregatedCanvas" width="800" height="250"></canvas>
           </div>
         </div>
       </div>

@@ -28,7 +28,8 @@
         "low": "Малий",
         "medium": "Середній",
         "high": "Великий",
-        "veryHigh": "Дуже великий"
+        "veryHigh": "Дуже великий",
+        "aggregated": "Агрегована множина"
       }
     },
     "navigation": {
@@ -45,9 +46,6 @@
         "connections": "Кількість З'єднань (C) (0-100):",
         "bytes": "Кількість Байтів (B) (0-100):"
       },
-      "buttons": {
-        "calculate": "Обчислити Індекс Довіри"
-      },
       "results": {
         "title": "Результат Обчислення",
         "value": "Значення індексу довіри (T):",
@@ -59,7 +57,8 @@
         "errors": "Кількість Помилок (E)",
         "connections": "Кількість З'єднань (C)",
         "bytes": "Кількість Байтів (B)",
-        "trust": "Індекс Довіри (T)"
+        "trust": "Індекс Довіри (T)",
+        "aggregated": "Агрегована вихідна множина (T)"
       },
       "graphs": {
         "title": "Функції Приналежності",
@@ -87,9 +86,6 @@
         "energy": "Споживання енергії (E) (0-100):",
         "strength": "Потужність з'єднання (S) (0-100):",
         "response": "Час очікування відгуку (T) (0-100):"
-      },
-      "buttons": {
-        "calculate": "Обчислити ризик безпеки"
       },
       "results": {
         "title": "Результат обчислення",
@@ -130,9 +126,6 @@
         "rate": "Швидкість передавання (R) (0-100):",
         "delivery": "Коефіцієнт доставки (D) (0-100):"
       },
-      "buttons": {
-        "calculate": "Обчислити вірогідність вторгнення"
-      },
       "results": {
         "title": "Результат обчислення",
         "value": "Значення вторгнення (I):",
@@ -143,7 +136,8 @@
         "packets": "Число пакетів (N)",
         "rate": "Швидкість передавання (R)",
         "delivery": "Коефіцієнт доставки (D)",
-        "intrusion": "Вторгнення (I)"
+        "intrusion": "Вторгнення (I)",
+        "aggregated": "Агрегована вихідна множина (I)"
       },
       "graphs": {
         "title": "Функції приналежності",
@@ -193,7 +187,8 @@
         "low": "Low",
         "medium": "Medium",
         "high": "High",
-        "veryHigh": "Very High"
+        "veryHigh": "Very High",
+        "aggregated": "Aggregated set"
       }
     },
     "navigation": {
@@ -210,9 +205,6 @@
         "connections": "Connection Count (C) (0-100):",
         "bytes": "Bytes Count (B) (0-100):"
       },
-      "buttons": {
-        "calculate": "Calculate Trust Index"
-      },
       "results": {
         "title": "Calculation Result",
         "value": "Trust Index value:",
@@ -224,7 +216,8 @@
         "errors": "Error Count (E)",
         "connections": "Connection Count (C)",
         "bytes": "Bytes Count (B)",
-        "trust": "Trust Index (T)"
+        "trust": "Trust Index (T)",
+        "aggregated": "Aggregated output set (T)"
       },
       "graphs": {
         "title": "Membership Functions",
@@ -252,9 +245,6 @@
         "energy": "Energy Consumption (E) (0-100):",
         "strength": "Connection Strength (S) (0-100):",
         "response": "Response Waiting Time (T) (0-100):"
-      },
-      "buttons": {
-        "calculate": "Calculate Security Risk"
       },
       "results": {
         "title": "Calculation Result",
@@ -295,9 +285,6 @@
         "rate": "Transmission Rate (R) (0-100):",
         "delivery": "Delivery Coefficient (D) (0-100):"
       },
-      "buttons": {
-        "calculate": "Calculate Intrusion Probability"
-      },
       "results": {
         "title": "Calculation Result",
         "value": "Intrusion value (I):",
@@ -308,7 +295,8 @@
         "packets": "Packet Count (N)",
         "rate": "Transmission Rate (R)",
         "delivery": "Delivery Coefficient (D)",
-        "intrusion": "Intrusion (I)"
+        "intrusion": "Intrusion (I)",
+        "aggregated": "Aggregated output set (I)"
       },
       "graphs": {
         "title": "Membership Functions",

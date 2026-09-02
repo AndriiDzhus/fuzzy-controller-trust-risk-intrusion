@@ -105,6 +105,7 @@ app.post("/api/controllers/:controller/calculate", (req, res) => {
       dominantTerm: result.dominantTerm,
       membershipData: result.membershipData,
       ruleOutputs: result.ruleOutputs,
+      aggregatedOutput: result.aggregatedOutput || null,
       inputs,
     });
   } catch (error) {

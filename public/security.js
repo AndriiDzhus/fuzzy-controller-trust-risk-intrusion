@@ -1,7 +1,6 @@
 document.addEventListener("DOMContentLoaded", async () => {
   await createFuzzyPage({
     controller: "security",
-    calculateButtonId: "calculateBtn",
     inputs: [
       { key: "energy", sliderId: "energySlider", numberId: "energyNumber", valueId: "energyValue" },
       { key: "strength", sliderId: "strengthSlider", numberId: "strengthNumber", valueId: "strengthValue" },

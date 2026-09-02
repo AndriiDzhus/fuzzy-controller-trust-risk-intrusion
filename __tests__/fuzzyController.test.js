@@ -1,5 +1,6 @@
 const {
   calculateTrustIndex,
+  getAggregatedOutput,
   calculateMembershipValues,
   getMostActiveTerm,
   trapezoidalMF,
@@ -38,5 +39,16 @@ describe("Trust controller calculations", () => {
     const memberships = calculateMembershipValues("trustIndex", 62.5);
     const term = getMostActiveTerm(memberships);
     expect(Object.keys(memberships)).toContain(term);
+  });
+
+  test("aggregated output comes from fuzzyis UnionOfTerms after inference", () => {
+    const value = calculateTrustIndex(50, 50, 50);
+    const series = getAggregatedOutput();
+    const atValue = series.find((p) => Math.abs(p.x - value) < 0.6);
+
+    expect(series.length).toBe(101);
+    expect(series[0]).toEqual({ x: 0, y: 0 });
+    expect(atValue.y).toBeGreaterThan(0.9);
+    expect(Math.max(...series.map((p) => p.y))).toBeCloseTo(1, 5);
   });
 });
