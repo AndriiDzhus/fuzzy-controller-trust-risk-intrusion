@@ -112,27 +112,6 @@ h3 {
   display: none;
 }
 
-#calculateBtn {
-  width: 100%;
-  padding: clamp(10px, 2.5vw, 15px);
-  background: linear-gradient(135deg, #3498db, #2980b9);
-  color: white;
-  border: none;
-  border-radius: 8px;
-  cursor: pointer;
-  font-size: clamp(0.9rem, 2.5vw, 1.125rem);
-  font-weight: 600;
-  transition: all 0.3s ease;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-
-#calculateBtn:hover {
-  background: linear-gradient(135deg, #2980b9, #3498db);
-  transform: translateY(-2px);
-  box-shadow: 0 5px 15px rgba(52, 152, 219, 0.4);
-}
-
 .result-display {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr));
@@ -229,6 +208,15 @@ h3 {
   grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr));
   gap: clamp(16px, 3vw, 30px);
   margin-bottom: clamp(16px, 3vw, 30px);
+}
+
+.graph-row-full {
+  grid-template-columns: 1fr;
+}
+
+.graph-row-full canvas {
+  width: min(100%, 800px);
+  height: auto;
 }
 
 .graph-container {
@@ -409,6 +397,12 @@ canvas {
   height: 10px;
   border-radius: 50%;
   display: inline-block;
+}
+
+.graph-legend-item.active {
+  background: #e8f1fb;
+  border-color: #7aa7d4;
+  box-shadow: inset 0 0 0 1px #7aa7d4;
 }
 
 /* Responsive Design */

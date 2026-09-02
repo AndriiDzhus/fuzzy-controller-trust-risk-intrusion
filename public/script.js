@@ -1,7 +1,6 @@
 document.addEventListener("DOMContentLoaded", async () => {
   await createFuzzyPage({
     controller: "trust",
-    calculateButtonId: "calculateBtn",
     inputs: [
       { key: "errors", sliderId: "errorsSlider", numberId: "errors", valueId: "eValue" },
       { key: "connections", sliderId: "connectionsSlider", numberId: "connections", valueId: "cValue" },
@@ -52,6 +51,13 @@ document.addEventListener("DOMContentLoaded", async () => {
           yKey: "index.graphs.axes.membershipY",
         },
         showPeakLabels: true,
+      },
+      aggregated: {
+        canvasId: "trustAggregatedCanvas",
+        axisLabels: {
+          xKey: "index.graphs.axes.trustX",
+          yKey: "index.graphs.axes.membershipY",
+        },
       },
     },
   });

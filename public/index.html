@@ -53,8 +53,6 @@
           <input type="number" id="bytes" min="0" max="100" step="0.1" value="50" />
           <span class="input-value" id="bValue">50.0</span>
         </div>
-
-        <button id="calculateBtn" data-i18n="index.buttons.calculate"></button>
       </div>
 
       <div class="output-section">
@@ -126,6 +124,12 @@
             <h4 data-i18n="index.membership.trust"></h4>
             <canvas id="trustIndexCanvas" width="400" height="250"></canvas>
             <div id="tTooltip" class="graph-tooltip"></div>
+          </div>
+        </div>
+        <div class="graph-row graph-row-full">
+          <div class="graph-container">
+            <h4 data-i18n="index.membership.aggregated"></h4>
+            <canvas id="trustAggregatedCanvas" width="800" height="250"></canvas>
           </div>
         </div>
       </div>

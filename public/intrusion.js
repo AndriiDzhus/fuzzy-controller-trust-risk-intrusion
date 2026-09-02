@@ -1,7 +1,6 @@
 document.addEventListener("DOMContentLoaded", async () => {
   await createFuzzyPage({
     controller: "intrusion",
-    calculateButtonId: "calculateBtn",
     inputs: [
       { key: "packets", sliderId: "packetsSlider", numberId: "packetsNumber", valueId: "packetsValue" },
       { key: "rate", sliderId: "rateSlider", numberId: "rateNumber", valueId: "rateValue" },
@@ -52,6 +51,13 @@ document.addEventListener("DOMContentLoaded", async () => {
           yKey: "intrusion.graphs.axes.membershipY",
         },
         showPeakLabels: true,
+      },
+      aggregated: {
+        canvasId: "intrusionAggregatedCanvas",
+        axisLabels: {
+          xKey: "intrusion.graphs.axes.intrusionX",
+          yKey: "intrusion.graphs.axes.membershipY",
+        },
       },
     },
   });
