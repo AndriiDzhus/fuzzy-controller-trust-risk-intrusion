@@ -91,6 +91,7 @@ function termColor(term, index) {
     veryLow: "#1abc9c",
     veryHigh: "#8e44ad",
     none: "#95a5a6",
+    aggregated: "#2c3e50",
     Low: "#e74c3c",
     Medium: "#3498db",
     High: "#27ae60",
@@ -100,7 +101,50 @@ function termColor(term, index) {
   return known[term] || graphPalette[index % graphPalette.length];
 }
 
-function ensureLegend(canvasId, terms) {
+function hexToRgba(hex, alpha) {
+  const raw = String(hex || "").replace("#", "");
+  const full = raw.length === 3 ? raw.split("").map((c) => c + c).join("") : raw;
+  const n = Number.parseInt(full, 16);
+  if (!Number.isFinite(n)) return `rgba(44, 62, 80, ${alpha})`;
+  const r = (n >> 16) & 255;
+  const g = (n >> 8) & 255;
+  const b = n & 255;
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+}
+
+function dominantTermFromMemberships(memberships) {
+  const entries = Object.entries(memberships || {});
+  if (!entries.length) return null;
+  let bestTerm = entries[0][0];
+  let bestValue = Number(entries[0][1]) || 0;
+  for (let i = 1; i < entries.length; i += 1) {
+    const [term, value] = entries[i];
+    const numeric = Number(value) || 0;
+    if (numeric > bestValue) {
+      bestTerm = term;
+      bestValue = numeric;
+    }
+  }
+  return bestValue > 0 ? bestTerm : null;
+}
+
+function fillTermArea(ctx, points, color, w, h, p) {
+  if (!Array.isArray(points) || points.length < 2) return;
+  const toX = (x) => p + (x / 100) * (w - 2 * p);
+  const toY = (y) => h - p - y * (h - 2 * p);
+
+  ctx.beginPath();
+  ctx.moveTo(toX(points[0].x), toY(0));
+  points.forEach((point) => {
+    ctx.lineTo(toX(point.x), toY(point.y));
+  });
+  ctx.lineTo(toX(points[points.length - 1].x), toY(0));
+  ctx.closePath();
+  ctx.fillStyle = hexToRgba(color, 0.28);
+  ctx.fill();
+}
+
+function ensureLegend(canvasId, terms, highlightTerm = null) {
   const canvas = document.getElementById(canvasId);
   if (!canvas) return;
   const container = canvas.closest(".graph-container");
@@ -117,6 +161,7 @@ function ensureLegend(canvasId, terms) {
   terms.forEach((term, index) => {
     const item = document.createElement("span");
     item.className = "graph-legend-item";
+    if (term === highlightTerm) item.classList.add("active");
     item.innerHTML = `<i style="background:${termColor(term, index)}"></i>${termLabel(term)}`;
     legend.appendChild(item);
   });
@@ -172,12 +217,24 @@ function drawCurveGraph(canvasId, termSeries, currentValue, options = {}) {
   drawAxes(ctx, w, h, p, options.axisLabels || null);
 
   const terms = Object.keys(termSeries);
+  const highlightTerm = options.highlightTerm || null;
+  if (highlightTerm && termSeries[highlightTerm]) {
+    fillTermArea(
+      ctx,
+      termSeries[highlightTerm],
+      termColor(highlightTerm, terms.indexOf(highlightTerm)),
+      w,
+      h,
+      p
+    );
+  }
+
   terms.forEach((term, idx) => {
     const points = termSeries[term];
     const color = termColor(term, idx);
 
     ctx.strokeStyle = color;
-    ctx.lineWidth = 2;
+    ctx.lineWidth = term === highlightTerm ? 3 : 2;
     ctx.beginPath();
 
     points.forEach((point, i) => {
@@ -213,7 +270,69 @@ function drawCurveGraph(canvasId, termSeries, currentValue, options = {}) {
     ctx.setLineDash([]);
   }
 
-  ensureLegend(canvasId, terms);
+  ensureLegend(canvasId, terms, highlightTerm);
+}
+
+function drawAggregatedSetGraph(canvasId, points, resultValue, options = {}) {
+  const canvas = document.getElementById(canvasId);
+  if (!canvas || !Array.isArray(points) || !points.length) return;
+
+  const ctx = canvas.getContext("2d");
+  const w = canvas.width;
+  const h = canvas.height;
+  const p = 40;
+  const fill = "rgba(44, 62, 80, 0.28)";
+  const stroke = "#2c3e50";
+
+  ctx.clearRect(0, 0, w, h);
+  drawAxes(ctx, w, h, p, options.axisLabels || null);
+
+  const toX = (x) => p + (x / 100) * (w - 2 * p);
+  const toY = (y) => h - p - y * (h - 2 * p);
+
+  ctx.beginPath();
+  ctx.moveTo(toX(points[0].x), toY(0));
+  points.forEach((point) => {
+    ctx.lineTo(toX(point.x), toY(point.y));
+  });
+  ctx.lineTo(toX(points[points.length - 1].x), toY(0));
+  ctx.closePath();
+  ctx.fillStyle = fill;
+  ctx.fill();
+
+  ctx.beginPath();
+  points.forEach((point, i) => {
+    const x = toX(point.x);
+    const y = toY(point.y);
+    if (i === 0) ctx.moveTo(x, y);
+    else ctx.lineTo(x, y);
+  });
+  ctx.strokeStyle = stroke;
+  ctx.lineWidth = 2;
+  ctx.stroke();
+
+  if (resultValue !== null && resultValue !== undefined) {
+    const vx = toX(resultValue);
+    ctx.strokeStyle = "#111";
+    ctx.setLineDash([5, 5]);
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(vx, p);
+    ctx.lineTo(vx, h - p);
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    ctx.fillStyle = "#111";
+    ctx.font = "bold 12px Arial";
+    ctx.textAlign = "left";
+    ctx.fillText(
+      formatNumber(resultValue, { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
+      Math.min(w - 70, vx + 8),
+      p + 12
+    );
+  }
+
+  ensureLegend(canvasId, ["aggregated"]);
 }
 
 function drawSingletonGraph(canvasId, singletonValues, ruleOutputs, resultValue, options = {}) {
@@ -227,6 +346,7 @@ function drawSingletonGraph(canvasId, singletonValues, ruleOutputs, resultValue,
   drawAxes(ctx, w, h, p, options.axisLabels || null);
 
   const terms = Object.keys(singletonValues);
+  const highlightTerm = options.highlightTerm || null;
   terms.forEach((term, idx) => {
     const x = singletonValues[term];
     const activation = ruleOutputs?.[term] || 0;
@@ -242,9 +362,14 @@ function drawSingletonGraph(canvasId, singletonValues, ruleOutputs, resultValue,
     ctx.stroke();
     ctx.globalAlpha = 1;
 
+    if (term === highlightTerm) {
+      ctx.fillStyle = hexToRgba(color, 0.2);
+      ctx.fillRect(px - 10, p, 20, h - 2 * p);
+    }
+
     if (activation > 0) {
       ctx.strokeStyle = color;
-      ctx.lineWidth = 2 + activation * 8;
+      ctx.lineWidth = 2 + activation * 8 + (term === highlightTerm ? 2 : 0);
       ctx.beginPath();
       ctx.moveTo(px, h - p);
       ctx.lineTo(px, h - p - activation * (h - 2 * p));
@@ -270,7 +395,7 @@ function drawSingletonGraph(canvasId, singletonValues, ruleOutputs, resultValue,
     p + 12
   );
 
-  ensureLegend(canvasId, terms);
+  ensureLegend(canvasId, terms, highlightTerm);
 }
 
 function renderMembership(containerId, data) {
@@ -417,6 +542,16 @@ function setupTooltips(config, state) {
       series: state.mfData.output[config.graphs.output.key],
     };
   });
+
+  if (config.graphs.aggregated?.canvasId) {
+    bindCanvasTooltip(config.graphs.aggregated.canvasId, state, () => {
+      if (!state.result?.aggregatedOutput) return null;
+      return {
+        type: "curve",
+        series: { aggregated: state.result.aggregatedOutput },
+      };
+    });
+  }
 }
 
 function normalizeCalculateResult(result, payload) {
@@ -425,6 +560,7 @@ function normalizeCalculateResult(result, payload) {
     dominantTerm: result.dominantTerm,
     membershipData: result.membershipData,
     ruleOutputs: result.ruleOutputs ?? null,
+    aggregatedOutput: result.aggregatedOutput || null,
     inputs: payload,
   };
 }
@@ -509,7 +645,10 @@ async function createFuzzyPage(config) {
         getGraphCanvasId(canvasId),
         state.mfData.inputs[key],
         buildMapFromSpecs(config.inputs)[key],
-        getGraphOptions(canvasId)
+        {
+          ...getGraphOptions(canvasId),
+          highlightTerm: dominantTermFromMemberships(state.result.membershipData?.[key]),
+        }
       );
     });
 
@@ -517,13 +656,17 @@ async function createFuzzyPage(config) {
     const outputCanvasId = config.graphs.output.canvasId;
     const outputSeries = state.mfData.output?.[outputKey];
     const hasOutputCurves = outputSeries && Object.keys(outputSeries).length > 0;
+    const outputHighlight = state.result.dominantTerm;
 
     if (hasOutputCurves) {
       drawCurveGraph(
         outputCanvasId,
         outputSeries,
         state.result.value,
-        getGraphOptions(config.graphs.output)
+        {
+          ...getGraphOptions(config.graphs.output),
+          highlightTerm: outputHighlight,
+        }
       );
     } else if (state.mfData.meta?.singletonValues) {
       drawSingletonGraph(
@@ -531,14 +674,29 @@ async function createFuzzyPage(config) {
         state.mfData.meta.singletonValues,
         state.result.ruleOutputs,
         state.result.value,
-        getGraphOptions(config.graphs.output)
+        {
+          ...getGraphOptions(config.graphs.output),
+          highlightTerm: outputHighlight,
+        }
       );
     } else {
       drawCurveGraph(
         outputCanvasId,
         state.mfData.output[outputKey],
         state.result.value,
-        getGraphOptions(config.graphs.output)
+        {
+          ...getGraphOptions(config.graphs.output),
+          highlightTerm: outputHighlight,
+        }
+      );
+    }
+
+    if (config.graphs.aggregated?.canvasId && state.result.aggregatedOutput) {
+      drawAggregatedSetGraph(
+        config.graphs.aggregated.canvasId,
+        state.result.aggregatedOutput,
+        state.result.value,
+        getGraphOptions(config.graphs.aggregated)
       );
     }
   };
@@ -559,9 +717,6 @@ async function createFuzzyPage(config) {
       });
     }
   });
-
-  const calcBtn = document.getElementById(config.calculateButtonId);
-  if (calcBtn) calcBtn.addEventListener("click", recalc);
 
   state.mfData = await loadMembershipFunctions(config.controller);
 
