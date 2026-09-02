@@ -11,6 +11,10 @@ describe("Unified controllers API", () => {
     expect(response.body).toHaveProperty("value");
     expect(response.body).toHaveProperty("dominantTerm");
     expect(response.body).toHaveProperty("membershipData");
+    expect(Array.isArray(response.body.aggregatedOutput)).toBe(true);
+    expect(response.body.aggregatedOutput.length).toBeGreaterThan(0);
+    expect(response.body.aggregatedOutput[0]).toHaveProperty("x");
+    expect(response.body.aggregatedOutput[0]).toHaveProperty("y");
   });
 
   test("security calculate endpoint works", async () => {

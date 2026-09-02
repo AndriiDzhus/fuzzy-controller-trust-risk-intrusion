@@ -23,6 +23,13 @@ describe("Intrusion controller logic", () => {
     expect(["medium", "high"]).toContain(result.dominantTerm);
   });
 
+  test("aggregated output is the clipped I set used for centroid", () => {
+    const result = calculateIntrusion({ packets: 15, rate: 55, delivery: 20 });
+    expect(result.aggregatedOutput.length).toBeGreaterThan(100);
+    expect(result.aggregatedOutput[0]).toEqual({ x: 0, y: expect.any(Number) });
+    expect(Math.max(...result.aggregatedOutput.map((p) => p.y))).toBeGreaterThan(0);
+  });
+
   test("result is deterministic", () => {
     const a = calculateIntrusion({ packets: 72.2, rate: 41.7, delivery: 60.4 }).value;
     const b = calculateIntrusion({ packets: 72.2, rate: 41.7, delivery: 60.4 }).value;
