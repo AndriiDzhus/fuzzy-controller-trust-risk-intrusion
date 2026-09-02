@@ -514,6 +514,127 @@ function bindCanvasTooltip(canvasId, state, getTooltipModel) {
   });
 }
 
+function stickyLabelKey(spec) {
+  if (spec.labelKey) return spec.labelKey;
+  const original = document.querySelector(`label[for="${spec.sliderId}"]`);
+  const key = original?.getAttribute("data-i18n") || "";
+  return key.replace(".inputs.", ".membership.");
+}
+
+function stickyShortLabel(spec, fullLabel) {
+  if (spec.shortLabel) return spec.shortLabel;
+  const match = String(fullLabel || "").match(/\(([A-Za-z])\)/);
+  if (match) return match[1].toUpperCase();
+  return String(spec.key || "?").slice(0, 1).toUpperCase();
+}
+
+function stickyTitleKey(config) {
+  if (config.titleKey) return config.titleKey;
+  const pageKey = {
+    trust: "index",
+    security: "security",
+    intrusion: "intrusion",
+  }[config.controller] || "index";
+  return `${pageKey}.stickyTitle`;
+}
+
+function refreshStickyCopy(config) {
+  const titleEl = document.getElementById("stickyPageTitle");
+  if (titleEl) {
+    titleEl.textContent = i18nText(stickyTitleKey(config));
+  }
+
+  config.inputs.forEach((spec) => {
+    const label = document.querySelector(`label[for="${spec.sliderId}Sticky"]`);
+    if (!label) return;
+    const full = i18nText(stickyLabelKey(spec), spec.key);
+    label.textContent = stickyShortLabel(spec, full);
+    label.setAttribute("title", full);
+    label.setAttribute("aria-label", full);
+  });
+}
+
+function updateStickyResult(data) {
+  const valueEl = document.getElementById("stickyResultValue");
+  const termEl = document.getElementById("stickyResultTerm");
+  if (!valueEl || !termEl) return;
+
+  if (!data) {
+    valueEl.textContent = "--";
+    termEl.textContent = "--";
+    return;
+  }
+
+  valueEl.textContent = formatNumber(data.value, {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
+  termEl.textContent = termLabel(data.dominantTerm);
+}
+
+function setupStickyInputs(config, { applyInputValue, recalc }) {
+  const inputSection = document.querySelector(".input-section");
+  if (!inputSection || document.getElementById("stickyInputs")) return;
+
+  const bar = document.createElement("aside");
+  bar.id = "stickyInputs";
+  bar.className = "sticky-inputs";
+  bar.setAttribute("aria-hidden", "true");
+  bar.innerHTML = `
+    <div class="sticky-inputs-inner">
+      <div class="sticky-inputs-head">
+        <p class="sticky-inputs-title" id="stickyPageTitle"></p>
+      </div>
+      <div class="sticky-inputs-controls"></div>
+      <div class="sticky-inputs-result">
+        <span class="sticky-inputs-result-label" data-i18n="common.sticky.result"></span>
+        <span class="sticky-inputs-result-value" id="stickyResultValue">--</span>
+        <span class="sticky-inputs-result-term" id="stickyResultTerm">--</span>
+      </div>
+    </div>
+  `;
+
+  const controls = bar.querySelector(".sticky-inputs-controls");
+  config.inputs.forEach((spec) => {
+    const current = document.getElementById(spec.numberId)?.value ?? "50";
+    const group = document.createElement("div");
+    group.className = "sticky-input-group";
+    group.innerHTML = `
+      <label class="sticky-input-label" for="${spec.sliderId}Sticky"></label>
+      <input type="range" id="${spec.sliderId}Sticky" min="0" max="100" step="0.1" value="${current}" />
+      <input type="number" id="${spec.numberId}Sticky" min="0" max="100" step="0.1" value="${current}" />
+    `;
+    controls.appendChild(group);
+
+    const slider = group.querySelector(`#${spec.sliderId}Sticky`);
+    const number = group.querySelector(`#${spec.numberId}Sticky`);
+
+    slider.addEventListener("input", () => {
+      applyInputValue(spec, Number(slider.value));
+      recalc();
+    });
+    number.addEventListener("input", () => {
+      const val = Math.min(100, Math.max(0, Number(number.value)));
+      applyInputValue(spec, val);
+      recalc();
+    });
+  });
+
+  document.body.appendChild(bar);
+  if (window.i18nHelper) window.i18nHelper.applyTranslations(bar);
+  refreshStickyCopy(config);
+
+  const observer = new IntersectionObserver(
+    ([entry]) => {
+      const show = !entry.isIntersecting;
+      bar.classList.toggle("is-visible", show);
+      bar.setAttribute("aria-hidden", show ? "false" : "true");
+    },
+    { threshold: 0 }
+  );
+  observer.observe(inputSection);
+}
+
 function setupTooltips(config, state) {
   Object.entries(config.graphs.inputs).forEach(([key, canvasId]) => {
     bindCanvasTooltip(getGraphCanvasId(canvasId), state, () => {
@@ -606,14 +727,23 @@ async function createFuzzyPage(config) {
 
   const applyInputValue = (spec, value) => {
     if (spec.sliderId) {
-      document.getElementById(spec.sliderId).value = value;
+      const slider = document.getElementById(spec.sliderId);
+      if (slider) slider.value = value;
+      const stickySlider = document.getElementById(`${spec.sliderId}Sticky`);
+      if (stickySlider) stickySlider.value = value;
     }
-    document.getElementById(spec.numberId).value = value;
+    const numberEl = document.getElementById(spec.numberId);
+    if (numberEl) numberEl.value = value;
+    const stickyNumber = document.getElementById(`${spec.numberId}Sticky`);
+    if (stickyNumber) stickyNumber.value = value;
     if (spec.valueId) {
-      document.getElementById(spec.valueId).textContent = formatNumber(value, {
-        minimumFractionDigits: 1,
-        maximumFractionDigits: 1,
-      });
+      const valueEl = document.getElementById(spec.valueId);
+      if (valueEl) {
+        valueEl.textContent = formatNumber(value, {
+          minimumFractionDigits: 1,
+          maximumFractionDigits: 1,
+        });
+      }
     }
   };
 
@@ -629,6 +759,7 @@ async function createFuzzyPage(config) {
       maximumFractionDigits: 2,
     });
     document.getElementById(config.output.termId).textContent = termLabel(data.dominantTerm);
+    updateStickyResult(data);
 
     Object.entries(config.membership).forEach(([key, containerId]) => {
       renderMembership(containerId, data.membershipData[key]);
@@ -718,13 +849,17 @@ async function createFuzzyPage(config) {
     }
   });
 
+  setupStickyInputs(config, { applyInputValue, recalc });
+
   state.mfData = await loadMembershipFunctions(config.controller);
 
   setupTooltips(config, state);
 
   window.addEventListener("languageChanged", () => {
+    refreshStickyCopy(config);
     if (!state.result) return;
     document.getElementById(config.output.termId).textContent = termLabel(state.result.dominantTerm);
+    updateStickyResult(state.result);
     Object.entries(config.membership).forEach(([key, containerId]) => {
       renderMembership(containerId, state.result.membershipData[key]);
     });

@@ -13,6 +13,9 @@
         "outputAxis": "Вихід",
         "memberships": "Ступені приналежності"
       },
+      "sticky": {
+        "result": "Результат"
+      },
       "languages": {
         "uk": "Українська",
         "en": "English"
@@ -40,6 +43,7 @@
     "index": {
       "pageTitle": "Індекс довіри | Платформа нечіткого виводу",
       "title": "Нечіткий контролер для оцінки індексу довіри системи",
+      "stickyTitle": "Оцінка індексу довіри",
       "description": "Система нечіткого виводу для оцінки індексу довіри на основі кількості помилок (E), кількості з'єднань (C) та кількості байтів (B). Результат: індекс довіри (T).",
       "inputs": {
         "errors": "Кількість Помилок (E) (0-100):",
@@ -81,6 +85,7 @@
     "security": {
       "pageTitle": "Ризик безпеки | Платформа нечіткого виводу",
       "title": "Нечіткий контролер ризику безпеки системи зв'язку",
+      "stickyTitle": "Оцінка ризику безпеки",
       "description": "Оцінка ризику безпеки R на основі споживання енергії (E), потужності з'єднання (S) та часу відгуку (T).",
       "inputs": {
         "energy": "Споживання енергії (E) (0-100):",
@@ -120,6 +125,7 @@
     "intrusion": {
       "pageTitle": "Вторгнення | Платформа нечіткого виводу",
       "title": "Нечіткий контролер вірогідності вторгнення",
+      "stickyTitle": "Оцінка вірогідності вторгнення",
       "description": "Оцінка вірогідності вторгнення I на основі числа пакетів (N), швидкості передавання (R) та коефіцієнта доставки (D).",
       "inputs": {
         "packets": "Число пакетів (N) (0-100):",
@@ -172,6 +178,9 @@
         "outputAxis": "Output",
         "memberships": "Membership values"
       },
+      "sticky": {
+        "result": "Result"
+      },
       "languages": {
         "uk": "Українська",
         "en": "English"
@@ -199,6 +208,7 @@
     "index": {
       "pageTitle": "Trust Index | Fuzzy Security Platform",
       "title": "Fuzzy Controller for System Trust Index Assessment",
+      "stickyTitle": "Trust index assessment",
       "description": "A fuzzy inference system for evaluating trust index using error count (E), connection count (C), and bytes count (B). Output: trust index (T).",
       "inputs": {
         "errors": "Error Count (E) (0-100):",
@@ -240,6 +250,7 @@
     "security": {
       "pageTitle": "Security Risk | Fuzzy Security Platform",
       "title": "Fuzzy Controller for Communication Security Risk",
+      "stickyTitle": "Security risk assessment",
       "description": "Evaluates security risk R based on energy consumption (E), connection strength (S), and response time (T).",
       "inputs": {
         "energy": "Energy Consumption (E) (0-100):",
@@ -279,6 +290,7 @@
     "intrusion": {
       "pageTitle": "Intrusion | Fuzzy Security Platform",
       "title": "Fuzzy Intrusion Probability Controller",
+      "stickyTitle": "Intrusion probability assessment",
       "description": "Evaluates intrusion probability I based on packet count (N), transmission rate (R), and delivery coefficient (D).",
       "inputs": {
         "packets": "Packet Count (N) (0-100):",
