@@ -26,6 +26,19 @@ describe("E2E smoke: navigation and i18n", () => {
     }
   });
 
+  test("i18n dictionary has sticky input bar labels", async () => {
+    const res = await request(app).get("/i18n.json");
+    expect(res.status).toBe(200);
+    expect(res.body.uk.common.sticky.result).toBeTruthy();
+    expect(res.body.uk.index.stickyTitle).toBeTruthy();
+    expect(res.body.uk.security.stickyTitle).toBeTruthy();
+    expect(res.body.uk.intrusion.stickyTitle).toBeTruthy();
+    expect(res.body.en.common.sticky.result).toBeTruthy();
+    expect(res.body.en.index.stickyTitle).toBeTruthy();
+    expect(res.body.en.security.stickyTitle).toBeTruthy();
+    expect(res.body.en.intrusion.stickyTitle).toBeTruthy();
+  });
+
   test("i18n dictionary has uk/en navigation labels", async () => {
     const res = await request(app).get("/i18n.json");
     expect(res.status).toBe(200);
