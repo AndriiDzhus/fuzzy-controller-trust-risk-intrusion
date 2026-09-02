@@ -1,5 +1,45 @@
 const graphPalette = ["#e74c3c", "#3498db", "#27ae60", "#8e44ad", "#1abc9c", "#f39c12"];
 
+const INPUTS_STORAGE_KEY = "fuzzyControllerInputs";
+
+function clampInputValue(value) {
+  const numeric = Number(value);
+  if (!Number.isFinite(numeric)) return null;
+  return Math.min(100, Math.max(0, numeric));
+}
+
+function readPersistedInputs() {
+  try {
+    const raw = localStorage.getItem(INPUTS_STORAGE_KEY);
+    if (!raw) return {};
+    const parsed = JSON.parse(raw);
+    return parsed && typeof parsed === "object" ? parsed : {};
+  } catch {
+    return {};
+  }
+}
+
+function persistControllerInputs(controller, values) {
+  const all = readPersistedInputs();
+  all[controller] = values;
+  try {
+    localStorage.setItem(INPUTS_STORAGE_KEY, JSON.stringify(all));
+  } catch {
+    // Ignore quota / private-mode failures.
+  }
+}
+
+function restoreControllerInputs(config, applyInputValue) {
+  const stored = readPersistedInputs()[config.controller];
+  if (!stored || typeof stored !== "object") return;
+
+  config.inputs.forEach((spec) => {
+    const value = clampInputValue(stored[spec.key]);
+    if (value === null) return;
+    applyInputValue(spec, value);
+  });
+}
+
 function buildMapFromSpecs(specs) {
   const data = {};
   specs.forEach((spec) => {
@@ -528,14 +568,22 @@ function stickyShortLabel(spec, fullLabel) {
   return String(spec.key || "?").slice(0, 1).toUpperCase();
 }
 
-function stickyTitleKey(config) {
-  if (config.titleKey) return config.titleKey;
-  const pageKey = {
+function pageI18nKey(config) {
+  return {
     trust: "index",
     security: "security",
     intrusion: "intrusion",
   }[config.controller] || "index";
-  return `${pageKey}.stickyTitle`;
+}
+
+function stickyTitleKey(config) {
+  if (config.titleKey) return config.titleKey;
+  return `${pageI18nKey(config)}.stickyTitle`;
+}
+
+function stickyNameKey(spec, config) {
+  if (spec.stickyNameKey) return spec.stickyNameKey;
+  return `${pageI18nKey(config)}.sticky.inputs.${spec.key}`;
 }
 
 function refreshStickyCopy(config) {
@@ -548,9 +596,14 @@ function refreshStickyCopy(config) {
     const label = document.querySelector(`label[for="${spec.sliderId}Sticky"]`);
     if (!label) return;
     const full = i18nText(stickyLabelKey(spec), spec.key);
-    label.textContent = stickyShortLabel(spec, full);
+    const letter = stickyShortLabel(spec, full);
+    const name = i18nText(stickyNameKey(spec, config), full);
+    const letterEl = label.querySelector(".sticky-input-letter");
+    const nameEl = label.querySelector(".sticky-input-name");
+    if (letterEl) letterEl.textContent = letter;
+    if (nameEl) nameEl.textContent = name;
     label.setAttribute("title", full);
-    label.setAttribute("aria-label", full);
+    label.setAttribute("aria-label", `${letter}: ${name}`);
   });
 }
 
@@ -600,7 +653,10 @@ function setupStickyInputs(config, { applyInputValue, recalc }) {
     const group = document.createElement("div");
     group.className = "sticky-input-group";
     group.innerHTML = `
-      <label class="sticky-input-label" for="${spec.sliderId}Sticky"></label>
+      <label class="sticky-input-label" for="${spec.sliderId}Sticky">
+        <span class="sticky-input-letter"></span>
+        <span class="sticky-input-name"></span>
+      </label>
       <input type="range" id="${spec.sliderId}Sticky" min="0" max="100" step="0.1" value="${current}" />
       <input type="number" id="${spec.numberId}Sticky" min="0" max="100" step="0.1" value="${current}" />
     `;
@@ -745,6 +801,7 @@ async function createFuzzyPage(config) {
         });
       }
     }
+    persistControllerInputs(config.controller, buildMapFromSpecs(config.inputs));
   };
 
   const recalc = async () => {
@@ -850,6 +907,7 @@ async function createFuzzyPage(config) {
   });
 
   setupStickyInputs(config, { applyInputValue, recalc });
+  restoreControllerInputs(config, applyInputValue);
 
   state.mfData = await loadMembershipFunctions(config.controller);
 

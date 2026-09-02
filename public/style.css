@@ -510,27 +510,54 @@ canvas {
 
 .sticky-input-group {
   display: grid;
-  grid-template-columns: 1.6rem minmax(0, 1fr) 3.6rem;
-  gap: 6px;
+  grid-template-columns: minmax(0, 1fr) 3.6rem;
+  grid-template-areas:
+    "label label"
+    "slider number";
+  gap: 4px 6px;
   align-items: center;
 }
 
 .sticky-input-label {
-  width: 1.6rem;
-  height: 1.6rem;
+  grid-area: label;
   display: inline-flex;
   align-items: center;
-  justify-content: center;
+  gap: 6px;
+  min-width: 0;
+  width: auto;
+  height: auto;
   margin: 0;
-  border-radius: 6px;
-  background: #3498db;
-  color: #fff;
-  font-size: 0.75rem;
-  font-weight: 700;
+  background: transparent;
+  color: #2c3e50;
   cursor: default;
 }
 
+.sticky-input-letter {
+  flex: 0 0 1.4rem;
+  width: 1.4rem;
+  height: 1.4rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  background: #3498db;
+  color: #fff;
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+.sticky-input-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.75rem;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
 .sticky-input-group input[type="range"] {
+  grid-area: slider;
   width: 100%;
   min-width: 0;
   height: 24px;
@@ -540,6 +567,7 @@ canvas {
 }
 
 .sticky-input-group input[type="number"] {
+  grid-area: number;
   width: 3.6rem;
   min-width: 3.6rem;
   padding: 4px 6px;
@@ -612,8 +640,7 @@ canvas {
   }
 
   .sticky-input-group {
-    grid-template-columns: 1.4rem minmax(0, 1fr) 3.1rem;
-    gap: 4px;
+    grid-template-columns: minmax(0, 1fr) 3.1rem;
   }
 }
 
