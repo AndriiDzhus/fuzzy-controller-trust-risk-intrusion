@@ -93,8 +93,8 @@ describe("E2E smoke: navigation and i18n", () => {
       expect(res.text).toContain('data-docs="formulas"');
       expect(res.text).toContain('data-docs="rules"');
       expect(res.text).toContain('src="controller-docs.js"');
-      expect(res.text).toContain("/vendor/katex/katex.min.js");
-      expect(res.text).toContain("/vendor/katex/katex.min.css");
+      expect(res.text).toContain("vendor/katex/katex.min.js");
+      expect(res.text).toContain("vendor/katex/katex.min.css");
     }
   });
 
