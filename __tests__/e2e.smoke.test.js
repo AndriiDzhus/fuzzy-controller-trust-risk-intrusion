@@ -38,6 +38,10 @@ describe("E2E smoke: navigation and i18n", () => {
   test("i18n dictionary has sticky input bar labels", async () => {
     const res = await request(app).get("/i18n.json");
     expect(res.status).toBe(200);
+    expect(res.body.uk.common.noRuleFired).toBeTruthy();
+    expect(res.body.en.common.noRuleFired).toBeTruthy();
+    expect(res.body.uk.common.noRuleFiredHint).toBeTruthy();
+    expect(res.body.en.common.noRuleFiredHint).toBeTruthy();
     expect(res.body.uk.common.sticky.result).toBeTruthy();
     expect(res.body.uk.index.stickyTitle).toBeTruthy();
     expect(res.body.uk.security.stickyTitle).toBeTruthy();

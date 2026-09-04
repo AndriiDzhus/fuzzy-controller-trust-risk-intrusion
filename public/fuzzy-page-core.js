@@ -417,23 +417,25 @@ function drawSingletonGraph(canvasId, singletonValues, ruleOutputs, resultValue,
     }
   });
 
-  const rx = p + (resultValue / 100) * (w - 2 * p);
-  ctx.strokeStyle = "#111";
-  ctx.setLineDash([6, 6]);
-  ctx.lineWidth = 2;
-  ctx.beginPath();
-  ctx.moveTo(rx, p);
-  ctx.lineTo(rx, h - p);
-  ctx.stroke();
-  ctx.setLineDash([]);
+  if (Number.isFinite(Number(resultValue))) {
+    const rx = p + (resultValue / 100) * (w - 2 * p);
+    ctx.strokeStyle = "#111";
+    ctx.setLineDash([6, 6]);
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(rx, p);
+    ctx.lineTo(rx, h - p);
+    ctx.stroke();
+    ctx.setLineDash([]);
 
-  ctx.fillStyle = "#111";
-  ctx.font = "bold 12px Arial";
-  ctx.fillText(
-    formatNumber(resultValue, { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
-    Math.min(w - 70, rx + 8),
-    p + 12
-  );
+    ctx.fillStyle = "#111";
+    ctx.font = "bold 12px Arial";
+    ctx.fillText(
+      formatNumber(resultValue, { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
+      Math.min(w - 70, rx + 8),
+      p + 12
+    );
+  }
 
   ensureLegend(canvasId, terms, highlightTerm);
 }
@@ -536,7 +538,7 @@ function bindCanvasTooltip(canvasId, state, getTooltipModel) {
 
       rows.sort((a, b) => b.value - a.value);
       tooltip.innerHTML = `
-        <strong>${i18nText("common.tooltip.outputAxis")}: ${formatNumber(model.resultValue, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong>
+        <strong>${i18nText("common.tooltip.outputAxis")}: ${Number.isFinite(Number(model.resultValue)) ? formatNumber(model.resultValue, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : "--"}</strong>
         <div>${membershipsLabel}</div>
         <hr />
         ${rows
@@ -607,22 +609,141 @@ function refreshStickyCopy(config) {
   });
 }
 
-function updateStickyResult(data) {
-  const valueEl = document.getElementById("stickyResultValue");
-  const termEl = document.getElementById("stickyResultTerm");
-  if (!valueEl || !termEl) return;
+function hasFiredOutput(data) {
+  return Boolean(data) && data.noRuleFired !== true && Number.isFinite(Number(data.value));
+}
 
-  if (!data) {
+function noRuleFiredLabel() {
+  return i18nText("common.noRuleFired", "No rule fired");
+}
+
+function noRuleFiredHint() {
+  return i18nText(
+    "common.noRuleFiredHint",
+    "The current inputs do not match any rule, so the output cannot be calculated."
+  );
+}
+
+function markUncoveredTip(el, on) {
+  if (!el) return;
+  if (on) {
+    el.dataset.uncoveredTip = "1";
+    el.setAttribute("tabindex", "0");
+    el.setAttribute("aria-describedby", "uncoveredHelpTooltip");
+  } else {
+    delete el.dataset.uncoveredTip;
+    el.removeAttribute("tabindex");
+    el.removeAttribute("aria-describedby");
+  }
+}
+
+function uncoveredHosts(valueEl, termEl) {
+  const parents = [
+    valueEl?.closest(".result-item"),
+    termEl?.closest(".result-item"),
+    valueEl?.closest(".sticky-inputs-result"),
+    termEl?.closest(".sticky-inputs-result"),
+  ].filter(Boolean);
+  if (parents.length) return [...new Set(parents)];
+  return [valueEl, termEl].filter(Boolean);
+}
+
+function getUncoveredTooltip() {
+  let tip = document.getElementById("uncoveredHelpTooltip");
+  if (tip) return tip;
+
+  tip = document.createElement("div");
+  tip.id = "uncoveredHelpTooltip";
+  tip.className = "help-tooltip";
+  tip.setAttribute("role", "tooltip");
+  document.body.appendChild(tip);
+  return tip;
+}
+
+function positionUncoveredTooltip(tip, event, anchor) {
+  const rect = anchor.getBoundingClientRect();
+  const x = event?.clientX ?? rect.left + rect.width / 2;
+  const showBelow = rect.top < 140;
+  tip.classList.toggle("is-below", showBelow);
+  tip.style.left = `${Math.min(window.innerWidth - 20, Math.max(20, x))}px`;
+  tip.style.top = `${showBelow ? rect.bottom : rect.top}px`;
+}
+
+function setupUncoveredTips() {
+  if (document.documentElement.dataset.uncoveredTips === "1") return;
+  document.documentElement.dataset.uncoveredTips = "1";
+
+  const tip = getUncoveredTooltip();
+  let active = null;
+
+  const hide = () => {
+    active = null;
+    tip.classList.remove("visible");
+  };
+
+  const show = (event) => {
+    const anchor = event.target.closest?.("[data-uncovered-tip]");
+    if (!anchor) return;
+    active = anchor;
+    tip.textContent = noRuleFiredHint();
+    positionUncoveredTooltip(tip, event, anchor);
+    tip.classList.add("visible");
+  };
+
+  document.addEventListener("mouseover", (event) => {
+    if (event.target.closest?.("[data-uncovered-tip]")) show(event);
+  });
+  document.addEventListener("mouseout", (event) => {
+    const from = event.target.closest?.("[data-uncovered-tip]");
+    const to = event.relatedTarget?.closest?.("[data-uncovered-tip]");
+    if (from && from !== to) hide();
+  });
+  document.addEventListener("mousemove", (event) => {
+    if (!active) return;
+    positionUncoveredTooltip(tip, event, active);
+  });
+  document.addEventListener("focusin", (event) => {
+    if (event.target.closest?.("[data-uncovered-tip]")) show(event);
+  });
+  document.addEventListener("focusout", (event) => {
+    if (event.target.closest?.("[data-uncovered-tip]")) hide();
+  });
+}
+
+function setOutputText(valueEl, termEl, data) {
+  if (!valueEl || !termEl) return;
+  setupUncoveredTips();
+
+  const hosts = uncoveredHosts(valueEl, termEl);
+  const uncovered = Boolean(data) && !hasFiredOutput(data);
+
+  if (!hasFiredOutput(data)) {
+    valueEl.classList.add("is-uncovered");
+    termEl.classList.add("is-uncovered");
     valueEl.textContent = "--";
-    termEl.textContent = "--";
+    termEl.textContent = data ? noRuleFiredLabel() : "--";
+    hosts.forEach((el) => markUncoveredTip(el, uncovered));
     return;
   }
 
+  valueEl.classList.remove("is-uncovered");
+  termEl.classList.remove("is-uncovered");
   valueEl.textContent = formatNumber(data.value, {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   });
   termEl.textContent = termLabel(data.dominantTerm);
+  hosts.forEach((el) => markUncoveredTip(el, false));
+  const tip = document.getElementById("uncoveredHelpTooltip");
+  if (tip) tip.classList.remove("visible");
+}
+
+function updateStickyResult(data) {
+  setOutputText(
+    document.getElementById("stickyResultValue"),
+    document.getElementById("stickyResultTerm"),
+    data
+  );
 }
 
 function setupStickyInputs(config, { applyInputValue, recalc }) {
@@ -733,8 +854,9 @@ function setupTooltips(config, state) {
 
 function normalizeCalculateResult(result, payload) {
   return {
-    value: parseFloat(result.value.toFixed(2)),
-    dominantTerm: result.dominantTerm,
+    value: result.value == null ? null : parseFloat(result.value.toFixed(2)),
+    dominantTerm: result.dominantTerm ?? null,
+    noRuleFired: Boolean(result.noRuleFired),
     membershipData: result.membershipData,
     ruleOutputs: result.ruleOutputs ?? null,
     aggregatedOutput: result.aggregatedOutput || null,
@@ -811,11 +933,11 @@ async function createFuzzyPage(config) {
 
     state.result = data;
 
-    document.getElementById(config.output.valueId).textContent = formatNumber(data.value, {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    });
-    document.getElementById(config.output.termId).textContent = termLabel(data.dominantTerm);
+    setOutputText(
+      document.getElementById(config.output.valueId),
+      document.getElementById(config.output.termId),
+      data
+    );
     updateStickyResult(data);
 
     Object.entries(config.membership).forEach(([key, containerId]) => {
@@ -844,13 +966,13 @@ async function createFuzzyPage(config) {
     const outputCanvasId = config.graphs.output.canvasId;
     const outputSeries = state.mfData.output?.[outputKey];
     const hasOutputCurves = outputSeries && Object.keys(outputSeries).length > 0;
-    const outputHighlight = state.result.dominantTerm;
+    const outputHighlight = hasFiredOutput(state.result) ? state.result.dominantTerm : null;
 
     if (hasOutputCurves) {
       drawCurveGraph(
         outputCanvasId,
         outputSeries,
-        state.result.value,
+        hasFiredOutput(state.result) ? state.result.value : null,
         {
           ...getGraphOptions(config.graphs.output),
           highlightTerm: outputHighlight,
@@ -861,7 +983,7 @@ async function createFuzzyPage(config) {
         outputCanvasId,
         state.mfData.meta.singletonValues,
         state.result.ruleOutputs,
-        state.result.value,
+        hasFiredOutput(state.result) ? state.result.value : null,
         {
           ...getGraphOptions(config.graphs.output),
           highlightTerm: outputHighlight,
@@ -871,7 +993,7 @@ async function createFuzzyPage(config) {
       drawCurveGraph(
         outputCanvasId,
         state.mfData.output[outputKey],
-        state.result.value,
+        hasFiredOutput(state.result) ? state.result.value : null,
         {
           ...getGraphOptions(config.graphs.output),
           highlightTerm: outputHighlight,
@@ -917,7 +1039,11 @@ async function createFuzzyPage(config) {
   window.addEventListener("languageChanged", () => {
     refreshStickyCopy(config);
     if (!state.result) return;
-    document.getElementById(config.output.termId).textContent = termLabel(state.result.dominantTerm);
+    setOutputText(
+      document.getElementById(config.output.valueId),
+      document.getElementById(config.output.termId),
+      state.result
+    );
     updateStickyResult(state.result);
     Object.entries(config.membership).forEach(([key, containerId]) => {
       renderMembership(containerId, state.result.membershipData[key]);
