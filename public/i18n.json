@@ -13,6 +13,8 @@
         "outputAxis": "Вихід",
         "memberships": "Ступені приналежності"
       },
+      "noRuleFired": "Жодне правило не спрацювало",
+      "noRuleFiredHint": "База правил безпеки має лише 6 комбінацій E, S і T. Поточні входи не активують жодне правило, тому ризик R не можна обчислити — немає активних сінглтонів для дефазифікації.",
       "sticky": {
         "result": "Результат"
       },
@@ -245,6 +247,8 @@
         "outputAxis": "Output",
         "memberships": "Membership values"
       },
+      "noRuleFired": "No rule fired",
+      "noRuleFiredHint": "The security rule base has only 6 combinations of E, S and T. The current inputs do not activate any rule, so risk R cannot be calculated — there are no active singletons to defuzzify.",
       "sticky": {
         "result": "Result"
       },

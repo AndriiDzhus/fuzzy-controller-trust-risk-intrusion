@@ -101,9 +101,11 @@ app.post("/api/controllers/:controller/calculate", (req, res) => {
     }
 
     const result = controller.calculate(inputs);
+    const value = result.value == null ? null : parseFloat(result.value.toFixed(2));
     return res.json({
-      value: parseFloat(result.value.toFixed(2)),
-      dominantTerm: result.dominantTerm,
+      value,
+      dominantTerm: result.dominantTerm ?? null,
+      noRuleFired: Boolean(result.noRuleFired),
       membershipData: result.membershipData,
       ruleOutputs: result.ruleOutputs,
       aggregatedOutput: result.aggregatedOutput || null,
