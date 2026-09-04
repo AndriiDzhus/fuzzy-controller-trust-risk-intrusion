@@ -16,6 +16,40 @@
       "sticky": {
         "result": "Результат"
       },
+      "docs": {
+        "formulasBtn": "Формули приналежності",
+        "rulesBtn": "База правил",
+        "formulasTitle": "Лінгвістичні змінні та функції приналежності",
+        "rulesTitle": "База правил",
+        "inputs": "Вхідні величини",
+        "output": "Вихідна величина",
+        "close": "Закрити",
+        "rule": "№",
+        "if": "ЯКЩО",
+        "and": "І",
+        "then": "ТО",
+        "otherwise": "інакше",
+        "or": "або",
+        "domain": "Область визначення",
+        "ifThenHint": "Кожне правило: якщо всі вхідні терми істинні одночасно, вихід набуває зазначеного терму.",
+        "piecewiseHint": "Кусково-лінійні функції приналежності на шкалі 0–100.",
+        "gaussianHint": "Гаусівські функції: μ(x) = exp(−(x − c)² / (2σ²)), де c — центр, σ — розмах.",
+        "singletonHint": "Вихід задано синглтонами (Sugeno): кожен терм відповідає одному чіткому значенню R.",
+        "ling": {
+          "lowF": "Мала",
+          "mediumF": "Середня",
+          "highF": "Велика",
+          "lowN": "Мале",
+          "mediumN": "Середнє",
+          "highN": "Велике",
+          "lowM": "Малий",
+          "mediumM": "Середній",
+          "highM": "Великий",
+          "veryLow": "Дуже малий",
+          "veryHigh": "Дуже великий",
+          "none": "Немає"
+        }
+      },
       "languages": {
         "uk": "Українська",
         "en": "English"
@@ -43,7 +77,11 @@
     "index": {
       "pageTitle": "Індекс довіри | Платформа нечіткого виводу",
       "title": "Нечіткий контролер для оцінки індексу довіри системи",
-      "stickyTitle": "Оцінка індексу довіри",
+      "stickyTitle": "Оцінка індексу довіри (T)",
+      "docs": {
+        "formulasTitle": "Довіра: функції приналежності",
+        "rulesTitle": "Довіра: база правил"
+      },
       "sticky": {
         "inputs": {
           "errors": "Помилки",
@@ -51,7 +89,7 @@
           "bytes": "Байти"
         }
       },
-      "description": "Система нечіткого виводу для оцінки індексу довіри на основі кількості помилок (E), кількості з'єднань (C) та кількості байтів (B). Результат: індекс довіри (T).",
+      "description": "Система нечіткого виводу для оцінки індексу довіри (T) на основі кількості помилок (E), кількості з'єднань (C) та кількості байтів (B).",
       "inputs": {
         "errors": "Кількість Помилок (E) (0-100):",
         "connections": "Кількість З'єднань (C) (0-100):",
@@ -92,7 +130,11 @@
     "security": {
       "pageTitle": "Ризик безпеки | Платформа нечіткого виводу",
       "title": "Нечіткий контролер ризику безпеки системи зв'язку",
-      "stickyTitle": "Оцінка ризику безпеки",
+      "stickyTitle": "Оцінка ризику безпеки (R)",
+      "docs": {
+        "formulasTitle": "Безпека: функції приналежності",
+        "rulesTitle": "Безпека: база правил"
+      },
       "sticky": {
         "inputs": {
           "energy": "Енергія",
@@ -100,7 +142,7 @@
           "response": "Відгук"
         }
       },
-      "description": "Оцінка ризику безпеки R на основі споживання енергії (E), потужності з'єднання (S) та часу відгуку (T).",
+      "description": "Оцінка ризику безпеки (R) на основі споживання енергії (E), потужності з'єднання (S) та часу відгуку (T).",
       "inputs": {
         "energy": "Споживання енергії (E) (0-100):",
         "strength": "Потужність з'єднання (S) (0-100):",
@@ -139,7 +181,11 @@
     "intrusion": {
       "pageTitle": "Вторгнення | Платформа нечіткого виводу",
       "title": "Нечіткий контролер вірогідності вторгнення",
-      "stickyTitle": "Оцінка вірогідності вторгнення",
+      "stickyTitle": "Оцінка вірогідності вторгнення (I)",
+      "docs": {
+        "formulasTitle": "Вторгнення: функції приналежності",
+        "rulesTitle": "Вторгнення: база правил"
+      },
       "sticky": {
         "inputs": {
           "packets": "Пакети",
@@ -147,7 +193,7 @@
           "delivery": "Доставка"
         }
       },
-      "description": "Оцінка вірогідності вторгнення I на основі числа пакетів (N), швидкості передавання (R) та коефіцієнта доставки (D).",
+      "description": "Оцінка вірогідності вторгнення (I) на основі числа пакетів (N), швидкості передавання (R) та коефіцієнта доставки (D).",
       "inputs": {
         "packets": "Число пакетів (N) (0-100):",
         "rate": "Швидкість передавання (R) (0-100):",
@@ -202,6 +248,40 @@
       "sticky": {
         "result": "Result"
       },
+      "docs": {
+        "formulasBtn": "Membership formulas",
+        "rulesBtn": "Rule base",
+        "formulasTitle": "Linguistic variables and membership functions",
+        "rulesTitle": "Rule base",
+        "inputs": "Input variables",
+        "output": "Output variable",
+        "close": "Close",
+        "rule": "No.",
+        "if": "IF",
+        "and": "AND",
+        "then": "THEN",
+        "otherwise": "otherwise",
+        "or": "or",
+        "domain": "Domain",
+        "ifThenHint": "Each rule: if all input terms hold at once, the output takes the listed term.",
+        "piecewiseHint": "Piecewise-linear membership functions on the 0–100 scale.",
+        "gaussianHint": "Gaussian functions: μ(x) = exp(−(x − c)² / (2σ²)), where c is the center and σ is the spread.",
+        "singletonHint": "The output uses Sugeno singletons: each term maps to one crisp R value.",
+        "ling": {
+          "lowF": "Small",
+          "mediumF": "Medium",
+          "highF": "Large",
+          "lowN": "Small",
+          "mediumN": "Medium",
+          "highN": "Large",
+          "lowM": "Small",
+          "mediumM": "Medium",
+          "highM": "Large",
+          "veryLow": "Very small",
+          "veryHigh": "Very large",
+          "none": "None"
+        }
+      },
       "languages": {
         "uk": "Українська",
         "en": "English"
@@ -229,7 +309,11 @@
     "index": {
       "pageTitle": "Trust Index | Fuzzy Security Platform",
       "title": "Fuzzy Controller for System Trust Index Assessment",
-      "stickyTitle": "Trust index assessment",
+      "stickyTitle": "Trust index assessment (T)",
+      "docs": {
+        "formulasTitle": "Trust: membership functions",
+        "rulesTitle": "Trust: rule base"
+      },
       "sticky": {
         "inputs": {
           "errors": "Errors",
@@ -237,7 +321,7 @@
           "bytes": "Bytes"
         }
       },
-      "description": "A fuzzy inference system for evaluating trust index using error count (E), connection count (C), and bytes count (B). Output: trust index (T).",
+      "description": "A fuzzy inference system for evaluating trust index (T) using error count (E), connection count (C), and bytes count (B).",
       "inputs": {
         "errors": "Error Count (E) (0-100):",
         "connections": "Connection Count (C) (0-100):",
@@ -278,7 +362,11 @@
     "security": {
       "pageTitle": "Security Risk | Fuzzy Security Platform",
       "title": "Fuzzy Controller for Communication Security Risk",
-      "stickyTitle": "Security risk assessment",
+      "stickyTitle": "Security risk assessment (R)",
+      "docs": {
+        "formulasTitle": "Security: membership functions",
+        "rulesTitle": "Security: rule base"
+      },
       "sticky": {
         "inputs": {
           "energy": "Energy",
@@ -286,7 +374,7 @@
           "response": "Response"
         }
       },
-      "description": "Evaluates security risk R based on energy consumption (E), connection strength (S), and response time (T).",
+      "description": "Evaluates security risk (R) based on energy consumption (E), connection strength (S), and response time (T).",
       "inputs": {
         "energy": "Energy Consumption (E) (0-100):",
         "strength": "Connection Strength (S) (0-100):",
@@ -325,7 +413,11 @@
     "intrusion": {
       "pageTitle": "Intrusion | Fuzzy Security Platform",
       "title": "Fuzzy Intrusion Probability Controller",
-      "stickyTitle": "Intrusion probability assessment",
+      "stickyTitle": "Intrusion probability assessment (I)",
+      "docs": {
+        "formulasTitle": "Intrusion: membership functions",
+        "rulesTitle": "Intrusion: rule base"
+      },
       "sticky": {
         "inputs": {
           "packets": "Packets",
@@ -333,7 +425,7 @@
           "delivery": "Delivery"
         }
       },
-      "description": "Evaluates intrusion probability I based on packet count (N), transmission rate (R), and delivery coefficient (D).",
+      "description": "Evaluates intrusion probability (I) based on packet count (N), transmission rate (R), and delivery coefficient (D).",
       "inputs": {
         "packets": "Packet Count (N) (0-100):",
         "rate": "Transmission Rate (R) (0-100):",

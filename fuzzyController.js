@@ -1,9 +1,36 @@
 const fuzzyis = require("fuzzyis");
 const CorrectedTerm = require("fuzzyis/lib/CorrectedTerm");
 const UnionOfTerms = require("fuzzyis/lib/UnionOfTerms");
+const mfTypes = require("fuzzyis/lib/mfTypes");
 
 // Import required components from fuzzyis
 const { LinguisticVariable, Term, Rule, FIS } = fuzzyis;
+
+function trapezoidalMF(x, a, b, c, d) {
+  if (x < a || x > d) return 0;
+  if (x >= b && x <= c) return 1;
+  if (x >= a && x < b) return (x - a) / (b - a || 1);
+  if (x > c && x <= d) return (d - x) / (d - c || 1);
+  return 0;
+}
+
+function triangularMF(x, a, b, c) {
+  if (x < a || x > c) return 0;
+  if (a === b) {
+    if (x >= a && x <= c) return (c - x) / (c - a || 1);
+  } else if (b === c) {
+    if (x >= a && x <= b) return (x - a) / (b - a || 1);
+  } else {
+    if (x >= a && x <= b) return (x - a) / (b - a || 1);
+    if (x > b && x <= c) return (c - x) / (c - b || 1);
+  }
+  return 0;
+}
+
+// fuzzyis divides by (maxLeft - left) and yields NaN on left-shoulder
+// terms like [0, 0, 30, 50] when the input is exactly 0.
+mfTypes.trapeze = trapezoidalMF;
+mfTypes.triangle = triangularMF;
 
 // --- Fuzzy Logic Controller Implementation using FuzzyIS ---
 
@@ -82,31 +109,6 @@ fuzzySystem.rules = [
   new Rule(["High", "High", "Medium"], ["VeryLow"], "and"),    // 26
   new Rule(["High", "High", "High"], ["VeryLow"], "and"),      // 27
 ];
-
-// Membership function helpers for visualization data
-function trapezoidalMF(x, a, b, c, d) {
-  if (x < a || x > d) return 0;
-  if (x >= b && x <= c) return 1;
-  if (x >= a && x < b) return (x - a) / (b - a);
-  if (x > c && x <= d) return (d - x) / (d - c);
-  return 0;
-}
-
-function triangularMF(x, a, b, c) {
-  if (x < a || x > c) return 0;
-  if (a === b) {
-    // Left-angled triangle case (VeryLow)
-    if (x >= a && x <= c) return (c - x) / (c - a);
-  } else if (b === c) {
-    // Right-angled triangle case (VeryHigh)
-    if (x >= a && x <= b) return (x - a) / (b - a);
-  } else {
-    // Standard triangle
-    if (x >= a && x <= b) return (x - a) / (b - a);
-    if (x > b && x <= c) return (c - x) / (c - b);
-  }
-  return 0;
-}
 
 // Membership function parameters for visualization
 const membershipParams = {
