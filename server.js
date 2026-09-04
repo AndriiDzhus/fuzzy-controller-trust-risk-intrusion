@@ -8,6 +8,7 @@ const app = express();
 const PORT = process.env.PORT || 3002;
 
 // Middleware
+app.use("/vendor/katex", express.static(path.join(__dirname, "node_modules/katex/dist")));
 app.use(express.static("public"));
 app.use(express.json());
 

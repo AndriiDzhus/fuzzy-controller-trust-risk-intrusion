@@ -26,6 +26,15 @@ describe("E2E smoke: navigation and i18n", () => {
     }
   });
 
+  test("i18n dictionary has docs popup labels", async () => {
+    const res = await request(app).get("/i18n.json");
+    expect(res.status).toBe(200);
+    expect(res.body.uk.common.docs.formulasBtn).toBeTruthy();
+    expect(res.body.uk.common.docs.rulesBtn).toBeTruthy();
+    expect(res.body.en.common.docs.formulasBtn).toBeTruthy();
+    expect(res.body.en.common.docs.rulesBtn).toBeTruthy();
+  });
+
   test("i18n dictionary has sticky input bar labels", async () => {
     const res = await request(app).get("/i18n.json");
     expect(res.status).toBe(200);
@@ -63,20 +72,38 @@ describe("E2E smoke: navigation and i18n", () => {
     }
   });
 
-  test("all pages include rules interpretation section", async () => {
-    const pages = [
-      { path: "/index.html", prefix: "index" },
-      { path: "/security.html", prefix: "security" },
-      { path: "/intrusion.html", prefix: "intrusion" },
-    ];
+  test("i18n dictionary has rules interpretation copy for all controllers", async () => {
+    const res = await request(app).get("/i18n.json");
+    expect(res.status).toBe(200);
 
-    for (const { path, prefix } of pages) {
-      const res = await request(app).get(path);
-      expect(res.status).toBe(200);
-      expect(res.text).toContain('class="rules-section"');
-      expect(res.text).toContain(`data-i18n="${prefix}.rules.title"`);
-      expect(res.text).toContain(`data-i18n="${prefix}.rules.category1"`);
+    for (const prefix of ["index", "security", "intrusion"]) {
+      expect(res.body.uk[prefix].rules.title).toBeTruthy();
+      expect(res.body.uk[prefix].rules.category1).toBeTruthy();
+      expect(res.body.en[prefix].rules.title).toBeTruthy();
+      expect(res.body.en[prefix].rules.category1).toBeTruthy();
     }
+  });
+
+  test("all pages include formula and rule-base buttons", async () => {
+    const pages = ["/index.html", "/security.html", "/intrusion.html"];
+
+    for (const page of pages) {
+      const res = await request(app).get(page);
+      expect(res.status).toBe(200);
+      expect(res.text).toContain('data-docs="formulas"');
+      expect(res.text).toContain('data-docs="rules"');
+      expect(res.text).toContain('src="controller-docs.js"');
+      expect(res.text).toContain("/vendor/katex/katex.min.js");
+      expect(res.text).toContain("/vendor/katex/katex.min.css");
+    }
+  });
+
+  test("KaTeX assets are served from the katex package", async () => {
+    const js = await request(app).get("/vendor/katex/katex.min.js");
+    const css = await request(app).get("/vendor/katex/katex.min.css");
+    expect(js.status).toBe(200);
+    expect(css.status).toBe(200);
+    expect(js.text).toContain("katex");
   });
 
   test("shared graph core and i18n helper are loaded on all pages", async () => {

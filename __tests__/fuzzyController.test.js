@@ -22,6 +22,17 @@ describe("Trust controller primitives", () => {
 });
 
 describe("Trust controller calculations", () => {
+  test("zero errors keeps high trust instead of collapsing to 0", () => {
+    const atZero = calculateTrustIndex(0, 50, 50);
+    const nearZero = calculateTrustIndex(0.1, 50, 50);
+    const allZero = calculateTrustIndex(0, 0, 0);
+
+    expect(atZero).toBeGreaterThan(70);
+    expect(atZero).toBeCloseTo(nearZero, 0);
+    expect(allZero).toBeGreaterThan(80);
+    expect(getMostActiveTerm(calculateMembershipValues("trustIndex", atZero))).toMatch(/High/);
+  });
+
   test("calculateTrustIndex returns value in range", () => {
     const value = calculateTrustIndex(50, 50, 50);
     expect(value).toBeGreaterThanOrEqual(0);
