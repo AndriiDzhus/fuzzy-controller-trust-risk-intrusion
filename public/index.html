@@ -6,12 +6,21 @@
     <title data-i18n="index.pageTitle"></title>
     <link rel="stylesheet" href="style.css" />
     <link rel="stylesheet" href="navigation.css" />
+    <link rel="stylesheet" href="/vendor/katex/katex.min.css" />
   </head>
   <body>
     <div class="container">
       <div class="app-brand">
         <p class="app-brand-name" data-i18n="app.name"></p>
-        <p class="app-brand-tagline" data-i18n="app.tagline"></p>
+        <div class="app-brand-row">
+          <p class="app-brand-tagline" data-i18n="app.tagline"></p>
+          <div class="lang-wrap">
+            <select id="languageSwitcher" class="lang-select">
+              <option value="uk" data-i18n="common.languages.uk"></option>
+              <option value="en" data-i18n="common.languages.en"></option>
+            </select>
+          </div>
+        </div>
       </div>
       <div class="top-bar">
         <nav class="navigation">
@@ -21,16 +30,14 @@
             <li><a class="nav-link" href="intrusion.html" data-i18n="navigation.intrusion"></a></li>
           </ul>
         </nav>
-        <div class="lang-wrap">
-          <select id="languageSwitcher" class="lang-select">
-            <option value="uk" data-i18n="common.languages.uk"></option>
-            <option value="en" data-i18n="common.languages.en"></option>
-          </select>
-        </div>
       </div>
 
       <h1 data-i18n="index.title"></h1>
       <p class="description" data-i18n="index.description"></p>
+      <div class="docs-actions">
+        <button type="button" class="docs-btn" data-docs="formulas" data-i18n="common.docs.formulasBtn"></button>
+        <button type="button" class="docs-btn docs-btn-alt" data-docs="rules" data-i18n="common.docs.rulesBtn"></button>
+      </div>
 
       <div class="input-section">
         <div class="input-group">
@@ -134,18 +141,11 @@
         </div>
       </div>
 
-      <div class="rules-section">
-        <h3 data-i18n="index.rules.title"></h3>
-        <p data-i18n="index.rules.description"></p>
-        <div class="rules-summary">
-          <div class="rule-category" data-i18n="index.rules.category1"></div>
-          <div class="rule-category" data-i18n="index.rules.category2"></div>
-          <div class="rule-category" data-i18n="index.rules.category3"></div>
-        </div>
-      </div>
     </div>
 
     <script src="i18n-helper.js"></script>
+    <script src="/vendor/katex/katex.min.js"></script>
+    <script src="controller-docs.js"></script>
     <script src="fuzzy-page-core.js"></script>
     <script src="script.js"></script>
   </body>
