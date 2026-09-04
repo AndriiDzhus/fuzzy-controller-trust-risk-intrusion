@@ -20,12 +20,24 @@ describe("Unified controllers API", () => {
   test("security calculate endpoint works", async () => {
     const response = await request(app)
       .post("/api/controllers/security/calculate")
-      .send({ energy: 70, strength: 30, response: 80 });
+      .send({ energy: 0, strength: 100, response: 0 });
 
     expect(response.status).toBe(200);
-    expect(response.body.value).toBeGreaterThanOrEqual(0);
-    expect(response.body.value).toBeLessThanOrEqual(100);
+    expect(response.body.value).toBe(0);
+    expect(response.body.dominantTerm).toBe("none");
+    expect(response.body.noRuleFired).toBe(false);
     expect(response.body.membershipData).toHaveProperty("risk");
+  });
+
+  test("security calculate endpoint reports uncovered inputs", async () => {
+    const response = await request(app)
+      .post("/api/controllers/security/calculate")
+      .send({ energy: 50, strength: 50, response: 50 });
+
+    expect(response.status).toBe(200);
+    expect(response.body.value).toBeNull();
+    expect(response.body.dominantTerm).toBeNull();
+    expect(response.body.noRuleFired).toBe(true);
   });
 
   test("intrusion calculate endpoint works", async () => {

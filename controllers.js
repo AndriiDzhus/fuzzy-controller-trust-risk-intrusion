@@ -259,12 +259,7 @@ function calculateSecurity(inputs) {
     denominator += mu;
   });
 
-  // The assignment defines only 6 sparse rules; uncovered combinations should map
-  // to a neutral midpoint instead of collapsing risk to zero.
-  const value = denominator === 0 ? 50 : numerator / denominator;
-  const dominantTerm = denominator === 0
-    ? nearestSingletonTerm(securityDef.singletons, value)
-    : maxTerm(ruleOutputs);
+  const noRuleFired = denominator === 0;
 
   const membershipData = {
     energy: fuzzy.energy,
@@ -274,8 +269,9 @@ function calculateSecurity(inputs) {
   };
 
   return {
-    value,
-    dominantTerm,
+    value: noRuleFired ? null : numerator / denominator,
+    dominantTerm: noRuleFired ? null : maxTerm(ruleOutputs),
+    noRuleFired,
     membershipData,
     ruleOutputs,
   };

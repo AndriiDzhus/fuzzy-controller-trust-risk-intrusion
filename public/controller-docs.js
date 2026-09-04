@@ -438,6 +438,17 @@ function renderVariable(variable) {
   `;
 }
 
+function renderDocsSwitch(kind, hintHtml) {
+  const nextKind = kind === "rules" ? "formulas" : "rules";
+  const label = docsText(nextKind === "rules" ? "common.docs.rulesBtn" : "common.docs.formulasBtn");
+  return `
+    <div class="docs-modal-switch-row">
+      ${hintHtml || ""}
+      <button type="button" class="docs-btn docs-modal-switch" data-docs-switch="${nextKind}">${docsEscape(label)}</button>
+    </div>
+  `;
+}
+
 function renderFormulas(spec) {
   const hint = spec.hintKey ? `<p class="docs-hint">${docsEscape(docsText(spec.hintKey))}</p>` : "";
   const outputHint = spec.outputHintKey
@@ -445,7 +456,7 @@ function renderFormulas(spec) {
     : "";
 
   return `
-    ${hint}
+    ${renderDocsSwitch("formulas", hint)}
     <h2 class="docs-section-title">${docsEscape(docsText("common.docs.inputs"))}</h2>
     ${spec.inputs.map(renderVariable).join("")}
     <h2 class="docs-section-title">${docsEscape(docsText("common.docs.output"))}</h2>
@@ -505,7 +516,7 @@ function renderRules(spec, pageKey) {
   const outCol = columns.find((col) => col.output);
 
   return `
-    <p class="docs-hint">${docsEscape(docsText("common.docs.ifThenHint"))}</p>
+    ${renderDocsSwitch("rules", `<p class="docs-hint">${docsEscape(docsText("common.docs.ifThenHint"))}</p>`)}
     <p class="docs-rule-read">
       ${docsEscape(docsText("common.docs.if"))}
       ${docsEscape(ifParts)}
@@ -543,7 +554,15 @@ function ensureDocsModal() {
   document.body.appendChild(modal);
 
   modal.addEventListener("click", (event) => {
-    if (event.target.closest("[data-docs-close]")) closeDocsModal();
+    if (event.target.closest("[data-docs-close]")) {
+      closeDocsModal();
+      return;
+    }
+
+    const switchBtn = event.target.closest("[data-docs-switch]");
+    if (switchBtn) {
+      openDocsModal(modal.dataset.controller, switchBtn.getAttribute("data-docs-switch"));
+    }
   });
 
   document.addEventListener("keydown", (event) => {
@@ -562,6 +581,7 @@ function openDocsModal(controller, kind) {
   const body = document.getElementById("docsModalBody");
   const closeBtn = modal.querySelector(".docs-modal-close");
 
+  modal.dataset.controller = controller;
   modal.dataset.kind = kind;
   const pageKey = { trust: "index", security: "security", intrusion: "intrusion" }[controller] || "index";
   const titleKind = kind === "rules" ? "rulesTitle" : "formulasTitle";
@@ -570,6 +590,8 @@ function openDocsModal(controller, kind) {
   body.innerHTML = kind === "rules" ? renderRules(spec, pageKey) : renderFormulas(spec);
   modal.hidden = false;
   document.body.classList.add("docs-modal-open");
+  const dialog = modal.querySelector(".docs-modal-dialog");
+  if (dialog) dialog.scrollTop = 0;
   closeBtn.focus();
 }
 
