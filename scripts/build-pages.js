@@ -37,6 +37,7 @@ function injectBundleScript(htmlPath) {
 
 fs.rmSync(distDir, { recursive: true, force: true });
 copyDir(publicDir, distDir);
+copyDir(path.join(rootDir, "node_modules/katex/dist"), path.join(distDir, "vendor/katex"));
 
 execSync(
   "npx --yes esbuild@0.25.12 scripts/controllers-browser-entry.js --bundle --platform=browser --format=iife --outfile=dist/controllers-bundle.js",

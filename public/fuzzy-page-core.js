@@ -908,6 +908,7 @@ async function createFuzzyPage(config) {
 
   setupStickyInputs(config, { applyInputValue, recalc });
   restoreControllerInputs(config, applyInputValue);
+  if (window.setupDocsModals) window.setupDocsModals(config.controller);
 
   state.mfData = await loadMembershipFunctions(config.controller);
 
