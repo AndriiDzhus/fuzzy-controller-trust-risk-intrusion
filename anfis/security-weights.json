@@ -1,0 +1,352 @@
+{
+  "version": 1,
+  "seed": 42,
+  "samples": 800,
+  "mfs": {
+    "E": {
+      "low": [
+        0,
+        12
+      ],
+      "medium": [
+        40,
+        16
+      ],
+      "high": [
+        100,
+        20
+      ]
+    },
+    "S": {
+      "low": [
+        0,
+        20
+      ],
+      "medium": [
+        60,
+        16
+      ],
+      "high": [
+        100,
+        14
+      ]
+    },
+    "T": {
+      "low": [
+        0,
+        10
+      ],
+      "medium": [
+        50,
+        20
+      ],
+      "high": [
+        100,
+        10
+      ]
+    }
+  },
+  "consequents": [
+    39.54579380431618,
+    60.06210207202627,
+    59.38753216740048,
+    19.227746007965116,
+    40.0055616540558,
+    39.26278539959054,
+    0,
+    18.841883759004823,
+    41.01932676627245,
+    39.5112280904948,
+    59.93316980722836,
+    80.21636435177818,
+    39.7516331054136,
+    60.07811318376016,
+    60.03063324863528,
+    19.172786509182217,
+    39.9811125810851,
+    39.33704324233852,
+    80.07433412115472,
+    79.97000152702914,
+    100,
+    59.744262913698336,
+    80.07613123287712,
+    80.06771482733733,
+    38.92978043684539,
+    59.830801208491884,
+    59.48687406617635
+  ],
+  "teacherTable": {
+    "low/low/low": 40,
+    "low/low/medium": 60,
+    "low/low/high": 60,
+    "low/medium/low": 20,
+    "low/medium/medium": 40,
+    "low/medium/high": 40,
+    "low/high/low": 0,
+    "low/high/medium": 20,
+    "low/high/high": 40,
+    "medium/low/low": 40,
+    "medium/low/medium": 60,
+    "medium/low/high": 80,
+    "medium/medium/low": 40,
+    "medium/medium/medium": 60,
+    "medium/medium/high": 60,
+    "medium/high/low": 20,
+    "medium/high/medium": 40,
+    "medium/high/high": 40,
+    "high/low/low": 80,
+    "high/low/medium": 80,
+    "high/low/high": 100,
+    "high/medium/low": 60,
+    "high/medium/medium": 80,
+    "high/medium/high": 80,
+    "high/high/low": 40,
+    "high/high/medium": 60,
+    "high/high/high": 60
+  },
+  "rules": [
+    {
+      "E": "low",
+      "S": "low",
+      "T": "low",
+      "key": "low/low/low",
+      "r": 39.54579380431618,
+      "teacher": 40,
+      "anchor": false
+    },
+    {
+      "E": "low",
+      "S": "low",
+      "T": "medium",
+      "key": "low/low/medium",
+      "r": 60.06210207202627,
+      "teacher": 60,
+      "anchor": false
+    },
+    {
+      "E": "low",
+      "S": "low",
+      "T": "high",
+      "key": "low/low/high",
+      "r": 59.38753216740048,
+      "teacher": 60,
+      "anchor": false
+    },
+    {
+      "E": "low",
+      "S": "medium",
+      "T": "low",
+      "key": "low/medium/low",
+      "r": 19.227746007965116,
+      "teacher": 20,
+      "anchor": false
+    },
+    {
+      "E": "low",
+      "S": "medium",
+      "T": "medium",
+      "key": "low/medium/medium",
+      "r": 40.0055616540558,
+      "teacher": 40,
+      "anchor": false
+    },
+    {
+      "E": "low",
+      "S": "medium",
+      "T": "high",
+      "key": "low/medium/high",
+      "r": 39.26278539959054,
+      "teacher": 40,
+      "anchor": false
+    },
+    {
+      "E": "low",
+      "S": "high",
+      "T": "low",
+      "key": "low/high/low",
+      "r": 0,
+      "teacher": 0,
+      "anchor": true
+    },
+    {
+      "E": "low",
+      "S": "high",
+      "T": "medium",
+      "key": "low/high/medium",
+      "r": 18.841883759004823,
+      "teacher": 20,
+      "anchor": true
+    },
+    {
+      "E": "low",
+      "S": "high",
+      "T": "high",
+      "key": "low/high/high",
+      "r": 41.01932676627245,
+      "teacher": 40,
+      "anchor": false
+    },
+    {
+      "E": "medium",
+      "S": "low",
+      "T": "low",
+      "key": "medium/low/low",
+      "r": 39.5112280904948,
+      "teacher": 40,
+      "anchor": false
+    },
+    {
+      "E": "medium",
+      "S": "low",
+      "T": "medium",
+      "key": "medium/low/medium",
+      "r": 59.93316980722836,
+      "teacher": 60,
+      "anchor": true
+    },
+    {
+      "E": "medium",
+      "S": "low",
+      "T": "high",
+      "key": "medium/low/high",
+      "r": 80.21636435177818,
+      "teacher": 80,
+      "anchor": false
+    },
+    {
+      "E": "medium",
+      "S": "medium",
+      "T": "low",
+      "key": "medium/medium/low",
+      "r": 39.7516331054136,
+      "teacher": 40,
+      "anchor": true
+    },
+    {
+      "E": "medium",
+      "S": "medium",
+      "T": "medium",
+      "key": "medium/medium/medium",
+      "r": 60.07811318376016,
+      "teacher": 60,
+      "anchor": false
+    },
+    {
+      "E": "medium",
+      "S": "medium",
+      "T": "high",
+      "key": "medium/medium/high",
+      "r": 60.03063324863528,
+      "teacher": 60,
+      "anchor": false
+    },
+    {
+      "E": "medium",
+      "S": "high",
+      "T": "low",
+      "key": "medium/high/low",
+      "r": 19.172786509182217,
+      "teacher": 20,
+      "anchor": false
+    },
+    {
+      "E": "medium",
+      "S": "high",
+      "T": "medium",
+      "key": "medium/high/medium",
+      "r": 39.9811125810851,
+      "teacher": 40,
+      "anchor": false
+    },
+    {
+      "E": "medium",
+      "S": "high",
+      "T": "high",
+      "key": "medium/high/high",
+      "r": 39.33704324233852,
+      "teacher": 40,
+      "anchor": false
+    },
+    {
+      "E": "high",
+      "S": "low",
+      "T": "low",
+      "key": "high/low/low",
+      "r": 80.07433412115472,
+      "teacher": 80,
+      "anchor": false
+    },
+    {
+      "E": "high",
+      "S": "low",
+      "T": "medium",
+      "key": "high/low/medium",
+      "r": 79.97000152702914,
+      "teacher": 80,
+      "anchor": false
+    },
+    {
+      "E": "high",
+      "S": "low",
+      "T": "high",
+      "key": "high/low/high",
+      "r": 100,
+      "teacher": 100,
+      "anchor": true
+    },
+    {
+      "E": "high",
+      "S": "medium",
+      "T": "low",
+      "key": "high/medium/low",
+      "r": 59.744262913698336,
+      "teacher": 60,
+      "anchor": false
+    },
+    {
+      "E": "high",
+      "S": "medium",
+      "T": "medium",
+      "key": "high/medium/medium",
+      "r": 80.07613123287712,
+      "teacher": 80,
+      "anchor": false
+    },
+    {
+      "E": "high",
+      "S": "medium",
+      "T": "high",
+      "key": "high/medium/high",
+      "r": 80.06771482733733,
+      "teacher": 80,
+      "anchor": true
+    },
+    {
+      "E": "high",
+      "S": "high",
+      "T": "low",
+      "key": "high/high/low",
+      "r": 38.92978043684539,
+      "teacher": 40,
+      "anchor": false
+    },
+    {
+      "E": "high",
+      "S": "high",
+      "T": "medium",
+      "key": "high/high/medium",
+      "r": 59.830801208491884,
+      "teacher": 60,
+      "anchor": false
+    },
+    {
+      "E": "high",
+      "S": "high",
+      "T": "high",
+      "key": "high/high/high",
+      "r": 59.48687406617635,
+      "teacher": 60,
+      "anchor": false
+    }
+  ]
+}

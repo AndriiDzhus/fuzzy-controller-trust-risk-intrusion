@@ -1,6 +1,14 @@
 document.addEventListener("DOMContentLoaded", async () => {
   await createFuzzyPage({
     controller: "security",
+    mode: {
+      default: "anfis",
+      hintId: "securityModeHint",
+      hintKeys: {
+        assignment: "security.mode.assignmentHint",
+        anfis: "security.mode.anfisHint",
+      },
+    },
     inputs: [
       { key: "energy", sliderId: "energySlider", numberId: "energyNumber", valueId: "energyValue" },
       { key: "strength", sliderId: "strengthSlider", numberId: "strengthNumber", valueId: "strengthValue" },
