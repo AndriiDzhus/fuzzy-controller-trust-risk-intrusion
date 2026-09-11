@@ -38,6 +38,10 @@ function restoreControllerInputs(config, applyInputValue) {
     if (value === null) return;
     applyInputValue(spec, value);
   });
+
+  if (config.mode && (stored.mode === "assignment" || stored.mode === "anfis")) {
+    setControllerMode(config, stored.mode, { persist: false });
+  }
 }
 
 function buildMapFromSpecs(specs) {
@@ -46,6 +50,44 @@ function buildMapFromSpecs(specs) {
     data[spec.key] = Number(document.getElementById(spec.numberId).value);
   });
   return data;
+}
+
+function getControllerMode(config) {
+  if (!config.mode) return undefined;
+  const select = document.getElementById("controllerModeSelect");
+  const value = select?.value || config.mode.default;
+  return value === "assignment" || value === "anfis" ? value : config.mode.default || "anfis";
+}
+
+function setControllerMode(config, mode, { persist = true } = {}) {
+  if (!config.mode) return;
+  const next = mode === "assignment" || mode === "anfis" ? mode : config.mode.default || "anfis";
+  const select = document.getElementById("controllerModeSelect");
+  if (select) select.value = next;
+  const hint = config.mode.hintId ? document.getElementById(config.mode.hintId) : null;
+  if (hint) {
+    const key = config.mode.hintKeys?.[next];
+    hint.textContent = key ? i18nText(key, "") : "";
+  }
+  if (persist) {
+    persistControllerInputs(config.controller, {
+      ...buildMapFromSpecs(config.inputs),
+      mode: next,
+    });
+  }
+  window.dispatchEvent(new CustomEvent("controllerModeChanged", { detail: { mode: next } }));
+}
+
+function setupControllerMode(config, { recalc, reloadMembership }) {
+  if (!config.mode) return;
+  setControllerMode(config, getControllerMode(config), { persist: false });
+  const select = document.getElementById("controllerModeSelect");
+  if (!select) return;
+  select.addEventListener("change", async () => {
+    setControllerMode(config, select.value);
+    if (reloadMembership) await reloadMembership();
+    await recalc();
+  });
 }
 
 function drawAxes(ctx, width, height, pad, axisLabels = null) {
@@ -857,6 +899,7 @@ function normalizeCalculateResult(result, payload) {
     value: result.value == null ? null : parseFloat(result.value.toFixed(2)),
     dominantTerm: result.dominantTerm ?? null,
     noRuleFired: Boolean(result.noRuleFired),
+    mode: result.mode || payload.mode || "assignment",
     membershipData: result.membershipData,
     ruleOutputs: result.ruleOutputs ?? null,
     aggregatedOutput: result.aggregatedOutput || null,
@@ -881,13 +924,14 @@ async function calculateController(controller, payload) {
   return response.json();
 }
 
-async function loadMembershipFunctions(controller) {
+async function loadMembershipFunctions(controller, mode) {
   const local = window.fuzzyControllers?.[controller];
   if (local) {
-    return local.membershipFunctions();
+    return local.membershipFunctions(mode);
   }
 
-  const response = await fetch(`/api/controllers/${controller}/membership-functions`);
+  const query = mode === "anfis" ? "?mode=anfis" : "";
+  const response = await fetch(`/api/controllers/${controller}/membership-functions${query}`);
   if (!response.ok) return null;
   return response.json();
 }
@@ -923,11 +967,21 @@ async function createFuzzyPage(config) {
         });
       }
     }
-    persistControllerInputs(config.controller, buildMapFromSpecs(config.inputs));
+    persistControllerInputs(config.controller, {
+      ...buildMapFromSpecs(config.inputs),
+      ...(config.mode ? { mode: getControllerMode(config) } : {}),
+    });
+  };
+
+  const reloadMembership = async () => {
+    state.mfData = await loadMembershipFunctions(config.controller, getControllerMode(config));
   };
 
   const recalc = async () => {
-    const payload = buildMapFromSpecs(config.inputs);
+    const payload = {
+      ...buildMapFromSpecs(config.inputs),
+      ...(config.mode ? { mode: getControllerMode(config) } : {}),
+    };
     const data = await calculateController(config.controller, payload);
     if (!data) return;
 
@@ -1030,14 +1084,18 @@ async function createFuzzyPage(config) {
 
   setupStickyInputs(config, { applyInputValue, recalc });
   restoreControllerInputs(config, applyInputValue);
-  if (window.setupDocsModals) window.setupDocsModals(config.controller);
+  setupControllerMode(config, { recalc, reloadMembership });
+  if (window.setupDocsModals) {
+    window.setupDocsModals(config.controller, () => getControllerMode(config));
+  }
 
-  state.mfData = await loadMembershipFunctions(config.controller);
+  await reloadMembership();
 
   setupTooltips(config, state);
 
   window.addEventListener("languageChanged", () => {
     refreshStickyCopy(config);
+    if (config.mode) setControllerMode(config, getControllerMode(config), { persist: false });
     if (!state.result) return;
     setOutputText(
       document.getElementById(config.output.valueId),
