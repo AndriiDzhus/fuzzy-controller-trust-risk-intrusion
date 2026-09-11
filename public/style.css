@@ -764,6 +764,11 @@ canvas {
   margin: -4px 0 clamp(16px, 3vw, 28px);
 }
 
+.controller-mode + .controller-meta {
+  margin-top: 0;
+  margin-bottom: 8px;
+}
+
 .controller-meta-chip {
   display: inline-flex;
   align-items: baseline;

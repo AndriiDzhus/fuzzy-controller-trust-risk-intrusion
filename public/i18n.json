@@ -23,7 +23,8 @@
         "defuzzification": "Дефазифікація",
         "mamdani": "Mamdani",
         "centroid": "Центроїд",
-        "bisector": "бісектриса площі (BOA)"
+        "centerOfGravity": "центр тяжіння",
+        "weightedAverage": "зважене середнє синглтонів"
       },
       "docs": {
         "formulasBtn": "Формули приналежності",
@@ -281,7 +282,8 @@
         "defuzzification": "Defuzzification",
         "mamdani": "Mamdani",
         "centroid": "Centroid",
-        "bisector": "area bisector (BOA)"
+        "centerOfGravity": "center of gravity",
+        "weightedAverage": "weighted average of singletons"
       },
       "docs": {
         "formulasBtn": "Membership formulas",
