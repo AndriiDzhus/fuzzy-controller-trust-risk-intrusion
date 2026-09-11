@@ -45,6 +45,14 @@ describe("E2E smoke: navigation and i18n", () => {
     expect(res.body.uk.common.sticky.result).toBeTruthy();
     expect(res.body.uk.index.stickyTitle).toBeTruthy();
     expect(res.body.uk.security.stickyTitle).toBeTruthy();
+    expect(res.body.uk.security.mode.anfis).toBeTruthy();
+    expect(res.body.en.security.mode.anfis).toBeTruthy();
+    expect(res.body.uk.security.mode.anfisHint).toMatch(/ANFIS \(Adaptive Neuro-Fuzzy Inference System/);
+    expect(res.body.en.security.mode.anfisHint).toMatch(/ANFIS \(Adaptive Neuro-Fuzzy Inference System\)/);
+    expect(res.body.uk.common.meta.mamdani).toBeTruthy();
+    expect(res.body.en.common.meta.centroid).toBeTruthy();
+    expect(res.body.uk.common.docs.origin.trained).toBeTruthy();
+    expect(res.body.en.common.docs.origin.trained).toBeTruthy();
     expect(res.body.uk.intrusion.stickyTitle).toBeTruthy();
     expect(res.body.en.common.sticky.result).toBeTruthy();
     expect(res.body.en.index.stickyTitle).toBeTruthy();
@@ -86,6 +94,26 @@ describe("E2E smoke: navigation and i18n", () => {
       expect(res.body.en[prefix].rules.title).toBeTruthy();
       expect(res.body.en[prefix].rules.category1).toBeTruthy();
     }
+  });
+
+  test("trust and intrusion pages show model and defuzzification marks", async () => {
+    const trust = await request(app).get("/index.html");
+    expect(trust.status).toBe(200);
+    expect(trust.text).toContain('data-i18n="common.meta.mamdani"');
+    expect(trust.text).toContain('data-i18n="common.meta.bisector"');
+
+    const intrusion = await request(app).get("/intrusion.html");
+    expect(intrusion.status).toBe(200);
+    expect(intrusion.text).toContain('data-i18n="common.meta.mamdani"');
+    expect(intrusion.text).toContain('data-i18n="common.meta.centroid"');
+  });
+
+  test("security page includes assignment/ANFIS mode selector", async () => {
+    const res = await request(app).get("/security.html");
+    expect(res.status).toBe(200);
+    expect(res.text).toContain('id="controllerModeSelect"');
+    expect(res.text).toContain('value="anfis"');
+    expect(res.text).toContain('value="assignment"');
   });
 
   test("all pages include formula and rule-base buttons", async () => {

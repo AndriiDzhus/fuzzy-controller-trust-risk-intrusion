@@ -38,6 +38,14 @@
         <button type="button" class="docs-btn" data-docs="formulas" data-i18n="common.docs.formulasBtn"></button>
         <button type="button" class="docs-btn docs-btn-alt" data-docs="rules" data-i18n="common.docs.rulesBtn"></button>
       </div>
+      <div class="controller-mode">
+        <label for="controllerModeSelect" class="controller-mode-label" data-i18n="security.mode.label"></label>
+        <select id="controllerModeSelect" class="controller-mode-select" aria-describedby="securityModeHint">
+          <option value="anfis" selected data-i18n="security.mode.anfis"></option>
+          <option value="assignment" data-i18n="security.mode.assignment"></option>
+        </select>
+      </div>
+      <p class="controller-mode-hint" id="securityModeHint"></p>
 
       <div class="input-section">
         <div class="input-group">

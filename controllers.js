@@ -1,4 +1,9 @@
 const trustController = require("./fuzzyController");
+const {
+  calculateAnfis,
+  anfisMembershipSeries,
+  loadWeights,
+} = require("./anfis/securityAnfis");
 
 function trapezoidalMF(x, a, b, c, d) {
   if (x < a || x > d) return 0;
@@ -165,7 +170,11 @@ const intrusionDef = {
 };
 
 function validateRange(values) {
-  return Object.values(values).every((v) => Number.isFinite(v) && v >= 0 && v <= 100);
+  return Object.entries(values).every(([key, value]) => {
+    if (key === "mode") return value === undefined || value === "assignment" || value === "anfis";
+    const numeric = Number(value);
+    return Number.isFinite(numeric) && numeric >= 0 && numeric <= 100;
+  });
 }
 
 function calculateTrust(inputs) {
@@ -215,7 +224,19 @@ function trustMembershipFunctions() {
   };
 }
 
+function calculateSecurityAnfis(inputs) {
+  return calculateAnfis({
+    energy: Number(inputs.energy),
+    strength: Number(inputs.strength),
+    response: Number(inputs.response),
+  });
+}
+
 function calculateSecurity(inputs) {
+  if (inputs.mode === "anfis") {
+    return calculateSecurityAnfis(inputs);
+  }
+
   const fuzzy = {
     energy: {
       low: securityDef.mfs.E.low(inputs.energy),
@@ -272,12 +293,19 @@ function calculateSecurity(inputs) {
     value: noRuleFired ? null : numerator / denominator,
     dominantTerm: noRuleFired ? null : maxTerm(ruleOutputs),
     noRuleFired,
+    mode: "assignment",
     membershipData,
     ruleOutputs,
   };
 }
 
-function securityMembershipFunctions() {
+function securityMembershipFunctions(mode) {
+  if (mode === "anfis") {
+    const series = anfisMembershipSeries(loadWeights().mfs);
+    series.output.risk = sampleSingletonPeaks(securityDef.singletons);
+    return series;
+  }
+
   return {
     inputs: {
       energy: {
@@ -418,7 +446,7 @@ const controllers = {
   security: {
     validate: (inputs) => validateRange(inputs),
     calculate: calculateSecurity,
-    membershipFunctions: securityMembershipFunctions,
+    membershipFunctions: (mode) => securityMembershipFunctions(mode),
   },
   intrusion: {
     validate: (inputs) => validateRange(inputs),
@@ -433,5 +461,6 @@ module.exports = {
   triangularMF,
   gaussianMF,
   calculateSecurity,
+  calculateSecurityAnfis,
   calculateIntrusion,
 };
