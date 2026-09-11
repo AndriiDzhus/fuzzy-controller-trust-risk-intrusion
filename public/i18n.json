@@ -19,12 +19,12 @@
         "result": "Результат"
       },
       "meta": {
-        "model": "Модель",
-        "defuzzification": "Дефазифікація",
+        "model": "Модель:",
+        "defuzzification": "Дефазифікація:",
         "mamdani": "Mamdani",
         "centroid": "Центроїд",
         "centerOfGravity": "центр тяжіння",
-        "weightedAverage": "зважене середнє синглтонів"
+        "weightedAverage": "згортка зважених наслідків"
       },
       "docs": {
         "formulasBtn": "Формули приналежності",
@@ -278,12 +278,12 @@
         "result": "Result"
       },
       "meta": {
-        "model": "Model",
-        "defuzzification": "Defuzzification",
+        "model": "Model:",
+        "defuzzification": "Defuzzification:",
         "mamdani": "Mamdani",
         "centroid": "Centroid",
         "centerOfGravity": "center of gravity",
-        "weightedAverage": "weighted average of singletons"
+        "weightedAverage": "fold of weighted consequents"
       },
       "docs": {
         "formulasBtn": "Membership formulas",
