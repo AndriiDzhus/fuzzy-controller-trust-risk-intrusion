@@ -1,5 +1,6 @@
 const {
   calculateTrustIndex,
+  centerOfGravity,
   getAggregatedOutput,
   calculateMembershipValues,
   getMostActiveTerm,
@@ -55,11 +56,30 @@ describe("Trust controller calculations", () => {
   test("aggregated output comes from fuzzyis UnionOfTerms after inference", () => {
     const value = calculateTrustIndex(50, 50, 50);
     const series = getAggregatedOutput();
-    const atValue = series.find((p) => Math.abs(p.x - value) < 0.6);
+    let numerator = 0;
+    let denominator = 0;
+    series.forEach((point) => {
+      numerator += point.x * point.y;
+      denominator += point.y;
+    });
 
     expect(series.length).toBe(101);
     expect(series[0]).toEqual({ x: 0, y: 0 });
-    expect(atValue.y).toBeGreaterThan(0.9);
+    expect(denominator).toBeGreaterThan(0);
     expect(Math.max(...series.map((p) => p.y))).toBeCloseTo(1, 5);
+    expect(value).toBeCloseTo(numerator / denominator, 0);
+  });
+
+  test("center of gravity is the first moment of the aggregated set", () => {
+    calculateTrustIndex(80, 20, 90);
+    const series = getAggregatedOutput();
+    const union = {
+      valueAt: (x) => {
+        const point = series.find((item) => Math.abs(item.x - x) < 1e-9);
+        return point ? point.y : 0;
+      },
+    };
+    const fromSeries = centerOfGravity(union, [0, 100], 1);
+    expect(calculateTrustIndex(80, 20, 90)).toBeCloseTo(fromSeries, 0);
   });
 });

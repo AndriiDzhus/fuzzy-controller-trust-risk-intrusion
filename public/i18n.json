@@ -18,6 +18,14 @@
       "sticky": {
         "result": "Результат"
       },
+      "meta": {
+        "model": "Модель:",
+        "defuzzification": "Дефазифікація:",
+        "mamdani": "Mamdani",
+        "centroid": "Центроїд",
+        "centerOfGravity": "центр тяжіння",
+        "weightedAverage": "згортка зважених наслідків"
+      },
       "docs": {
         "formulasBtn": "Формули приналежності",
         "rulesBtn": "База правил",
@@ -36,7 +44,16 @@
         "ifThenHint": "Кожне правило: якщо всі вхідні терми істинні одночасно, вихід набуває зазначеного терму.",
         "piecewiseHint": "Кусково-лінійні функції приналежності на шкалі 0–100.",
         "gaussianHint": "Гаусівські функції: μ(x) = exp(−(x − c)² / (2σ²)), де c — центр, σ — розмах.",
+        "anfisGaussianHint": "Кусково-лінійні функції нечіткого контролера та гаусівські апроксимації ANFIS. Під час навчання змінювались лише наслідки правил.",
         "singletonHint": "Вихід задано синглтонами (Sugeno): кожен терм відповідає одному чіткому значенню R.",
+        "origin": {
+          "column": "Джерело",
+          "base": "Базове",
+          "trained": "Добудоване",
+          "anfis": "ANFIS",
+          "legend": "★ Базове — правило нечіткого контролера. + Добудоване — клітинка сітки 3×3×3, додана під час навчання ANFIS.",
+          "formulasNote": "Позначка ANFIS — гаусівська апроксимація вхідних термів, додана для навчання. Центри й розмах взято з піків нечіткого контролера."
+        },
         "ling": {
           "lowF": "Мала",
           "mediumF": "Середня",
@@ -145,6 +162,13 @@
         }
       },
       "description": "Оцінка ризику безпеки (R) на основі споживання енергії (E), потужності з'єднання (S) та часу відгуку (T).",
+      "mode": {
+        "label": "Модель виводу",
+        "assignment": "Нечіткий контролер",
+        "anfis": "ANFIS",
+        "assignmentHint": "Класичний Sugeno: спрацьовують лише 6 правил. Якщо комбінація не покрита — значення немає.",
+        "anfisHint": "ANFIS (Adaptive Neuro-Fuzzy Inference System — адаптивна нейро-нечітка система виводу) — нейро-нечітка сітка 3×3×3, навчена з 6 правил нечіткого контролера та їхньої інтерпретації."
+      },
       "inputs": {
         "energy": "Споживання енергії (E) (0-100):",
         "strength": "Потужність з'єднання (S) (0-100):",
@@ -175,6 +199,7 @@
       "rules": {
         "title": "База Правил та Інтерпретація Результатів",
         "description": "Система використовує 6 правил нечіткого виводу для визначення ризику безпеки на основі комбінацій вхідних параметрів: E (Energy), S (Strength), T (Response) → R (Security Risk).",
+        "anfisDescription": "ANFIS використовує повну сітку 3×3×3: 6 базових правил нечіткого контролера та 21 добудоване правило, додане під час навчання.",
         "category1": "Низьке споживання енергії (E): мінімальний ризик за сильного з'єднання та швидкого відгуку.",
         "category2": "Середнє споживання енергії (E): рівень ризику залежить від потужності з'єднання та часу відгуку.",
         "category3": "Високе споживання енергії (E): підвищений ризик, особливо при слабкому з'єднанні та повільному відгуку."
@@ -252,6 +277,14 @@
       "sticky": {
         "result": "Result"
       },
+      "meta": {
+        "model": "Model:",
+        "defuzzification": "Defuzzification:",
+        "mamdani": "Mamdani",
+        "centroid": "Centroid",
+        "centerOfGravity": "center of gravity",
+        "weightedAverage": "fold of weighted consequents"
+      },
       "docs": {
         "formulasBtn": "Membership formulas",
         "rulesBtn": "Rule base",
@@ -270,7 +303,16 @@
         "ifThenHint": "Each rule: if all input terms hold at once, the output takes the listed term.",
         "piecewiseHint": "Piecewise-linear membership functions on the 0–100 scale.",
         "gaussianHint": "Gaussian functions: μ(x) = exp(−(x − c)² / (2σ²)), where c is the center and σ is the spread.",
+        "anfisGaussianHint": "Piecewise-linear fuzzy-controller functions plus ANFIS Gaussians. Only rule consequents were fitted during training.",
         "singletonHint": "The output uses Sugeno singletons: each term maps to one crisp R value.",
+        "origin": {
+          "column": "Source",
+          "base": "Base",
+          "trained": "Completed",
+          "anfis": "ANFIS",
+          "legend": "★ Base — fuzzy-controller rule. + Completed — a 3×3×3 grid cell added during ANFIS training.",
+          "formulasNote": "The ANFIS mark denotes the Gaussian approximation of input terms added for training. Centers and spreads come from the fuzzy-controller peaks."
+        },
         "ling": {
           "lowF": "Small",
           "mediumF": "Medium",
@@ -379,6 +421,13 @@
         }
       },
       "description": "Evaluates security risk (R) based on energy consumption (E), connection strength (S), and response time (T).",
+      "mode": {
+        "label": "Inference model",
+        "assignment": "Fuzzy controller",
+        "anfis": "ANFIS",
+        "assignmentHint": "Classic Sugeno: only 6 rules fire. Uncovered combinations have no value.",
+        "anfisHint": "ANFIS (Adaptive Neuro-Fuzzy Inference System) is a 3×3×3 neuro-fuzzy grid trained from the 6 fuzzy-controller rules and their interpretation."
+      },
       "inputs": {
         "energy": "Energy Consumption (E) (0-100):",
         "strength": "Connection Strength (S) (0-100):",
@@ -409,6 +458,7 @@
       "rules": {
         "title": "Rule Base and Result Interpretation",
         "description": "The system uses 6 fuzzy inference rules to determine security risk based on input combinations: E (Energy), S (Strength), T (Response) → R (Security Risk).",
+        "anfisDescription": "ANFIS uses the full 3×3×3 grid: 6 base fuzzy-controller rules and 21 completed rules added during training.",
         "category1": "Low energy consumption (E): minimal risk when connection is strong and response is fast.",
         "category2": "Medium energy consumption (E): risk level depends on connection strength and response time.",
         "category3": "High energy consumption (E): elevated risk, especially with weak connection and slow response."

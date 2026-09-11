@@ -136,23 +136,6 @@ const membershipParams = {
   },
 };
 
-// Calculate the trust index
-function calculateTrustIndex(errorsVal, connectionsVal, bytesVal) {
-  try {
-    // Run fuzzy inference with fuzzyis
-    const result = fuzzySystem.getPreciseOutput([
-      errorsVal,
-      connectionsVal,
-      bytesVal,
-    ]);
-    
-    return result[0]; // Return the first (and only) value from the result array
-  } catch (error) {
-    console.error("Error in fuzzy inference:", error);
-    throw error;
-  }
-}
-
 function buildOutputUnion() {
   const output = fuzzySystem.outputs[0];
   const corrected = fuzzySystem.rules.map((rule) => {
@@ -160,6 +143,29 @@ function buildOutputUnion() {
     return new CorrectedTerm(term, rule.beliefDegree || 0);
   });
   return new UnionOfTerms(corrected);
+}
+
+function inferTrustUnion(errorsVal, connectionsVal, bytesVal) {
+  fuzzySystem.getPreciseOutput([errorsVal, connectionsVal, bytesVal]);
+  return buildOutputUnion();
+}
+
+function centerOfGravity(union, range = [0, 100], step = 0.2) {
+  const [start, end] = range;
+  let numerator = 0;
+  let denominator = 0;
+  for (let x = start; x <= end + 1e-9; x += step) {
+    const mu = union.valueAt(x);
+    numerator += x * mu;
+    denominator += mu;
+  }
+  if (denominator === 0) return 0;
+  return Math.min(end, Math.max(start, numerator / denominator));
+}
+
+function calculateTrustIndex(errorsVal, connectionsVal, bytesVal) {
+  const union = inferTrustUnion(errorsVal, connectionsVal, bytesVal);
+  return centerOfGravity(union, fuzzySystem.outputs[0].range);
 }
 
 function sampleAggregatedOutput(union, range, points = 100) {
@@ -173,14 +179,12 @@ function sampleAggregatedOutput(union, range, points = 100) {
 }
 
 function getAggregatedOutput(errorsVal, connectionsVal, bytesVal) {
-  if (
+  const union =
     Number.isFinite(errorsVal) &&
     Number.isFinite(connectionsVal) &&
     Number.isFinite(bytesVal)
-  ) {
-    calculateTrustIndex(errorsVal, connectionsVal, bytesVal);
-  }
-  const union = buildOutputUnion();
+      ? inferTrustUnion(errorsVal, connectionsVal, bytesVal)
+      : buildOutputUnion();
   return sampleAggregatedOutput(union, fuzzySystem.outputs[0].range, 100);
 }
 
@@ -230,6 +234,7 @@ function getMostActiveTerm(memberships) {
 module.exports = {
   fuzzySystem,
   calculateTrustIndex,
+  centerOfGravity,
   getAggregatedOutput,
   calculateMembershipValues,
   getMostActiveTerm,
