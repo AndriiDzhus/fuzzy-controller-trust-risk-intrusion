@@ -100,7 +100,7 @@ describe("E2E smoke: navigation and i18n", () => {
     const trust = await request(app).get("/index.html");
     expect(trust.status).toBe(200);
     expect(trust.text).toContain('data-i18n="common.meta.mamdani"');
-    expect(trust.text).toContain('data-i18n="common.meta.bisector"');
+    expect(trust.text).toContain('data-i18n="common.meta.centerOfGravity"');
 
     const intrusion = await request(app).get("/intrusion.html");
     expect(intrusion.status).toBe(200);
@@ -114,6 +114,7 @@ describe("E2E smoke: navigation and i18n", () => {
     expect(res.text).toContain('id="controllerModeSelect"');
     expect(res.text).toContain('value="anfis"');
     expect(res.text).toContain('value="assignment"');
+    expect(res.text).toContain('data-i18n="common.meta.weightedAverage"');
   });
 
   test("all pages include formula and rule-base buttons", async () => {
