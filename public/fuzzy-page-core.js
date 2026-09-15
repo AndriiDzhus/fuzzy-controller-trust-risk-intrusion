@@ -387,34 +387,28 @@ function drawSingletonGraph(canvasId, singletonValues, ruleOutputs, resultValue,
 
   const terms = Object.keys(singletonValues);
   const highlightTerm = options.highlightTerm || null;
+  const plotH = h - 2 * p;
   terms.forEach((term, idx) => {
     const x = singletonValues[term];
     const activation = ruleOutputs?.[term] || 0;
     const px = p + (x / 100) * (w - 2 * p);
     const color = termColor(term, idx);
-
-    ctx.strokeStyle = color;
-    ctx.lineWidth = 1;
-    ctx.globalAlpha = 0.35;
-    ctx.beginPath();
-    ctx.moveTo(px, h - p);
-    ctx.lineTo(px, h - p - (h - 2 * p) * 0.12);
-    ctx.stroke();
-    ctx.globalAlpha = 1;
+    const fired = activation > 0;
+    const top = h - p - plotH;
 
     if (term === highlightTerm) {
       ctx.fillStyle = hexToRgba(color, 0.2);
-      ctx.fillRect(px - 10, p, 20, h - 2 * p);
+      ctx.fillRect(px - 10, p, 20, plotH);
     }
 
-    if (activation > 0) {
-      ctx.strokeStyle = color;
-      ctx.lineWidth = 2 + activation * 8 + (term === highlightTerm ? 2 : 0);
-      ctx.beginPath();
-      ctx.moveTo(px, h - p);
-      ctx.lineTo(px, h - p - activation * (h - 2 * p));
-      ctx.stroke();
-    }
+    ctx.strokeStyle = color;
+    ctx.globalAlpha = fired ? 1 : 0.55;
+    ctx.lineWidth = fired ? 2 + activation * 4 + (term === highlightTerm ? 2 : 0) : 2;
+    ctx.beginPath();
+    ctx.moveTo(px, h - p);
+    ctx.lineTo(px, top);
+    ctx.stroke();
+    ctx.globalAlpha = 1;
   });
 
   if (Number.isFinite(Number(resultValue))) {
@@ -968,21 +962,21 @@ async function createFuzzyPage(config) {
     const hasOutputCurves = outputSeries && Object.keys(outputSeries).length > 0;
     const outputHighlight = hasFiredOutput(state.result) ? state.result.dominantTerm : null;
 
-    if (hasOutputCurves) {
-      drawCurveGraph(
+    if (state.mfData.meta?.singletonValues) {
+      drawSingletonGraph(
         outputCanvasId,
-        outputSeries,
+        state.mfData.meta.singletonValues,
+        state.result.ruleOutputs,
         hasFiredOutput(state.result) ? state.result.value : null,
         {
           ...getGraphOptions(config.graphs.output),
           highlightTerm: outputHighlight,
         }
       );
-    } else if (state.mfData.meta?.singletonValues) {
-      drawSingletonGraph(
+    } else if (hasOutputCurves) {
+      drawCurveGraph(
         outputCanvasId,
-        state.mfData.meta.singletonValues,
-        state.result.ruleOutputs,
+        outputSeries,
         hasFiredOutput(state.result) ? state.result.value : null,
         {
           ...getGraphOptions(config.graphs.output),
