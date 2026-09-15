@@ -22,7 +22,7 @@ document.addEventListener("DOMContentLoaded", async () => {
           canvasId: "errorsCanvas",
           axisLabels: {
             xKey: "index.graphs.axes.errorsX",
-            yKey: "index.graphs.axes.membershipY",
+            yKey: "index.graphs.axes.errorsY",
           },
           showPeakLabels: true,
         },
@@ -30,7 +30,7 @@ document.addEventListener("DOMContentLoaded", async () => {
           canvasId: "connectionsCanvas",
           axisLabels: {
             xKey: "index.graphs.axes.connectionsX",
-            yKey: "index.graphs.axes.membershipY",
+            yKey: "index.graphs.axes.connectionsY",
           },
           showPeakLabels: true,
         },
@@ -38,7 +38,7 @@ document.addEventListener("DOMContentLoaded", async () => {
           canvasId: "bytesCanvas",
           axisLabels: {
             xKey: "index.graphs.axes.bytesX",
-            yKey: "index.graphs.axes.membershipY",
+            yKey: "index.graphs.axes.bytesY",
           },
           showPeakLabels: true,
         },
@@ -48,7 +48,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         canvasId: "trustIndexCanvas",
         axisLabels: {
           xKey: "index.graphs.axes.trustX",
-          yKey: "index.graphs.axes.membershipY",
+          yKey: "index.graphs.axes.trustY",
         },
         showPeakLabels: true,
       },
@@ -56,7 +56,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         canvasId: "trustAggregatedCanvas",
         axisLabels: {
           xKey: "index.graphs.axes.trustX",
-          yKey: "index.graphs.axes.membershipY",
+          yKey: "index.graphs.axes.trustY",
         },
       },
     },

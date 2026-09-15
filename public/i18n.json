@@ -9,21 +9,71 @@
       "coordinates": "Координати",
       "membershipFunctions": "Функції приналежності",
       "tooltip": {
-        "xAxis": "Вісь X",
+        "xAxis": "x",
         "outputAxis": "Вихід",
-        "memberships": "Ступені приналежності"
+        "memberships": "μ у цій точці",
+        "aggregatedMu": "μ агрегованої множини",
+        "current": "Поточний вхід",
+        "result": "Результат",
+        "singletonAt": "Синглтон",
+        "notSingleton": "Поза синглтонами, μ = 0",
+        "muX": "Ступінь приналежності чіткого входу: 0 — терм не виконується, 1 — виконується повністю. На цих графіках це {vars} — окремо для кожної вхідної величини.",
+        "muOut": "Ступінь приналежності виходу {var} після правил: 0 — терм не виконується, 1 — виконується повністю."
+      },
+      "glossary": {
+        "clipped": {
+          "label": "Зрізані",
+          "hint": "Верх терму зрізано на силу правила: μ′(y) = min(α, μ(y))."
+        },
+        "max": {
+          "label": "max",
+          "hint": "У кожній точці осі лишається найбільше μ: μ(y) = max μᵢ(y)."
+        },
+        "cog": {
+          "label": "центр тяжіння (центроїд)",
+          "hint": "Баланс фігури під кривою: y* = Σ y·μ(y) / Σ μ(y)."
+        },
+        "wavg": {
+          "label": "зважене середнє синглтонів",
+          "hint": "y* = Σ wᵢzᵢ / Σ wᵢ, де zᵢ — точка синглтона, wᵢ — його вага."
+        },
+        "maxAct": {
+          "label": "максимальна активація",
+          "hint": "Кілька правил на один синглтон — лишається найбільше спрацювання (max), не сума."
+        },
+        "accAct": {
+          "label": "акумульована активація",
+          "hint": "Вага wᵢ дорівнює max спрацювань цього синглтона після акумуляції."
+        }
       },
       "noRuleFired": "Жодне правило не спрацювало",
       "noRuleFiredHint": "База правил безпеки має лише 6 комбінацій E, S і T. Поточні входи не активують жодне правило, тому ризик R не можна обчислити — немає активних сінглтонів для дефазифікації.",
       "sticky": {
         "result": "Результат"
       },
+      "graph": {
+        "expand": "Збільшити графік",
+        "collapse": "Згорнути графік"
+      },
+      "pipeline": {
+        "inputs": "Вхідні величини",
+        "fuzzification": "Фазифікація",
+        "accumulation": "Акумуляція",
+        "defuzzification": "Дефазифікація",
+        "fuzzificationHint": "Перетворення чітких входів на ступені приналежності μ(x) лінгвістичних термів. Вертикальна лінія — поточне значення входу.",
+        "accumulationHintMamdani": "{tip:clipped} вихідні терми об’єднуються в одну {mu} операцією {tip:max}. Вертикальна лінія — {tip:cog} цієї площі.",
+        "accumulationHintSugeno": "Для кожного синглтона лишається {tip:maxAct} правил, що на нього вказують.",
+        "defuzzificationHintCog": "Той самий результат на лінгвістичних термах виходу. Вертикальна лінія — чітке значення, підсвічений терм — його рівень.",
+        "defuzzificationHintCentroid": "Той самий результат на лінгвістичних термах виходу. Вертикальна лінія — чітке значення, підсвічений терм — його рівень.",
+        "defuzzificationHintSugeno": "Чітке значення — {tip:wavg}; вага терму — його {tip:accAct}. Вертикальна лінія — отримане значення."
+      },
       "meta": {
         "model": "Модель:",
         "defuzzification": "Дефазифікація:",
         "mamdani": "Mamdani",
-        "centroid": "Центроїд",
-        "centerOfGravity": "центр тяжіння",
+        "sugeno": "Sugeno",
+        "centroid": "центр тяжіння (центроїд)",
+        "centerOfGravity": "центр тяжіння (центроїд)",
         "weightedAverage": "згортка зважених наслідків"
       },
       "docs": {
@@ -44,16 +94,7 @@
         "ifThenHint": "Кожне правило: якщо всі вхідні терми істинні одночасно, вихід набуває зазначеного терму.",
         "piecewiseHint": "Кусково-лінійні функції приналежності на шкалі 0–100.",
         "gaussianHint": "Гаусівські функції: μ(x) = exp(−(x − c)² / (2σ²)), де c — центр, σ — розмах.",
-        "anfisGaussianHint": "Кусково-лінійні функції нечіткого контролера та гаусівські апроксимації ANFIS. Під час навчання змінювались лише наслідки правил.",
         "singletonHint": "Вихід задано синглтонами (Sugeno): кожен терм відповідає одному чіткому значенню R.",
-        "origin": {
-          "column": "Джерело",
-          "base": "Базове",
-          "trained": "Добудоване",
-          "anfis": "ANFIS",
-          "legend": "★ Базове — правило нечіткого контролера. + Добудоване — клітинка сітки 3×3×3, додана під час навчання ANFIS.",
-          "formulasNote": "Позначка ANFIS — гаусівська апроксимація вхідних термів, додана для навчання. Центри й розмах взято з піків нечіткого контролера."
-        },
         "ling": {
           "lowF": "Мала",
           "mediumF": "Середня",
@@ -95,7 +136,7 @@
     },
     "index": {
       "pageTitle": "Індекс довіри | Платформа нечіткого виводу",
-      "title": "Нечіткий контролер для оцінки індексу довіри системи",
+      "title": "Індекс довіри системи",
       "stickyTitle": "Оцінка індексу довіри (T)",
       "docs": {
         "formulasTitle": "Довіра: функції приналежності",
@@ -131,11 +172,14 @@
       "graphs": {
         "title": "Функції Приналежності",
         "axes": {
-          "membershipY": "Y - Ступінь приналежності",
-          "errorsX": "X - Шкала помилок (E)",
-          "connectionsX": "X - Шкала з'єднань (C)",
-          "bytesX": "X - Шкала байтів (B)",
-          "trustX": "X - Шкала індексу довіри (T)"
+          "errorsY": "μ(E)",
+          "errorsX": "E",
+          "connectionsY": "μ(C)",
+          "connectionsX": "C",
+          "bytesY": "μ(B)",
+          "bytesX": "B",
+          "trustY": "μ(T)",
+          "trustX": "T"
         }
       },
       "rules": {
@@ -148,7 +192,7 @@
     },
     "security": {
       "pageTitle": "Ризик безпеки | Платформа нечіткого виводу",
-      "title": "Нечіткий контролер ризику безпеки системи зв'язку",
+      "title": "Ризик безпеки системи зв'язку",
       "stickyTitle": "Оцінка ризику безпеки (R)",
       "docs": {
         "formulasTitle": "Безпека: функції приналежності",
@@ -162,13 +206,6 @@
         }
       },
       "description": "Оцінка ризику безпеки (R) на основі споживання енергії (E), потужності з'єднання (S) та часу відгуку (T).",
-      "mode": {
-        "label": "Модель виводу",
-        "assignment": "Нечіткий контролер",
-        "anfis": "ANFIS",
-        "assignmentHint": "Класичний Sugeno: спрацьовують лише 6 правил. Якщо комбінація не покрита — значення немає.",
-        "anfisHint": "ANFIS (Adaptive Neuro-Fuzzy Inference System — адаптивна нейро-нечітка система виводу) — нейро-нечітка сітка 3×3×3, навчена з 6 правил нечіткого контролера та їхньої інтерпретації."
-      },
       "inputs": {
         "energy": "Споживання енергії (E) (0-100):",
         "strength": "Потужність з'єднання (S) (0-100):",
@@ -189,17 +226,19 @@
       "graphs": {
         "title": "Функції приналежності",
         "axes": {
-          "membershipY": "Y - Ступінь приналежності",
-          "energyX": "X - Шкала споживання енергії (E)",
-          "strengthX": "X - Шкала потужності з'єднання (S)",
-          "responseX": "X - Шкала часу відгуку (T)",
-          "riskX": "X - Шкала ризику безпеки (R)"
+          "energyY": "μ(E)",
+          "energyX": "E",
+          "strengthY": "μ(S)",
+          "strengthX": "S",
+          "responseY": "μ(T)",
+          "responseX": "T",
+          "riskY": "μ(R)",
+          "riskX": "R"
         }
       },
       "rules": {
         "title": "База Правил та Інтерпретація Результатів",
         "description": "Система використовує 6 правил нечіткого виводу для визначення ризику безпеки на основі комбінацій вхідних параметрів: E (Energy), S (Strength), T (Response) → R (Security Risk).",
-        "anfisDescription": "ANFIS використовує повну сітку 3×3×3: 6 базових правил нечіткого контролера та 21 добудоване правило, додане під час навчання.",
         "category1": "Низьке споживання енергії (E): мінімальний ризик за сильного з'єднання та швидкого відгуку.",
         "category2": "Середнє споживання енергії (E): рівень ризику залежить від потужності з'єднання та часу відгуку.",
         "category3": "Високе споживання енергії (E): підвищений ризик, особливо при слабкому з'єднанні та повільному відгуку."
@@ -207,7 +246,7 @@
     },
     "intrusion": {
       "pageTitle": "Вторгнення | Платформа нечіткого виводу",
-      "title": "Нечіткий контролер вірогідності вторгнення",
+      "title": "Вірогідність вторгнення",
       "stickyTitle": "Оцінка вірогідності вторгнення (I)",
       "docs": {
         "formulasTitle": "Вторгнення: функції приналежності",
@@ -242,11 +281,14 @@
       "graphs": {
         "title": "Функції приналежності",
         "axes": {
-          "membershipY": "Y - Ступінь приналежності",
-          "packetsX": "X - Шкала числа пакетів (N)",
-          "rateX": "X - Шкала швидкості передавання (R)",
-          "deliveryX": "X - Шкала коефіцієнта доставки (D)",
-          "intrusionX": "X - Шкала вірогідності вторгнення (I)"
+          "packetsY": "μ(N)",
+          "packetsX": "N",
+          "rateY": "μ(R)",
+          "rateX": "R",
+          "deliveryY": "μ(D)",
+          "deliveryX": "D",
+          "intrusionY": "μ(I)",
+          "intrusionX": "I"
         }
       },
       "rules": {
@@ -268,21 +310,71 @@
       "coordinates": "Coordinates",
       "membershipFunctions": "Membership functions",
       "tooltip": {
-        "xAxis": "X axis",
+        "xAxis": "x",
         "outputAxis": "Output",
-        "memberships": "Membership values"
+        "memberships": "μ at this x",
+        "aggregatedMu": "Aggregated-set μ",
+        "current": "Current input",
+        "result": "Result",
+        "singletonAt": "Singleton",
+        "notSingleton": "Off the singletons, μ = 0",
+        "muX": "Membership degree of the crisp input: 0 — the term does not hold, 1 — it holds fully. On these plots that is {vars} — one axis per input variable.",
+        "muOut": "Membership degree of output {var} after the rules: 0 — the term does not hold, 1 — it holds fully."
+      },
+      "glossary": {
+        "clipped": {
+          "label": "Clipped",
+          "hint": "Each term is cut at the rule strength: μ′(y) = min(α, μ(y))."
+        },
+        "max": {
+          "label": "max",
+          "hint": "At each point the largest μ is kept: μ(y) = max μᵢ(y)."
+        },
+        "cog": {
+          "label": "center of gravity (centroid)",
+          "hint": "Balance point of the area under the curve: y* = Σ y·μ(y) / Σ μ(y)."
+        },
+        "wavg": {
+          "label": "weighted average of the singletons",
+          "hint": "y* = Σ wᵢzᵢ / Σ wᵢ, where zᵢ is the singleton point and wᵢ its weight."
+        },
+        "maxAct": {
+          "label": "maximum activation",
+          "hint": "Several rules, one singleton — keep the highest firing (max), not the sum."
+        },
+        "accAct": {
+          "label": "accumulated activation",
+          "hint": "Weight wᵢ is that singleton's max firing after accumulation."
+        }
       },
       "noRuleFired": "No rule fired",
       "noRuleFiredHint": "The security rule base has only 6 combinations of E, S and T. The current inputs do not activate any rule, so risk R cannot be calculated — there are no active singletons to defuzzify.",
       "sticky": {
         "result": "Result"
       },
+      "graph": {
+        "expand": "Enlarge graph",
+        "collapse": "Collapse graph"
+      },
+      "pipeline": {
+        "inputs": "Input values",
+        "fuzzification": "Fuzzification",
+        "accumulation": "Accumulation",
+        "defuzzification": "Defuzzification",
+        "fuzzificationHint": "Conversion of crisp inputs into membership degrees μ(x) of linguistic terms. The vertical line is the current input value.",
+        "accumulationHintMamdani": "{tip:clipped} output terms are merged into one {mu} by the {tip:max} operator. The vertical line is the {tip:cog} of this area.",
+        "accumulationHintSugeno": "Each output singleton keeps the {tip:maxAct} of the rules that point to it.",
+        "defuzzificationHintCog": "The same result read on the output terms. The vertical line is the crisp value; the highlighted term is its linguistic level.",
+        "defuzzificationHintCentroid": "The same result read on the output terms. The vertical line is the crisp value; the highlighted term is its linguistic level.",
+        "defuzzificationHintSugeno": "The crisp value is the {tip:wavg}; a term's weight is its {tip:accAct}. The vertical line is the obtained value."
+      },
       "meta": {
         "model": "Model:",
         "defuzzification": "Defuzzification:",
         "mamdani": "Mamdani",
-        "centroid": "Centroid",
-        "centerOfGravity": "center of gravity",
+        "sugeno": "Sugeno",
+        "centroid": "center of gravity (centroid)",
+        "centerOfGravity": "center of gravity (centroid)",
         "weightedAverage": "fold of weighted consequents"
       },
       "docs": {
@@ -303,16 +395,7 @@
         "ifThenHint": "Each rule: if all input terms hold at once, the output takes the listed term.",
         "piecewiseHint": "Piecewise-linear membership functions on the 0–100 scale.",
         "gaussianHint": "Gaussian functions: μ(x) = exp(−(x − c)² / (2σ²)), where c is the center and σ is the spread.",
-        "anfisGaussianHint": "Piecewise-linear fuzzy-controller functions plus ANFIS Gaussians. Only rule consequents were fitted during training.",
         "singletonHint": "The output uses Sugeno singletons: each term maps to one crisp R value.",
-        "origin": {
-          "column": "Source",
-          "base": "Base",
-          "trained": "Completed",
-          "anfis": "ANFIS",
-          "legend": "★ Base — fuzzy-controller rule. + Completed — a 3×3×3 grid cell added during ANFIS training.",
-          "formulasNote": "The ANFIS mark denotes the Gaussian approximation of input terms added for training. Centers and spreads come from the fuzzy-controller peaks."
-        },
         "ling": {
           "lowF": "Small",
           "mediumF": "Medium",
@@ -354,7 +437,7 @@
     },
     "index": {
       "pageTitle": "Trust Index | Fuzzy Security Platform",
-      "title": "Fuzzy Controller for System Trust Index Assessment",
+      "title": "System trust index",
       "stickyTitle": "Trust index assessment (T)",
       "docs": {
         "formulasTitle": "Trust: membership functions",
@@ -390,11 +473,14 @@
       "graphs": {
         "title": "Membership Functions",
         "axes": {
-          "membershipY": "Y - Membership degree",
-          "errorsX": "X - Errors scale (E)",
-          "connectionsX": "X - Connections scale (C)",
-          "bytesX": "X - Bytes scale (B)",
-          "trustX": "X - Trust index scale (T)"
+          "errorsY": "μ(E)",
+          "errorsX": "E",
+          "connectionsY": "μ(C)",
+          "connectionsX": "C",
+          "bytesY": "μ(B)",
+          "bytesX": "B",
+          "trustY": "μ(T)",
+          "trustX": "T"
         }
       },
       "rules": {
@@ -407,7 +493,7 @@
     },
     "security": {
       "pageTitle": "Security Risk | Fuzzy Security Platform",
-      "title": "Fuzzy Controller for Communication Security Risk",
+      "title": "Communication security risk",
       "stickyTitle": "Security risk assessment (R)",
       "docs": {
         "formulasTitle": "Security: membership functions",
@@ -421,13 +507,6 @@
         }
       },
       "description": "Evaluates security risk (R) based on energy consumption (E), connection strength (S), and response time (T).",
-      "mode": {
-        "label": "Inference model",
-        "assignment": "Fuzzy controller",
-        "anfis": "ANFIS",
-        "assignmentHint": "Classic Sugeno: only 6 rules fire. Uncovered combinations have no value.",
-        "anfisHint": "ANFIS (Adaptive Neuro-Fuzzy Inference System) is a 3×3×3 neuro-fuzzy grid trained from the 6 fuzzy-controller rules and their interpretation."
-      },
       "inputs": {
         "energy": "Energy Consumption (E) (0-100):",
         "strength": "Connection Strength (S) (0-100):",
@@ -448,17 +527,19 @@
       "graphs": {
         "title": "Membership Functions",
         "axes": {
-          "membershipY": "Y - Membership degree",
-          "energyX": "X - Energy consumption scale (E)",
-          "strengthX": "X - Connection strength scale (S)",
-          "responseX": "X - Response time scale (T)",
-          "riskX": "X - Security risk scale (R)"
+          "energyY": "μ(E)",
+          "energyX": "E",
+          "strengthY": "μ(S)",
+          "strengthX": "S",
+          "responseY": "μ(T)",
+          "responseX": "T",
+          "riskY": "μ(R)",
+          "riskX": "R"
         }
       },
       "rules": {
         "title": "Rule Base and Result Interpretation",
         "description": "The system uses 6 fuzzy inference rules to determine security risk based on input combinations: E (Energy), S (Strength), T (Response) → R (Security Risk).",
-        "anfisDescription": "ANFIS uses the full 3×3×3 grid: 6 base fuzzy-controller rules and 21 completed rules added during training.",
         "category1": "Low energy consumption (E): minimal risk when connection is strong and response is fast.",
         "category2": "Medium energy consumption (E): risk level depends on connection strength and response time.",
         "category3": "High energy consumption (E): elevated risk, especially with weak connection and slow response."
@@ -466,7 +547,7 @@
     },
     "intrusion": {
       "pageTitle": "Intrusion | Fuzzy Security Platform",
-      "title": "Fuzzy Intrusion Probability Controller",
+      "title": "Intrusion probability",
       "stickyTitle": "Intrusion probability assessment (I)",
       "docs": {
         "formulasTitle": "Intrusion: membership functions",
@@ -501,11 +582,14 @@
       "graphs": {
         "title": "Membership Functions",
         "axes": {
-          "membershipY": "Y - Membership degree",
-          "packetsX": "X - Packet count scale (N)",
-          "rateX": "X - Transmission rate scale (R)",
-          "deliveryX": "X - Delivery coefficient scale (D)",
-          "intrusionX": "X - Intrusion probability scale (I)"
+          "packetsY": "μ(N)",
+          "packetsX": "N",
+          "rateY": "μ(R)",
+          "rateX": "R",
+          "deliveryY": "μ(D)",
+          "deliveryX": "D",
+          "intrusionY": "μ(I)",
+          "intrusionX": "I"
         }
       },
       "rules": {

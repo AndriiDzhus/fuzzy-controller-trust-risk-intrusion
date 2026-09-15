@@ -38,10 +38,6 @@ function restoreControllerInputs(config, applyInputValue) {
     if (value === null) return;
     applyInputValue(spec, value);
   });
-
-  if (config.mode && (stored.mode === "assignment" || stored.mode === "anfis")) {
-    setControllerMode(config, stored.mode, { persist: false });
-  }
 }
 
 function buildMapFromSpecs(specs) {
@@ -52,45 +48,37 @@ function buildMapFromSpecs(specs) {
   return data;
 }
 
-function getControllerMode(config) {
-  if (!config.mode) return undefined;
-  const select = document.getElementById("controllerModeSelect");
-  const value = select?.value || config.mode.default;
-  return value === "assignment" || value === "anfis" ? value : config.mode.default || "anfis";
-}
+function drawPlotGrid(ctx, width, height, pad) {
+  const xTicks = [20, 40, 60, 80];
+  const yTicks = [0.25, 0.5, 0.75, 1];
 
-function setControllerMode(config, mode, { persist = true } = {}) {
-  if (!config.mode) return;
-  const next = mode === "assignment" || mode === "anfis" ? mode : config.mode.default || "anfis";
-  const select = document.getElementById("controllerModeSelect");
-  if (select) select.value = next;
-  const hint = config.mode.hintId ? document.getElementById(config.mode.hintId) : null;
-  if (hint) {
-    const key = config.mode.hintKeys?.[next];
-    hint.textContent = key ? i18nText(key, "") : "";
-  }
-  if (persist) {
-    persistControllerInputs(config.controller, {
-      ...buildMapFromSpecs(config.inputs),
-      mode: next,
-    });
-  }
-  window.dispatchEvent(new CustomEvent("controllerModeChanged", { detail: { mode: next } }));
-}
+  ctx.save();
+  ctx.strokeStyle = "rgba(148, 163, 184, 0.55)";
+  ctx.lineWidth = 0.8;
+  ctx.setLineDash([2, 4]);
 
-function setupControllerMode(config, { recalc, reloadMembership }) {
-  if (!config.mode) return;
-  setControllerMode(config, getControllerMode(config), { persist: false });
-  const select = document.getElementById("controllerModeSelect");
-  if (!select) return;
-  select.addEventListener("change", async () => {
-    setControllerMode(config, select.value);
-    if (reloadMembership) await reloadMembership();
-    await recalc();
+  xTicks.forEach((tick) => {
+    const x = pad + (tick / 100) * (width - 2 * pad);
+    ctx.beginPath();
+    ctx.moveTo(x, pad);
+    ctx.lineTo(x, height - pad);
+    ctx.stroke();
   });
+
+  yTicks.forEach((tick) => {
+    const y = height - pad - tick * (height - 2 * pad);
+    ctx.beginPath();
+    ctx.moveTo(pad, y);
+    ctx.lineTo(width - pad, y);
+    ctx.stroke();
+  });
+
+  ctx.restore();
 }
 
 function drawAxes(ctx, width, height, pad, axisLabels = null) {
+  drawPlotGrid(ctx, width, height, pad);
+
   ctx.strokeStyle = "#bdc3c7";
   ctx.lineWidth = 1;
   ctx.beginPath();
@@ -104,7 +92,7 @@ function drawAxes(ctx, width, height, pad, axisLabels = null) {
   const yTicks = [0, 0.5, 1];
 
   ctx.fillStyle = "#6b7280";
-  ctx.font = "11px Arial";
+  ctx.font = "12px Arial";
   ctx.textAlign = "center";
   xTicks.forEach((tick) => {
     const x = pad + (tick / 100) * (width - 2 * pad);
@@ -127,20 +115,20 @@ function drawAxes(ctx, width, height, pad, axisLabels = null) {
 
   if (!axisLabels) return;
 
-  ctx.fillStyle = "#4b5563";
-  ctx.font = "12px Arial";
+  ctx.fillStyle = "#374151";
+  ctx.font = "italic 15px Arial";
   ctx.textAlign = "center";
+  ctx.textBaseline = "alphabetic";
   if (axisLabels.x) {
-    ctx.fillText(axisLabels.x, width / 2, height - 4);
+    ctx.fillText(axisLabels.x, width / 2, height - 6);
   }
 
   if (axisLabels.y) {
-    ctx.save();
-    ctx.translate(14, height / 2);
-    ctx.rotate(-Math.PI / 2);
-    ctx.fillText(axisLabels.y, 0, 0);
-    ctx.restore();
+    ctx.textAlign = "left";
+    ctx.textBaseline = "top";
+    ctx.fillText(axisLabels.y, 8, pad + 8);
   }
+  ctx.textBaseline = "alphabetic";
 }
 
 function termLabel(term) {
@@ -226,28 +214,14 @@ function fillTermArea(ctx, points, color, w, h, p) {
   ctx.fill();
 }
 
-function ensureLegend(canvasId, terms, highlightTerm = null) {
+function ensureLegend(canvasId) {
   const canvas = document.getElementById(canvasId);
-  if (!canvas) return;
-  const container = canvas.closest(".graph-container");
-  if (!container) return;
-
-  let legend = container.querySelector(".graph-legend");
-  if (!legend) {
-    legend = document.createElement("div");
-    legend.className = "graph-legend";
-    container.appendChild(legend);
-  }
-
-  legend.innerHTML = "";
-  terms.forEach((term, index) => {
-    const item = document.createElement("span");
-    item.className = "graph-legend-item";
-    if (term === highlightTerm) item.classList.add("active");
-    item.innerHTML = `<i style="background:${termColor(term, index)}"></i>${termLabel(term)}`;
-    legend.appendChild(item);
-  });
+  const legend = canvas?.closest(".graph-container")?.querySelector(".graph-legend");
+  if (legend) legend.remove();
 }
+
+const PLOT_PAD = 46;
+const SINGLETON_SNAP = 7;
 
 function getGlobalTooltip() {
   let tooltip = document.getElementById("globalGraphTooltip");
@@ -255,22 +229,241 @@ function getGlobalTooltip() {
     tooltip = document.createElement("div");
     tooltip.id = "globalGraphTooltip";
     tooltip.className = "graph-tooltip";
+    tooltip.setAttribute("role", "tooltip");
     document.body.appendChild(tooltip);
   }
   return tooltip;
 }
 
-function findNearestPoint(points, x) {
-  let best = points[0];
-  let minDist = Math.abs(points[0].x - x);
+function escapeHtml(value) {
+  return String(value)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+
+function interpolateSeriesY(points, x) {
+  if (!Array.isArray(points) || !points.length) return 0;
+  if (x <= points[0].x) return Number(points[0].y) || 0;
+  const last = points[points.length - 1];
+  if (x >= last.x) return Number(last.y) || 0;
+
   for (let i = 1; i < points.length; i += 1) {
-    const d = Math.abs(points[i].x - x);
-    if (d < minDist) {
-      minDist = d;
-      best = points[i];
+    const left = points[i - 1];
+    const right = points[i];
+    if (x <= right.x) {
+      const span = right.x - left.x;
+      if (span <= 0) return Number(right.y) || 0;
+      const t = (x - left.x) / span;
+      return (Number(left.y) || 0) + t * ((Number(right.y) || 0) - (Number(left.y) || 0));
     }
   }
-  return best;
+  return Number(last.y) || 0;
+}
+
+function getPlotGeometry(canvas) {
+  const rect = canvas.getBoundingClientRect();
+  const scaleX = canvas.clientWidth / canvas.width;
+  const scaleY = canvas.clientHeight / canvas.height;
+  const left = canvas.clientLeft;
+  const top = canvas.clientTop;
+  return {
+    rect,
+    plotLeft: left + PLOT_PAD * scaleX,
+    plotRight: left + (canvas.width - PLOT_PAD) * scaleX,
+    plotTop: top + PLOT_PAD * scaleY,
+    plotBottom: top + (canvas.height - PLOT_PAD) * scaleY,
+  };
+}
+
+function readCursorX(canvas, event) {
+  const geo = getPlotGeometry(canvas);
+  const cssX = event.clientX - geo.rect.left;
+  const cssY = event.clientY - geo.rect.top;
+  const inPlot =
+    cssX >= geo.plotLeft &&
+    cssX <= geo.plotRight &&
+    cssY >= geo.plotTop &&
+    cssY <= geo.plotBottom;
+  if (!inPlot) return { inPlot: false, x: null, geo, cssX };
+  const span = geo.plotRight - geo.plotLeft;
+  const x = span <= 0 ? 0 : ((cssX - geo.plotLeft) / span) * 100;
+  return { inPlot: true, x: Math.min(100, Math.max(0, x)), geo, cssX };
+}
+
+function graphTitle(canvas) {
+  return canvas.closest(".graph-container")?.querySelector("h4")?.textContent?.trim() || "";
+}
+
+function ensureGraphProbe(canvas) {
+  const container = canvas.closest(".graph-container");
+  if (!container) return null;
+  let probe = container.querySelector(".graph-probe");
+  if (!probe) {
+    probe = document.createElement("div");
+    probe.className = "graph-probe";
+    probe.hidden = true;
+    container.appendChild(probe);
+  }
+  return probe;
+}
+
+function hideGraphProbe(canvas) {
+  const probe = canvas.closest(".graph-container")?.querySelector(".graph-probe");
+  if (probe) probe.hidden = true;
+}
+
+function showGraphProbe(canvas, geo, cssX) {
+  const probe = ensureGraphProbe(canvas);
+  const container = canvas.closest(".graph-container");
+  if (!probe || !container) return;
+  const cRect = container.getBoundingClientRect();
+  probe.hidden = false;
+  probe.style.left = `${geo.rect.left - cRect.left + cssX}px`;
+  probe.style.top = `${geo.rect.top - cRect.top + geo.plotTop}px`;
+  probe.style.height = `${Math.max(0, geo.plotBottom - geo.plotTop)}px`;
+}
+
+function muRowHtml(term, value, color, { dominant = false, zero = false } = {}) {
+  const pct = Math.round(Math.max(0, Math.min(1, Number(value) || 0)) * 100);
+  const classes = ["tt-row"];
+  if (dominant) classes.push("is-dominant");
+  if (zero) classes.push("is-zero");
+  return `<div class="${classes.join(" ")}">
+    <i style="background:${color}"></i>
+    <span class="tt-term">${escapeHtml(termLabel(term))}</span>
+    <span class="tt-mu">${formatNumber(value, { minimumFractionDigits: 3, maximumFractionDigits: 3 })}</span>
+    <span class="tt-bar"><span style="width:${pct}%"></span></span>
+  </div>`;
+}
+
+function formatCursorX(model, x) {
+  const symbol = model.xLabel || "x";
+  return `${escapeHtml(symbol)} = ${formatNumber(x, {
+    minimumFractionDigits: 1,
+    maximumFractionDigits: 1,
+  })}`;
+}
+
+function snapCursorX(x, model) {
+  const candidates = [];
+  if (Number.isFinite(Number(model.currentValue))) candidates.push(Number(model.currentValue));
+  if (Number.isFinite(Number(model.resultValue))) candidates.push(Number(model.resultValue));
+  Object.values(model.singletonValues || {}).forEach((value) => {
+    if (Number.isFinite(Number(value))) candidates.push(Number(value));
+  });
+
+  let best = x;
+  let bestDist = 0.4;
+  candidates.forEach((value) => {
+    const dist = Math.abs(value - x);
+    if (dist < bestDist) {
+      best = value;
+      bestDist = dist;
+    }
+  });
+  return Math.round(best * 10) / 10;
+}
+
+function tooltipFooter(model) {
+  if (model.kind === "input" && Number.isFinite(Number(model.currentValue))) {
+    return `<div class="tt-foot">${i18nText("common.tooltip.current")}: ${formatNumber(
+      Number(model.currentValue),
+      {
+        minimumFractionDigits: 1,
+        maximumFractionDigits: 1,
+      }
+    )}</div>`;
+  }
+
+  if (!Number.isFinite(Number(model.resultValue))) return "";
+  const term = model.resultTerm ? ` · ${escapeHtml(termLabel(model.resultTerm))}` : "";
+  return `<div class="tt-foot">${i18nText("common.tooltip.result")}: ${formatNumber(
+    Number(model.resultValue),
+    {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    }
+  )}${term}</div>`;
+}
+
+function buildCurveTooltip(model, x) {
+  const rows = Object.entries(model.series || {}).map(([term, points], idx) => ({
+    term,
+    value: interpolateSeriesY(points, x),
+    color: termColor(term, idx),
+  }));
+  const max = rows.reduce((best, row) => Math.max(best, row.value), 0);
+  const caption =
+    model.kind === "aggregated"
+      ? i18nText("common.tooltip.aggregatedMu")
+      : i18nText("common.tooltip.memberships");
+
+  return `
+    <div class="tt-head">${escapeHtml(model.title || "")}</div>
+    <div class="tt-x">${formatCursorX(model, x)}</div>
+    <div class="tt-cap">${escapeHtml(caption)}</div>
+    ${rows
+      .map((row) =>
+        muRowHtml(row.term, row.value, row.color, {
+          dominant: max > 0.001 && row.value === max,
+          zero: row.value < 0.005,
+        })
+      )
+      .join("")}
+    ${tooltipFooter(model)}
+  `;
+}
+
+function buildSingletonTooltip(model, x) {
+  const entries = Object.entries(model.singletonValues || {});
+  let nearest = null;
+  entries.forEach(([term, sx], idx) => {
+    const dist = Math.abs(Number(sx) - x);
+    if (!nearest || dist < nearest.dist) {
+      nearest = { term, dist, color: termColor(term, idx) };
+    }
+  });
+  const onSpike = Boolean(nearest && nearest.dist <= SINGLETON_SNAP);
+  const rows = entries.map(([term, sx], idx) => ({
+    term,
+    value: Number(model.activations?.[term]) || 0,
+    color: termColor(term, idx),
+    x: Number(sx),
+  }));
+  const max = rows.reduce((best, row) => Math.max(best, row.value), 0);
+  const status = onSpike
+    ? `${i18nText("common.tooltip.singletonAt")}: ${termLabel(nearest.term)}`
+    : i18nText("common.tooltip.notSingleton");
+
+  return `
+    <div class="tt-head">${escapeHtml(model.title || "")}</div>
+    <div class="tt-x">${formatCursorX(model, x)}</div>
+    <div class="tt-cap">${escapeHtml(status)}</div>
+    ${rows
+      .map((row) =>
+        muRowHtml(row.term, row.value, row.color, {
+          dominant: onSpike ? row.term === nearest.term : max > 0 && row.value === max,
+          zero: row.value <= 0,
+        })
+      )
+      .join("")}
+    ${tooltipFooter(model)}
+  `;
+}
+
+function placeTooltip(tooltip, event) {
+  tooltip.classList.add("visible");
+  const width = tooltip.offsetWidth || 220;
+  const height = tooltip.offsetHeight || 80;
+  const margin = 12;
+  const below = event.clientY - margin < height + 8;
+  tooltip.classList.toggle("is-below", below);
+  const half = width / 2;
+  const left = Math.min(window.innerWidth - margin - half, Math.max(margin + half, event.clientX));
+  tooltip.style.left = `${left}px`;
+  tooltip.style.top = `${event.clientY}px`;
 }
 
 function findPeakPoint(points) {
@@ -293,7 +486,7 @@ function drawCurveGraph(canvasId, termSeries, currentValue, options = {}) {
   const ctx = canvas.getContext("2d");
   const w = canvas.width;
   const h = canvas.height;
-  const p = 40;
+  const p = PLOT_PAD;
 
   ctx.clearRect(0, 0, w, h);
   drawAxes(ctx, w, h, p, options.axisLabels || null);
@@ -362,7 +555,7 @@ function drawAggregatedSetGraph(canvasId, points, resultValue, options = {}) {
   const ctx = canvas.getContext("2d");
   const w = canvas.width;
   const h = canvas.height;
-  const p = 40;
+  const p = PLOT_PAD;
   const fill = "rgba(44, 62, 80, 0.28)";
   const stroke = "#2c3e50";
 
@@ -422,41 +615,35 @@ function drawSingletonGraph(canvasId, singletonValues, ruleOutputs, resultValue,
   const ctx = canvas.getContext("2d");
   const w = canvas.width;
   const h = canvas.height;
-  const p = 40;
+  const p = PLOT_PAD;
 
   ctx.clearRect(0, 0, w, h);
   drawAxes(ctx, w, h, p, options.axisLabels || null);
 
   const terms = Object.keys(singletonValues);
   const highlightTerm = options.highlightTerm || null;
+  const plotH = h - 2 * p;
   terms.forEach((term, idx) => {
     const x = singletonValues[term];
     const activation = ruleOutputs?.[term] || 0;
     const px = p + (x / 100) * (w - 2 * p);
     const color = termColor(term, idx);
-
-    ctx.strokeStyle = color;
-    ctx.lineWidth = 1;
-    ctx.globalAlpha = 0.35;
-    ctx.beginPath();
-    ctx.moveTo(px, h - p);
-    ctx.lineTo(px, h - p - (h - 2 * p) * 0.12);
-    ctx.stroke();
-    ctx.globalAlpha = 1;
+    const fired = activation > 0;
+    const top = h - p - plotH;
 
     if (term === highlightTerm) {
       ctx.fillStyle = hexToRgba(color, 0.2);
-      ctx.fillRect(px - 10, p, 20, h - 2 * p);
+      ctx.fillRect(px - 10, p, 20, plotH);
     }
 
-    if (activation > 0) {
-      ctx.strokeStyle = color;
-      ctx.lineWidth = 2 + activation * 8 + (term === highlightTerm ? 2 : 0);
-      ctx.beginPath();
-      ctx.moveTo(px, h - p);
-      ctx.lineTo(px, h - p - activation * (h - 2 * p));
-      ctx.stroke();
-    }
+    ctx.strokeStyle = color;
+    ctx.globalAlpha = fired ? 1 : 0.55;
+    ctx.lineWidth = fired ? 2 + activation * 4 + (term === highlightTerm ? 2 : 0) : 2;
+    ctx.beginPath();
+    ctx.moveTo(px, h - p);
+    ctx.lineTo(px, top);
+    ctx.stroke();
+    ctx.globalAlpha = 1;
   });
 
   if (Number.isFinite(Number(resultValue))) {
@@ -487,10 +674,18 @@ function renderMembership(containerId, data) {
   if (!container) return;
   container.innerHTML = "";
 
-  Object.entries(data || {}).forEach(([term, value]) => {
+  const entries = Object.entries(data || {});
+  const maxValue = entries.reduce((best, [, value]) => Math.max(best, Number(value) || 0), 0);
+
+  entries.forEach(([term, value], index) => {
+    const numeric = Number(value) || 0;
+    const color = termColor(term, index);
     const item = document.createElement("div");
     item.className = "membership-item";
+    if (maxValue > 0 && numeric === maxValue) item.classList.add("active");
+    item.style.borderLeftColor = color;
     item.innerHTML = `
+      <i class="membership-swatch" style="background:${color}"></i>
       <span class="membership-label">${termLabel(term)}</span>
       <span class="membership-value">${formatNumber(value, {
         minimumFractionDigits: 3,
@@ -522,79 +717,49 @@ function getGraphOptions(graphConfig) {
   };
 }
 
-function bindCanvasTooltip(canvasId, state, getTooltipModel) {
+function bindCanvasTooltip(canvasId, getTooltipModel) {
   const canvas = document.getElementById(canvasId);
   if (!canvas) return;
   const tooltip = getGlobalTooltip();
+  let frame = 0;
+  let lastPoint = null;
 
   const hide = () => {
     tooltip.classList.remove("visible");
+    hideGraphProbe(canvas);
+    lastPoint = null;
   };
 
-  canvas.addEventListener("mouseleave", hide);
-  canvas.addEventListener("mousemove", (event) => {
+  const render = () => {
+    frame = 0;
+    if (!lastPoint) return;
     const model = getTooltipModel();
-    if (!model) return;
-
-    const rect = canvas.getBoundingClientRect();
-    const px = event.clientX - rect.left;
-    const py = event.clientY - rect.top;
-    const pad = 40;
-    if (px < pad || px > canvas.width - pad || py < pad || py > canvas.height - pad) {
+    if (!model) {
       hide();
       return;
     }
 
-    const x = ((px - pad) / (canvas.width - 2 * pad)) * 100;
-    const formattedX = formatNumber(x, { minimumFractionDigits: 1, maximumFractionDigits: 1 });
-    const membershipsLabel = i18nText("common.tooltip.memberships");
-
-    if (model.type === "curve") {
-      const rows = Object.entries(model.series).map(([term, points], idx) => {
-        const point = findNearestPoint(points, x);
-        return {
-          term,
-          value: point.y,
-          color: termColor(term, idx),
-        };
-      });
-
-      rows.sort((a, b) => b.value - a.value);
-      tooltip.innerHTML = `
-        <strong>${i18nText("common.tooltip.xAxis")}: ${formattedX}</strong>
-        <div>${membershipsLabel}</div>
-        <hr />
-        ${rows
-          .map(
-            (r) =>
-              `<div><span style="display:inline-block;width:9px;height:9px;border-radius:50%;background:${r.color};margin-right:6px"></span>${termLabel(r.term)}: ${formatNumber(r.value, { minimumFractionDigits: 3, maximumFractionDigits: 3 })}</div>`
-          )
-          .join("")}
-      `;
-    } else {
-      const rows = Object.entries(model.activations).map(([term, value], idx) => ({
-        term,
-        value,
-        color: termColor(term, idx),
-      }));
-
-      rows.sort((a, b) => b.value - a.value);
-      tooltip.innerHTML = `
-        <strong>${i18nText("common.tooltip.outputAxis")}: ${Number.isFinite(Number(model.resultValue)) ? formatNumber(model.resultValue, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : "--"}</strong>
-        <div>${membershipsLabel}</div>
-        <hr />
-        ${rows
-          .map(
-            (r) =>
-              `<div><span style="display:inline-block;width:9px;height:9px;border-radius:50%;background:${r.color};margin-right:6px"></span>${termLabel(r.term)}: ${formatNumber(r.value, { minimumFractionDigits: 3, maximumFractionDigits: 3 })}</div>`
-          )
-          .join("")}
-      `;
+    const cursor = readCursorX(canvas, lastPoint);
+    if (!cursor.inPlot) {
+      hide();
+      return;
     }
 
-    tooltip.style.left = `${event.clientX}px`;
-    tooltip.style.top = `${event.clientY}px`;
-    tooltip.classList.add("visible");
+    model.title = graphTitle(canvas);
+    const x = snapCursorX(cursor.x, model);
+    tooltip.innerHTML =
+      model.type === "singleton"
+        ? buildSingletonTooltip(model, x)
+        : buildCurveTooltip(model, x);
+    showGraphProbe(canvas, cursor.geo, cursor.cssX);
+    placeTooltip(tooltip, lastPoint);
+  };
+
+  canvas.addEventListener("mouseleave", hide);
+  canvas.addEventListener("mousemove", (event) => {
+    lastPoint = { clientX: event.clientX, clientY: event.clientY };
+    if (frame) return;
+    frame = requestAnimationFrame(render);
   });
 }
 
@@ -788,6 +953,300 @@ function updateStickyResult(data) {
   );
 }
 
+function joinPrettyList(items) {
+  const labels = items.filter(Boolean);
+  if (labels.length <= 1) return labels[0] || "";
+  const head = labels.slice(0, -1).join(", ");
+  const last = labels[labels.length - 1];
+  const lang = window.i18nHelper?.currentLang || "uk";
+  return lang === "en" ? `${head} and ${last}` : `${head} і ${last}`;
+}
+
+function inputMuLabels(config) {
+  return Object.values(config.graphs?.inputs || {})
+    .map((graph) => getGraphOptions(graph).axisLabels?.y || "")
+    .filter(Boolean);
+}
+
+function outputMuLabel(config) {
+  const source = config.graphs?.aggregated || config.graphs?.output;
+  return getGraphOptions(source).axisLabels?.y || "μ(y)";
+}
+
+function muRefCaption(variable, config) {
+  if (variable === "x") {
+    const vars = joinPrettyList(inputMuLabels(config));
+    return i18nText("common.tooltip.muX", "").replaceAll("{vars}", vars || "μ(x)");
+  }
+  return i18nText("common.tooltip.muOut", "").replaceAll("{var}", variable || outputMuLabel(config));
+}
+
+function glossaryCaption(key) {
+  return i18nText(`common.glossary.${key}.hint`, "");
+}
+
+function glossaryLabel(key) {
+  return i18nText(`common.glossary.${key}.label`, key);
+}
+
+function hintRefCaption(el, config) {
+  if (el.dataset.tip) return glossaryCaption(el.dataset.tip);
+  return muRefCaption(el.dataset.mu || "x", config);
+}
+
+function showMuRefTooltip(el, event, config) {
+  const tooltip = getGlobalTooltip();
+  tooltip.innerHTML = `
+    <div class="tt-head">${escapeHtml(el.textContent || "")}</div>
+    <div class="tt-cap">${escapeHtml(hintRefCaption(el, config))}</div>
+  `;
+  placeTooltip(tooltip, event);
+}
+
+function bindMuRefTooltips(config) {
+  const root = document.documentElement;
+  root._muRefConfig = config;
+  if (root.dataset.muRefBound) return;
+  root.dataset.muRefBound = "1";
+
+  const hide = () => getGlobalTooltip().classList.remove("visible");
+  const fromEvent = (event) => {
+    const el = event.target.closest?.(".mu-ref");
+    if (!el) return;
+    showMuRefTooltip(el, event, root._muRefConfig);
+  };
+
+  document.addEventListener("mouseover", fromEvent);
+  document.addEventListener("mousemove", (event) => {
+    if (event.target.closest?.(".mu-ref")) fromEvent(event);
+  });
+  document.addEventListener("mouseout", (event) => {
+    const el = event.target.closest?.(".mu-ref");
+    if (!el) return;
+    if (event.relatedTarget?.closest?.(".mu-ref") === el) return;
+    hide();
+  });
+  document.addEventListener("focusin", (event) => {
+    const el = event.target.closest?.(".mu-ref");
+    if (!el) return;
+    const rect = el.getBoundingClientRect();
+    showMuRefTooltip(
+      el,
+      { clientX: rect.left + rect.width / 2, clientY: rect.top },
+      root._muRefConfig
+    );
+  });
+  document.addEventListener("focusout", (event) => {
+    if (event.target.closest?.(".mu-ref")) hide();
+  });
+}
+
+function decoratePipelineMuHints(config) {
+  bindMuRefTooltips(config);
+  const mu = outputMuLabel(config);
+  document.querySelectorAll(".process-step-hint[data-i18n]").forEach((el) => {
+    const text = i18nText(el.getAttribute("data-i18n"), el.textContent).replaceAll("{mu}", mu);
+    el.innerHTML = escapeHtml(text)
+      .replace(/\{tip:([a-zA-Z]+)\}/g, (_, key) => {
+        return `<span class="mu-ref" tabindex="0" data-tip="${key}">${escapeHtml(glossaryLabel(key))}</span>`;
+      })
+      .replace(/μ\(([^)]+)\)/g, (_, variable) => {
+        const safe = escapeHtml(variable);
+        return `<span class="mu-ref" tabindex="0" data-mu="${safe}">μ(${safe})</span>`;
+      });
+    el.querySelectorAll(".mu-ref").forEach((span) => {
+      span.setAttribute("aria-label", `${span.textContent}. ${hintRefCaption(span, config)}`);
+    });
+  });
+}
+
+function setupGraphExpand(redraw) {
+  const expandIcon =
+    '<svg viewBox="0 0 24 24" aria-hidden="true"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg>';
+  const collapseIcon =
+    '<svg viewBox="0 0 24 24" aria-hidden="true"><polyline points="4 14 10 14 10 20"/><polyline points="20 10 14 10 14 4"/><line x1="10" y1="14" x2="3" y2="21"/><line x1="14" y1="10" x2="21" y2="3"/></svg>';
+
+  const rememberCanvasSize = (canvas) => {
+    if (!canvas.dataset.baseWidth) {
+      canvas.dataset.baseWidth = String(canvas.width);
+      canvas.dataset.baseHeight = String(canvas.height);
+    }
+  };
+
+  const restoreCanvasSize = (canvas) => {
+    const w = Number(canvas.dataset.baseWidth);
+    const h = Number(canvas.dataset.baseHeight);
+    if (w && h && (canvas.width !== w || canvas.height !== h)) {
+      canvas.width = w;
+      canvas.height = h;
+      return true;
+    }
+    return false;
+  };
+
+  const isMobileExpand = () => window.matchMedia("(max-width: 768px)").matches;
+
+  const appContainerWidth = () => {
+    const shell = document.querySelector(".container");
+    if (!shell) return Math.min(1200, Math.floor(window.innerWidth - 48));
+    return Math.max(280, Math.round(shell.getBoundingClientRect().width));
+  };
+
+  const applyExpandSize = (container, canvas) => {
+    if (isMobileExpand()) {
+      container.style.removeProperty("--expand-w");
+      container.style.removeProperty("--expand-h");
+      return;
+    }
+    const width = appContainerWidth();
+    const ratio =
+      (Number(canvas?.dataset.baseHeight || canvas?.height) || 220) /
+      (Number(canvas?.dataset.baseWidth || canvas?.width) || 400);
+    container.style.setProperty("--expand-w", `${width}px`);
+    container.style.setProperty("--expand-h", `${Math.round(width * ratio)}px`);
+  };
+
+  const fitExpandedCanvas = (canvas) => {
+    rememberCanvasSize(canvas);
+    const baseW = Number(canvas.dataset.baseWidth) || canvas.width;
+    const baseH = Number(canvas.dataset.baseHeight) || canvas.height;
+    const ratio = baseH / baseW;
+    let width;
+    let height;
+    if (isMobileExpand()) {
+      width = Math.max(baseW, Math.floor(canvas.clientWidth) || baseW);
+      height = Math.round(width * ratio);
+      const maxH = Math.floor(window.innerHeight * 0.72);
+      if (height > maxH) {
+        height = maxH;
+        width = Math.round(height / ratio);
+      }
+    } else {
+      width = appContainerWidth();
+      height = Math.round(width * ratio);
+      const maxH = Math.floor(window.innerHeight * 0.7);
+      if (height > maxH) {
+        height = maxH;
+        width = Math.round(height / ratio);
+      }
+    }
+    if (canvas.width !== width || canvas.height !== height) {
+      canvas.width = width;
+      canvas.height = height;
+      return true;
+    }
+    return false;
+  };
+
+  const syncExpandButtons = () => {
+    document.querySelectorAll(".graph-expand-btn").forEach((btn) => {
+      const expanded = btn.closest(".graph-container")?.classList.contains("is-expanded");
+      btn.innerHTML = expanded ? collapseIcon : expandIcon;
+      btn.setAttribute(
+        "aria-label",
+        i18nText(expanded ? "common.graph.collapse" : "common.graph.expand", expanded ? "Collapse" : "Expand")
+      );
+      btn.setAttribute("aria-pressed", expanded ? "true" : "false");
+    });
+  };
+
+  const collapseGraph = () => {
+    const container = document.querySelector(".graph-container.is-expanded");
+    if (!container) return;
+    const canvas = container.querySelector("canvas");
+    const placeholder = container.nextElementSibling;
+    container.classList.remove("is-expanded");
+    container.style.removeProperty("--expand-w");
+    container.style.removeProperty("--expand-h");
+    document.body.classList.remove("graph-expanded");
+    if (placeholder?.classList.contains("graph-expand-placeholder")) placeholder.remove();
+    if (canvas) restoreCanvasSize(canvas);
+    syncExpandButtons();
+    if (typeof redraw === "function") redraw();
+  };
+
+  const expandGraph = (container) => {
+    if (container.classList.contains("is-expanded")) {
+      collapseGraph();
+      return;
+    }
+    collapseGraph();
+    const canvas = container.querySelector("canvas");
+    if (canvas) rememberCanvasSize(canvas);
+    applyExpandSize(container, canvas);
+    const placeholder = document.createElement("div");
+    placeholder.className = "graph-expand-placeholder";
+    placeholder.style.height = `${container.offsetHeight}px`;
+    container.after(placeholder);
+    container.classList.add("is-expanded");
+    document.body.classList.add("graph-expanded");
+    syncExpandButtons();
+    requestAnimationFrame(() => {
+      const live = container.querySelector("canvas");
+      if (live) fitExpandedCanvas(live);
+      if (typeof redraw === "function") redraw();
+    });
+  };
+
+  document.querySelectorAll(".graph-container").forEach((container) => {
+    if (container.querySelector(".graph-expand-btn")) return;
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "graph-expand-btn";
+    container.appendChild(btn);
+    btn.addEventListener("click", (event) => {
+      event.stopPropagation();
+      expandGraph(container);
+    });
+  });
+  syncExpandButtons();
+
+  if (!document.documentElement.dataset.graphExpandBound) {
+    document.documentElement.dataset.graphExpandBound = "1";
+    document.addEventListener("keydown", (event) => {
+      if (event.key === "Escape") collapseGraph();
+    });
+    document.addEventListener("click", (event) => {
+      if (!document.body.classList.contains("graph-expanded")) return;
+      if (event.target.closest(".graph-container.is-expanded")) return;
+      collapseGraph();
+    });
+    window.addEventListener("resize", () => {
+      const container = document.querySelector(".graph-container.is-expanded");
+      const canvas = container?.querySelector("canvas");
+      if (!canvas) return;
+      applyExpandSize(container, canvas);
+      if (fitExpandedCanvas(canvas) && typeof redraw === "function") {
+        redraw();
+      }
+    });
+  }
+
+  window.addEventListener("languageChanged", syncExpandButtons);
+}
+
+function setupPipelineAccordions(config) {
+  const page = window.location.pathname || "index.html";
+  document.querySelectorAll(".process-step[data-step]").forEach((el) => {
+    const key = `fuzzyPipeline:${page}:${el.dataset.step}`;
+    try {
+      const stored = localStorage.getItem(key);
+      if (stored === "0") el.open = false;
+      if (stored === "1") el.open = true;
+    } catch {
+      // Ignore private-mode failures.
+    }
+    el.addEventListener("toggle", () => {
+      try {
+        localStorage.setItem(key, el.open ? "1" : "0");
+      } catch {
+        // Ignore quota / private-mode failures.
+      }
+    });
+  });
+  decoratePipelineMuHints(config);
+}
+
 function setupStickyInputs(config, { applyInputValue, recalc }) {
   const inputSection = document.querySelector(".input-section");
   if (!inputSection || document.getElementById("stickyInputs")) return;
@@ -856,39 +1315,56 @@ function setupStickyInputs(config, { applyInputValue, recalc }) {
 
 function setupTooltips(config, state) {
   Object.entries(config.graphs.inputs).forEach(([key, canvasId]) => {
-    bindCanvasTooltip(getGraphCanvasId(canvasId), state, () => {
+    bindCanvasTooltip(getGraphCanvasId(canvasId), () => {
       if (!state.mfData) return null;
+      const spec = config.inputs.find((item) => item.key === key);
+      const fromResult = Number(state.result?.inputs?.[key]);
+      const fromInput = spec ? Number(document.getElementById(spec.numberId)?.value) : NaN;
       return {
         type: "curve",
+        kind: "input",
         series: state.mfData.inputs[key],
+        currentValue: Number.isFinite(fromResult) ? fromResult : fromInput,
+        xLabel: getGraphOptions(canvasId).axisLabels?.x || "x",
       };
     });
   });
 
-  const outputCanvas = config.graphs.output.canvasId;
-  bindCanvasTooltip(outputCanvas, state, () => {
+  bindCanvasTooltip(config.graphs.output.canvasId, () => {
     if (!state.mfData || !state.result) return null;
 
     if (state.mfData.meta?.singletonValues) {
       return {
         type: "singleton",
+        kind: "output",
+        singletonValues: state.mfData.meta.singletonValues,
         activations: state.result.ruleOutputs || {},
-        resultValue: state.result.value,
+        resultValue: hasFiredOutput(state.result) ? state.result.value : null,
+        resultTerm: hasFiredOutput(state.result) ? state.result.dominantTerm : null,
+        xLabel: getGraphOptions(config.graphs.output).axisLabels?.x || "x",
       };
     }
 
     return {
       type: "curve",
+      kind: "output",
       series: state.mfData.output[config.graphs.output.key],
+      resultValue: hasFiredOutput(state.result) ? state.result.value : null,
+      resultTerm: hasFiredOutput(state.result) ? state.result.dominantTerm : null,
+      xLabel: getGraphOptions(config.graphs.output).axisLabels?.x || "x",
     };
   });
 
   if (config.graphs.aggregated?.canvasId) {
-    bindCanvasTooltip(config.graphs.aggregated.canvasId, state, () => {
+    bindCanvasTooltip(config.graphs.aggregated.canvasId, () => {
       if (!state.result?.aggregatedOutput) return null;
       return {
         type: "curve",
+        kind: "aggregated",
         series: { aggregated: state.result.aggregatedOutput },
+        resultValue: hasFiredOutput(state.result) ? state.result.value : null,
+        resultTerm: hasFiredOutput(state.result) ? state.result.dominantTerm : null,
+        xLabel: getGraphOptions(config.graphs.aggregated).axisLabels?.x || "x",
       };
     });
   }
@@ -899,7 +1375,6 @@ function normalizeCalculateResult(result, payload) {
     value: result.value == null ? null : parseFloat(result.value.toFixed(2)),
     dominantTerm: result.dominantTerm ?? null,
     noRuleFired: Boolean(result.noRuleFired),
-    mode: result.mode || payload.mode || "assignment",
     membershipData: result.membershipData,
     ruleOutputs: result.ruleOutputs ?? null,
     aggregatedOutput: result.aggregatedOutput || null,
@@ -924,14 +1399,13 @@ async function calculateController(controller, payload) {
   return response.json();
 }
 
-async function loadMembershipFunctions(controller, mode) {
+async function loadMembershipFunctions(controller) {
   const local = window.fuzzyControllers?.[controller];
   if (local) {
-    return local.membershipFunctions(mode);
+    return local.membershipFunctions();
   }
 
-  const query = mode === "anfis" ? "?mode=anfis" : "";
-  const response = await fetch(`/api/controllers/${controller}/membership-functions${query}`);
+  const response = await fetch(`/api/controllers/${controller}/membership-functions`);
   if (!response.ok) return null;
   return response.json();
 }
@@ -967,21 +1441,11 @@ async function createFuzzyPage(config) {
         });
       }
     }
-    persistControllerInputs(config.controller, {
-      ...buildMapFromSpecs(config.inputs),
-      ...(config.mode ? { mode: getControllerMode(config) } : {}),
-    });
-  };
-
-  const reloadMembership = async () => {
-    state.mfData = await loadMembershipFunctions(config.controller, getControllerMode(config));
+    persistControllerInputs(config.controller, buildMapFromSpecs(config.inputs));
   };
 
   const recalc = async () => {
-    const payload = {
-      ...buildMapFromSpecs(config.inputs),
-      ...(config.mode ? { mode: getControllerMode(config) } : {}),
-    };
+    const payload = buildMapFromSpecs(config.inputs);
     const data = await calculateController(config.controller, payload);
     if (!data) return;
 
@@ -1022,21 +1486,21 @@ async function createFuzzyPage(config) {
     const hasOutputCurves = outputSeries && Object.keys(outputSeries).length > 0;
     const outputHighlight = hasFiredOutput(state.result) ? state.result.dominantTerm : null;
 
-    if (hasOutputCurves) {
-      drawCurveGraph(
+    if (state.mfData.meta?.singletonValues) {
+      drawSingletonGraph(
         outputCanvasId,
-        outputSeries,
+        state.mfData.meta.singletonValues,
+        state.result.ruleOutputs,
         hasFiredOutput(state.result) ? state.result.value : null,
         {
           ...getGraphOptions(config.graphs.output),
           highlightTerm: outputHighlight,
         }
       );
-    } else if (state.mfData.meta?.singletonValues) {
-      drawSingletonGraph(
+    } else if (hasOutputCurves) {
+      drawCurveGraph(
         outputCanvasId,
-        state.mfData.meta.singletonValues,
-        state.result.ruleOutputs,
+        outputSeries,
         hasFiredOutput(state.result) ? state.result.value : null,
         {
           ...getGraphOptions(config.graphs.output),
@@ -1083,19 +1547,18 @@ async function createFuzzyPage(config) {
   });
 
   setupStickyInputs(config, { applyInputValue, recalc });
+  setupPipelineAccordions(config);
+  setupGraphExpand(drawAll);
   restoreControllerInputs(config, applyInputValue);
-  setupControllerMode(config, { recalc, reloadMembership });
-  if (window.setupDocsModals) {
-    window.setupDocsModals(config.controller, () => getControllerMode(config));
-  }
+  if (window.setupDocsModals) window.setupDocsModals(config.controller);
 
-  await reloadMembership();
+  state.mfData = await loadMembershipFunctions(config.controller);
 
   setupTooltips(config, state);
 
   window.addEventListener("languageChanged", () => {
+    decoratePipelineMuHints(config);
     refreshStickyCopy(config);
-    if (config.mode) setControllerMode(config, getControllerMode(config), { persist: false });
     if (!state.result) return;
     setOutputText(
       document.getElementById(config.output.valueId),

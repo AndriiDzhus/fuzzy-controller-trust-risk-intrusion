@@ -23,6 +23,13 @@ describe("Intrusion controller logic", () => {
     expect(["medium", "high"]).toContain(result.dominantTerm);
   });
 
+  test("defuzzification memberships evaluate I at the crisp result", () => {
+    const result = calculateIntrusion({ packets: 15, rate: 55, delivery: 20 });
+    expect(result.membershipData.intrusion).not.toEqual(result.ruleOutputs);
+    const top = Object.entries(result.membershipData.intrusion).sort((a, b) => b[1] - a[1])[0][0];
+    expect(top).toBe(result.dominantTerm);
+  });
+
   test("aggregated output is the clipped I set used for centroid", () => {
     const result = calculateIntrusion({ packets: 15, rate: 55, delivery: 20 });
     expect(result.aggregatedOutput.length).toBeGreaterThan(100);
