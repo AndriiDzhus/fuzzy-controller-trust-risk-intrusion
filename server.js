@@ -106,7 +106,6 @@ app.post("/api/controllers/:controller/calculate", (req, res) => {
       value,
       dominantTerm: result.dominantTerm ?? null,
       noRuleFired: Boolean(result.noRuleFired),
-      mode: result.mode || inputs.mode || "assignment",
       membershipData: result.membershipData,
       ruleOutputs: result.ruleOutputs,
       aggregatedOutput: result.aggregatedOutput || null,
@@ -147,8 +146,7 @@ app.get("/api/controllers/:controller/membership-functions", (req, res) => {
       return res.status(404).json({ error: "Controller not found" });
     }
 
-    const mode = req.query.mode === "anfis" ? "anfis" : "assignment";
-    return res.json(controller.membershipFunctions(mode));
+    return res.json(controller.membershipFunctions());
   } catch (error) {
     console.error("Error getting unified membership functions:", error);
     return res.status(500).json({ error: "Internal server error: " + error.message });

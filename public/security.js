@@ -1,14 +1,6 @@
 document.addEventListener("DOMContentLoaded", async () => {
   await createFuzzyPage({
     controller: "security",
-    mode: {
-      default: "anfis",
-      hintId: "securityModeHint",
-      hintKeys: {
-        assignment: "security.mode.assignmentHint",
-        anfis: "security.mode.anfisHint",
-      },
-    },
     inputs: [
       { key: "energy", sliderId: "energySlider", numberId: "energyNumber", valueId: "energyValue" },
       { key: "strength", sliderId: "strengthSlider", numberId: "strengthNumber", valueId: "strengthValue" },
@@ -30,7 +22,7 @@ document.addEventListener("DOMContentLoaded", async () => {
           canvasId: "energyCanvas",
           axisLabels: {
             xKey: "security.graphs.axes.energyX",
-            yKey: "security.graphs.axes.membershipY",
+            yKey: "security.graphs.axes.energyY",
           },
           showPeakLabels: true,
         },
@@ -38,7 +30,7 @@ document.addEventListener("DOMContentLoaded", async () => {
           canvasId: "strengthCanvas",
           axisLabels: {
             xKey: "security.graphs.axes.strengthX",
-            yKey: "security.graphs.axes.membershipY",
+            yKey: "security.graphs.axes.strengthY",
           },
           showPeakLabels: true,
         },
@@ -46,7 +38,7 @@ document.addEventListener("DOMContentLoaded", async () => {
           canvasId: "responseCanvas",
           axisLabels: {
             xKey: "security.graphs.axes.responseX",
-            yKey: "security.graphs.axes.membershipY",
+            yKey: "security.graphs.axes.responseY",
           },
           showPeakLabels: true,
         },
@@ -56,7 +48,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         canvasId: "riskCanvas",
         axisLabels: {
           xKey: "security.graphs.axes.riskX",
-          yKey: "security.graphs.axes.membershipY",
+          yKey: "security.graphs.axes.riskY",
         },
       },
     },

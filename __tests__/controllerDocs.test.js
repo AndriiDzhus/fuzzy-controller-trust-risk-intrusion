@@ -40,14 +40,4 @@ describe("controller docs content", () => {
     expect(docs.trust.rules.rows[0]).toEqual(["low", "low", "low", "veryHigh"]);
     expect(docs.trust.rules.rows[26]).toEqual(["high", "high", "high", "veryLow"]);
   });
-
-  test("security ANFIS docs add completed rules and gaussian terms", () => {
-    const anfis = docs.security.anfis;
-    expect(anfis.rules.rows).toHaveLength(27);
-    expect(anfis.rules.rows.filter((row) => row.origin === "base")).toHaveLength(6);
-    expect(anfis.rules.rows.filter((row) => row.origin === "trained")).toHaveLength(21);
-    expect(anfis.inputs[0].terms[0].gaussian).toEqual({ center: 0, sigma: 12 });
-    expect(anfis.rules.rows.find((row) => row.cells.join("/") === "low/high/low/none").origin).toBe("base");
-    expect(anfis.rules.rows.find((row) => row.cells.join("/") === "low/low/low/low").origin).toBe("trained");
-  });
 });
