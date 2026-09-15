@@ -45,14 +45,10 @@ describe("E2E smoke: navigation and i18n", () => {
     expect(res.body.uk.common.sticky.result).toBeTruthy();
     expect(res.body.uk.index.stickyTitle).toBeTruthy();
     expect(res.body.uk.security.stickyTitle).toBeTruthy();
-    expect(res.body.uk.security.mode.anfis).toBeTruthy();
-    expect(res.body.en.security.mode.anfis).toBeTruthy();
-    expect(res.body.uk.security.mode.anfisHint).toMatch(/ANFIS \(Adaptive Neuro-Fuzzy Inference System/);
-    expect(res.body.en.security.mode.anfisHint).toMatch(/ANFIS \(Adaptive Neuro-Fuzzy Inference System\)/);
     expect(res.body.uk.common.meta.mamdani).toBeTruthy();
     expect(res.body.en.common.meta.centroid).toBeTruthy();
-    expect(res.body.uk.common.docs.origin.trained).toBeTruthy();
-    expect(res.body.en.common.docs.origin.trained).toBeTruthy();
+    expect(res.body.uk.common.meta.centerOfGravity).toBeTruthy();
+    expect(res.body.uk.common.meta.weightedAverage).toBeTruthy();
     expect(res.body.uk.intrusion.stickyTitle).toBeTruthy();
     expect(res.body.en.common.sticky.result).toBeTruthy();
     expect(res.body.en.index.stickyTitle).toBeTruthy();
@@ -108,13 +104,11 @@ describe("E2E smoke: navigation and i18n", () => {
     expect(intrusion.text).toContain('data-i18n="common.meta.centroid"');
   });
 
-  test("security page includes assignment/ANFIS mode selector", async () => {
+  test("security page shows singleton defuzzification mark", async () => {
     const res = await request(app).get("/security.html");
     expect(res.status).toBe(200);
-    expect(res.text).toContain('id="controllerModeSelect"');
-    expect(res.text).toContain('value="anfis"');
-    expect(res.text).toContain('value="assignment"');
     expect(res.text).toContain('data-i18n="common.meta.weightedAverage"');
+    expect(res.text).not.toContain('id="controllerModeSelect"');
   });
 
   test("all pages include formula and rule-base buttons", async () => {

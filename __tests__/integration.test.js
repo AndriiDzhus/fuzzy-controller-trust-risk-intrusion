@@ -29,18 +29,6 @@ describe("Unified controllers API", () => {
     expect(response.body.membershipData).toHaveProperty("risk");
   });
 
-  test("security ANFIS endpoint fills uncovered inputs", async () => {
-    const response = await request(app)
-      .post("/api/controllers/security/calculate")
-      .send({ energy: 50, strength: 50, response: 50, mode: "anfis" });
-
-    expect(response.status).toBe(200);
-    expect(response.body.mode).toBe("anfis");
-    expect(response.body.noRuleFired).toBe(false);
-    expect(response.body.value).toBeGreaterThanOrEqual(0);
-    expect(response.body.value).toBeLessThanOrEqual(100);
-  });
-
   test("security calculate endpoint reports uncovered inputs", async () => {
     const response = await request(app)
       .post("/api/controllers/security/calculate")
