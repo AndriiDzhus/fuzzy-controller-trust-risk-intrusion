@@ -5,65 +5,6 @@ const VL = "veryLow";
 const VH = "veryHigh";
 const NONE = "none";
 
-const RISK_BY_VALUE = { 0: NONE, 20: VL, 40: L, 60: M, 80: H, 100: VH };
-
-// Keep in sync with anfis/securityAnfis.js TEACHER_TABLE and ANCHOR_RULES.
-const SECURITY_ANFIS_TEACHER = {
-  "low/low/low": 40,
-  "low/low/medium": 60,
-  "low/low/high": 60,
-  "low/medium/low": 20,
-  "low/medium/medium": 40,
-  "low/medium/high": 40,
-  "low/high/low": 0,
-  "low/high/medium": 20,
-  "low/high/high": 40,
-  "medium/low/low": 40,
-  "medium/low/medium": 60,
-  "medium/low/high": 80,
-  "medium/medium/low": 40,
-  "medium/medium/medium": 60,
-  "medium/medium/high": 60,
-  "medium/high/low": 20,
-  "medium/high/medium": 40,
-  "medium/high/high": 40,
-  "high/low/low": 80,
-  "high/low/medium": 80,
-  "high/low/high": 100,
-  "high/medium/low": 60,
-  "high/medium/medium": 80,
-  "high/medium/high": 80,
-  "high/high/low": 40,
-  "high/high/medium": 60,
-  "high/high/high": 60,
-};
-
-const SECURITY_ANFIS_ANCHORS = new Set([
-  "low/high/low",
-  "low/high/medium",
-  "medium/medium/low",
-  "medium/low/medium",
-  "high/medium/high",
-  "high/low/high",
-]);
-
-function securityAnfisRuleRows() {
-  const terms = [L, M, H];
-  const rows = [];
-  terms.forEach((energy) => {
-    terms.forEach((strength) => {
-      terms.forEach((response) => {
-        const key = `${energy}/${strength}/${response}`;
-        rows.push({
-          cells: [energy, strength, response, RISK_BY_VALUE[SECURITY_ANFIS_TEACHER[key]]],
-          origin: SECURITY_ANFIS_ANCHORS.has(key) ? "base" : "trained",
-        });
-      });
-    });
-  });
-  return rows;
-}
-
 const controllerDocs = {
   trust: {
     hintKey: "common.docs.piecewiseHint",
@@ -290,47 +231,6 @@ const controllerDocs = {
         [H, L, H, VH],
       ],
     },
-    anfis: {
-      hintKey: "common.docs.anfisGaussianHint",
-      originNoteKey: "common.docs.origin.formulasNote",
-      inputs: [
-        {
-          symbol: "E",
-          titleKey: "security.membership.energy",
-          gender: "n",
-          terms: [
-            { term: L, mu: "L", gaussian: { center: 0, sigma: 12 }, origin: "anfis" },
-            { term: M, mu: "M", gaussian: { center: 40, sigma: 16 }, origin: "anfis" },
-            { term: H, mu: "H", gaussian: { center: 100, sigma: 20 }, origin: "anfis" },
-          ],
-        },
-        {
-          symbol: "S",
-          titleKey: "security.membership.strength",
-          gender: "f",
-          terms: [
-            { term: L, mu: "L", gaussian: { center: 0, sigma: 20 }, origin: "anfis" },
-            { term: M, mu: "M", gaussian: { center: 60, sigma: 16 }, origin: "anfis" },
-            { term: H, mu: "H", gaussian: { center: 100, sigma: 14 }, origin: "anfis" },
-          ],
-        },
-        {
-          symbol: "T",
-          titleKey: "security.membership.response",
-          gender: "m",
-          terms: [
-            { term: L, mu: "L", gaussian: { center: 0, sigma: 10 }, origin: "anfis" },
-            { term: M, mu: "M", gaussian: { center: 50, sigma: 20 }, origin: "anfis" },
-            { term: H, mu: "H", gaussian: { center: 100, sigma: 10 }, origin: "anfis" },
-          ],
-        },
-      ],
-      rules: {
-        descriptionKey: "security.rules.anfisDescription",
-        showOrigin: true,
-        rows: securityAnfisRuleRows(),
-      },
-    },
   },
   intrusion: {
     hintKey: "common.docs.gaussianHint",
@@ -496,21 +396,6 @@ function renderSingleton(symbol, term) {
   );
 }
 
-function originMark(origin) {
-  if (origin === "base") return "★";
-  if (origin === "trained") return "+";
-  return "";
-}
-
-function originBadge(origin) {
-  if (!origin) return "";
-  const mark = originMark(origin);
-  const label = docsText(`common.docs.origin.${origin}`);
-  return `<span class="docs-origin docs-origin-${origin}">${mark ? `${docsEscape(mark)} ` : ""}${docsEscape(
-    label
-  )}</span>`;
-}
-
 function renderTermBlock(variable, term) {
   const color = docsTermColor[term.term] || "#3498db";
   let body = "";
@@ -523,7 +408,6 @@ function renderTermBlock(variable, term) {
       <header class="docs-term-head">
         <i style="background:${color}"></i>
         <strong>${docsEscape(lingLabel(term.term, variable.gender))}</strong>
-        ${originBadge(term.origin)}
       </header>
       ${body}
     </article>
@@ -567,16 +451,12 @@ function renderDocsSwitch(kind, hintHtml) {
 
 function renderFormulas(spec) {
   const hint = spec.hintKey ? `<p class="docs-hint">${docsEscape(docsText(spec.hintKey))}</p>` : "";
-  const originNote = spec.originNoteKey
-    ? `<p class="docs-origin-note">${docsEscape(docsText(spec.originNoteKey))}</p>`
-    : "";
   const outputHint = spec.outputHintKey
     ? `<p class="docs-hint">${docsEscape(docsText(spec.outputHintKey))}</p>`
     : "";
 
   return `
     ${renderDocsSwitch("formulas", hint)}
-    ${originNote}
     <h2 class="docs-section-title">${docsEscape(docsText("common.docs.inputs"))}</h2>
     ${spec.inputs.map(renderVariable).join("")}
     <h2 class="docs-section-title">${docsEscape(docsText("common.docs.output"))}</h2>
@@ -589,12 +469,11 @@ function ruleColumnLabel(col) {
   return docsText(col.titleKey, col.key);
 }
 
-function renderRulesInterpretation(pageKey, spec) {
-  const descriptionKey = spec.rules.descriptionKey || `${pageKey}.rules.description`;
+function renderRulesInterpretation(pageKey) {
   return `
     <section class="docs-rules-interpretation">
       <h3>${docsEscape(docsText(`${pageKey}.rules.title`))}</h3>
-      <p>${docsEscape(docsText(descriptionKey))}</p>
+      <p>${docsEscape(docsText(`${pageKey}.rules.description`))}</p>
       <div class="rules-summary">
         <div class="rule-category">${docsEscape(docsText(`${pageKey}.rules.category1`))}</div>
         <div class="rule-category">${docsEscape(docsText(`${pageKey}.rules.category2`))}</div>
@@ -604,26 +483,18 @@ function renderRulesInterpretation(pageKey, spec) {
   `;
 }
 
-function normalizeRuleRow(row) {
-  if (Array.isArray(row)) return { cells: row, origin: null };
-  return { cells: row.cells, origin: row.origin || null };
-}
-
 function renderRules(spec, pageKey) {
   const { columns, rows } = spec.rules;
-  const normalized = rows.map(normalizeRuleRow);
-  const showOrigin = Boolean(spec.rules.showOrigin || normalized.some((row) => row.origin));
   const head = [
     `<th>${docsEscape(docsText("common.docs.rule"))}</th>`,
-    showOrigin ? `<th>${docsEscape(docsText("common.docs.origin.column"))}</th>` : "",
     ...columns.map(
       (col) => `<th${col.output ? ' class="docs-out"' : ""}>${docsEscape(ruleColumnLabel(col))}</th>`
     ),
   ].join("");
 
-  const body = normalized
-    .map((row, index) => {
-      const tds = row.cells
+  const body = rows
+    .map((cells, index) => {
+      const tds = cells
         .map((term, i) => {
           const col = columns[i];
           const color = docsTermColor[term] || "#7f8c8d";
@@ -634,9 +505,7 @@ function renderRules(spec, pageKey) {
           </td>`;
         })
         .join("");
-      const originCell = showOrigin ? `<td>${originBadge(row.origin)}</td>` : "";
-      const rowClass = row.origin === "trained" ? ' class="docs-row-trained"' : "";
-      return `<tr${rowClass}><td class="docs-num">${index + 1}</td>${originCell}${tds}</tr>`;
+      return `<tr><td class="docs-num">${index + 1}</td>${tds}</tr>`;
     })
     .join("");
 
@@ -645,9 +514,6 @@ function renderRules(spec, pageKey) {
     .map((col) => `${col.key} = …`)
     .join(` ${docsText("common.docs.and")} `);
   const outCol = columns.find((col) => col.output);
-  const legend = showOrigin
-    ? `<p class="docs-origin-legend">${docsEscape(docsText("common.docs.origin.legend"))}</p>`
-    : "";
 
   return `
     ${renderDocsSwitch("rules", `<p class="docs-hint">${docsEscape(docsText("common.docs.ifThenHint"))}</p>`)}
@@ -663,8 +529,7 @@ function renderRules(spec, pageKey) {
         <tbody>${body}</tbody>
       </table>
     </div>
-    ${legend}
-    ${renderRulesInterpretation(pageKey, spec)}
+    ${renderRulesInterpretation(pageKey)}
   `;
 }
 
@@ -707,33 +572,8 @@ function ensureDocsModal() {
   return modal;
 }
 
-function resolveDocsSpec(controller, mode) {
-  const spec = controllerDocs[controller];
-  if (!spec) return null;
-  if (controller === "security" && mode === "anfis" && spec.anfis) {
-    const anfisInputs = spec.anfis.inputs || [];
-    return {
-      ...spec,
-      ...spec.anfis,
-      inputs: spec.inputs.map((variable, index) => ({
-        ...variable,
-        terms: [
-          ...variable.terms.map((term) => ({ ...term, origin: "base" })),
-          ...(anfisInputs[index]?.terms || []),
-        ],
-      })),
-      rules: { ...spec.rules, ...spec.anfis.rules },
-    };
-  }
-  return spec;
-}
-
-function currentDocsMode() {
-  return typeof window.getControllerDocsMode === "function" ? window.getControllerDocsMode() : undefined;
-}
-
 function openDocsModal(controller, kind) {
-  const spec = resolveDocsSpec(controller, currentDocsMode());
+  const spec = controllerDocs[controller];
   if (!spec) return;
 
   const modal = ensureDocsModal();
@@ -762,23 +602,18 @@ function closeDocsModal() {
   document.body.classList.remove("docs-modal-open");
 }
 
-function setupDocsModals(controller, getMode) {
-  window.getControllerDocsMode = typeof getMode === "function" ? getMode : () => undefined;
+function setupDocsModals(controller) {
   ensureDocsModal();
   document.querySelectorAll("[data-docs]").forEach((btn) => {
     btn.addEventListener("click", () => openDocsModal(controller, btn.getAttribute("data-docs")));
   });
 
-  const refreshOpenDocs = () => {
+  window.addEventListener("languageChanged", () => {
     const modal = document.getElementById("docsModal");
     if (!modal || modal.hidden) return;
     openDocsModal(controller, modal.dataset.kind || "formulas");
-  };
-
-  window.addEventListener("languageChanged", refreshOpenDocs);
-  window.addEventListener("controllerModeChanged", refreshOpenDocs);
+  });
 }
 
 window.setupDocsModals = setupDocsModals;
-window.resolveDocsSpec = resolveDocsSpec;
 window.controllerDocs = controllerDocs;
