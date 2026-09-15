@@ -125,19 +125,10 @@ describe("Security controller logic", () => {
     expect(Object.values(result.ruleOutputs).every((mu) => mu === 0)).toBe(true);
   });
 
-  test("membership functions include risk output curves for chart rendering", () => {
+  test("risk output is drawn as assignment singletons, not triangle curves", () => {
     const mf = controllers.security.membershipFunctions();
-
-    expect(Object.keys(mf.output.risk)).toEqual([
-      "none",
-      "veryLow",
-      "low",
-      "medium",
-      "high",
-      "veryHigh",
-    ]);
-    expect(mf.output.risk.low.length).toBeGreaterThan(0);
-    expect(mf.output.risk.low.some((point) => point.y > 0)).toBe(true);
+    expect(mf.output.risk).toEqual({});
+    expect(mf.meta.singletonValues).toEqual(SINGletons);
   });
 });
 
