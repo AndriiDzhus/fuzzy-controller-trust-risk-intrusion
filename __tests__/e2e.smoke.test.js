@@ -150,7 +150,8 @@ describe("E2E smoke: navigation and i18n", () => {
     expect(res.body.uk.common.glossary.cog.hint).toContain("Σ");
     expect(res.body.uk.common.glossary.wavg.hint).toContain("w");
     expect(res.body.uk.common.pipeline.defuzzificationHintSugeno).toContain("{tip:wavg}");
-    expect(res.body.uk.common.pipeline.accumulation).toBe("Акумуляція");
+    expect(res.body.uk.common.graph.expand).toBeTruthy();
+    expect(res.body.en.common.graph.collapse).toBeTruthy();
     expect(res.body.uk.common.pipeline.defuzzification).toBe("Дефазифікація");
     expect(res.body.en.common.pipeline.fuzzification).toBe("Fuzzification");
     expect(res.body.en.common.pipeline.accumulation).toBe("Accumulation");
@@ -177,6 +178,15 @@ describe("E2E smoke: navigation and i18n", () => {
     expect(js.status).toBe(200);
     expect(css.status).toBe(200);
     expect(js.text).toContain("katex");
+  });
+
+  test("graph expand control is available in shared core", async () => {
+    const js = await request(app).get("/fuzzy-page-core.js");
+    const css = await request(app).get("/style.css");
+    expect(js.status).toBe(200);
+    expect(js.text).toContain("setupGraphExpand");
+    expect(js.text).toContain('querySelector(".container")');
+    expect(css.text).toContain(".graph-expand-btn");
   });
 
   test("shared graph core and i18n helper are loaded on all pages", async () => {

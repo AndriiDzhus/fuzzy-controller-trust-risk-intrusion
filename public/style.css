@@ -577,6 +577,114 @@ canvas {
   filter: brightness(1.05);
 }
 
+.graph-container h4 {
+  padding-right: 2rem;
+}
+
+.graph-expand-btn {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 5;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 1px solid #d5dde5;
+  border-radius: 8px;
+  background: #fff;
+  color: #2c3e50;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 1px 4px rgba(44, 62, 80, 0.08);
+}
+
+.graph-expand-btn:hover,
+.graph-expand-btn:focus {
+  background: #f4f8fb;
+  border-color: #7aa7d4;
+  outline: none;
+}
+
+.graph-expand-btn svg {
+  width: 16px;
+  height: 16px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.graph-expand-placeholder {
+  min-width: 0;
+}
+
+body.graph-expanded {
+  overflow: hidden;
+}
+
+body.graph-expanded::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.45);
+  z-index: 70;
+}
+
+.graph-container.is-expanded {
+  position: fixed;
+  inset: auto;
+  top: 50%;
+  left: 50%;
+  right: auto;
+  bottom: auto;
+  transform: translate(-50%, -50%);
+  z-index: 75;
+  width: min(var(--expand-w, 1200px), 100vw);
+  max-height: calc(100vh - 48px);
+  margin: 0;
+  padding: 16px 18px 14px;
+  display: flex;
+  flex-direction: column;
+  overflow: auto;
+}
+
+.graph-container.is-expanded h4 {
+  font-size: 1.05rem;
+  padding-right: 2.4rem;
+}
+
+.graph-container.is-expanded canvas {
+  width: 100%;
+  height: auto;
+  max-height: min(var(--expand-h, 70vh), calc(100vh - 180px));
+  margin: 0 auto;
+}
+
+.graph-container.is-expanded .membership-values {
+  margin-top: 12px;
+}
+
+@media (max-width: 768px) {
+  .graph-container.is-expanded {
+    inset: 12px;
+    top: 12px;
+    left: 12px;
+    right: 12px;
+    bottom: 12px;
+    transform: none;
+    width: auto;
+    max-height: none;
+    padding: 18px 16px 16px;
+  }
+
+  .graph-container.is-expanded canvas {
+    max-height: calc(100vh - 160px);
+  }
+}
+
 .graph-legend {
   display: none;
 }
