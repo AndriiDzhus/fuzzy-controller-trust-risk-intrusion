@@ -22,7 +22,7 @@ document.addEventListener("DOMContentLoaded", async () => {
           canvasId: "packetsCanvas",
           axisLabels: {
             xKey: "intrusion.graphs.axes.packetsX",
-            yKey: "intrusion.graphs.axes.membershipY",
+            yKey: "intrusion.graphs.axes.packetsY",
           },
           showPeakLabels: true,
         },
@@ -30,7 +30,7 @@ document.addEventListener("DOMContentLoaded", async () => {
           canvasId: "rateCanvas",
           axisLabels: {
             xKey: "intrusion.graphs.axes.rateX",
-            yKey: "intrusion.graphs.axes.membershipY",
+            yKey: "intrusion.graphs.axes.rateY",
           },
           showPeakLabels: true,
         },
@@ -38,7 +38,7 @@ document.addEventListener("DOMContentLoaded", async () => {
           canvasId: "deliveryCanvas",
           axisLabels: {
             xKey: "intrusion.graphs.axes.deliveryX",
-            yKey: "intrusion.graphs.axes.membershipY",
+            yKey: "intrusion.graphs.axes.deliveryY",
           },
           showPeakLabels: true,
         },
@@ -48,7 +48,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         canvasId: "intrusionCanvas",
         axisLabels: {
           xKey: "intrusion.graphs.axes.intrusionX",
-          yKey: "intrusion.graphs.axes.membershipY",
+          yKey: "intrusion.graphs.axes.intrusionY",
         },
         showPeakLabels: true,
       },
@@ -56,7 +56,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         canvasId: "intrusionAggregatedCanvas",
         axisLabels: {
           xKey: "intrusion.graphs.axes.intrusionX",
-          yKey: "intrusion.graphs.axes.membershipY",
+          yKey: "intrusion.graphs.axes.intrusionY",
         },
       },
     },

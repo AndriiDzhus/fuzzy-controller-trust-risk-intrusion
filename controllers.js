@@ -345,7 +345,7 @@ function calculateIntrusion(inputs) {
     packets: fuzzy.packets,
     rate: fuzzy.rate,
     delivery: fuzzy.delivery,
-    intrusion: ruleOutputs,
+    intrusion: outputMemberships,
   };
 
   return {

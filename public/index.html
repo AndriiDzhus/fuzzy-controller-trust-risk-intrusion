@@ -10,10 +10,9 @@
   </head>
   <body>
     <div class="container">
-      <div class="app-brand">
-        <p class="app-brand-name" data-i18n="app.name"></p>
-        <div class="app-brand-row">
-          <p class="app-brand-tagline" data-i18n="app.tagline"></p>
+      <header class="app-header">
+        <div class="app-header-top">
+          <p class="app-brand-name" data-i18n="app.name"></p>
           <div class="lang-wrap">
             <select id="languageSwitcher" class="lang-select">
               <option value="uk" data-i18n="common.languages.uk"></option>
@@ -21,135 +20,144 @@
             </select>
           </div>
         </div>
-      </div>
-      <div class="top-bar">
-        <nav class="navigation">
+        <nav class="navigation" aria-label="controllers">
           <ul class="nav-list">
             <li><a class="nav-link active" href="index.html" data-i18n="navigation.main"></a></li>
             <li><a class="nav-link" href="security.html" data-i18n="navigation.security"></a></li>
             <li><a class="nav-link" href="intrusion.html" data-i18n="navigation.intrusion"></a></li>
           </ul>
         </nav>
-      </div>
-
-      <h1 data-i18n="index.title"></h1>
-      <p class="description" data-i18n="index.description"></p>
-      <div class="docs-actions">
-        <button type="button" class="docs-btn" data-docs="formulas" data-i18n="common.docs.formulasBtn"></button>
-        <button type="button" class="docs-btn docs-btn-alt" data-docs="rules" data-i18n="common.docs.rulesBtn"></button>
-      </div>
-      <div class="controller-meta">
-        <span class="controller-meta-chip">
-          <strong data-i18n="common.meta.model"></strong>
-          <span data-i18n="common.meta.mamdani"></span>
-        </span>
-        <span class="controller-meta-chip">
-          <strong data-i18n="common.meta.defuzzification"></strong>
-          <span data-i18n="common.meta.centerOfGravity"></span>
-        </span>
-      </div>
-
-      <div class="input-section">
-        <div class="input-group">
-          <label for="errorsSlider" data-i18n="index.inputs.errors"></label>
-          <input type="range" id="errorsSlider" min="0" max="100" step="0.1" value="50" />
-          <input type="number" id="errors" min="0" max="100" step="0.1" value="50" />
-          <span class="input-value" id="eValue">50.0</span>
-        </div>
-
-        <div class="input-group">
-          <label for="connectionsSlider" data-i18n="index.inputs.connections"></label>
-          <input type="range" id="connectionsSlider" min="0" max="100" step="0.1" value="50" />
-          <input type="number" id="connections" min="0" max="100" step="0.1" value="50" />
-          <span class="input-value" id="cValue">50.0</span>
-        </div>
-
-        <div class="input-group">
-          <label for="bytesSlider" data-i18n="index.inputs.bytes"></label>
-          <input type="range" id="bytesSlider" min="0" max="100" step="0.1" value="50" />
-          <input type="number" id="bytes" min="0" max="100" step="0.1" value="50" />
-          <span class="input-value" id="bValue">50.0</span>
-        </div>
-      </div>
-
-      <div class="output-section">
-        <h2 data-i18n="index.results.title"></h2>
-        <div class="result-display">
-          <div class="result-item">
-            <span class="result-label" data-i18n="index.results.value"></span>
-            <span class="result-value" id="trustIndexOutput">--</span>
+        <div class="page-head">
+          <div class="page-head-copy">
+            <h1 data-i18n="index.title"></h1>
+            <p class="description" data-i18n="index.description"></p>
           </div>
-          <div class="result-item">
-            <span class="result-label" data-i18n="index.results.level"></span>
-            <span class="result-term" id="activeOutputTerm">--</span>
-            <small class="result-explanation" data-i18n="index.results.explanation"></small>
+          <div class="page-head-tools">
+            <div class="controller-meta">
+              <span class="controller-meta-chip">
+                <strong data-i18n="common.meta.model"></strong>
+                <span data-i18n="common.meta.mamdani"></span>
+              </span>
+              <span class="controller-meta-chip">
+                <strong data-i18n="common.meta.defuzzification"></strong>
+                <span data-i18n="common.meta.centerOfGravity"></span>
+              </span>
+            </div>
+            <div class="docs-actions">
+              <button type="button" class="docs-btn" data-docs="formulas" data-i18n="common.docs.formulasBtn"></button>
+              <button type="button" class="docs-btn docs-btn-alt" data-docs="rules" data-i18n="common.docs.rulesBtn"></button>
+            </div>
           </div>
         </div>
-      </div>
+      </header>
 
-      <div class="membership-display">
-        <h3 data-i18n="index.membership.title"></h3>
-        <div class="membership-grid">
-          <div class="membership-section">
-            <h4 data-i18n="index.membership.errors"></h4>
-            <div id="eMembership" class="membership-values"></div>
+      <div class="workspace">
+        <div class="input-section">
+          <h2 class="workspace-heading" data-i18n="common.pipeline.inputs"></h2>
+          <div class="input-group">
+            <label for="errorsSlider" data-i18n="index.inputs.errors"></label>
+            <input type="range" id="errorsSlider" min="0" max="100" step="0.1" value="50" />
+            <input type="number" id="errors" min="0" max="100" step="0.1" value="50" />
+            <span class="input-value" id="eValue">50.0</span>
           </div>
-          <div class="membership-section">
-            <h4 data-i18n="index.membership.connections"></h4>
-            <div id="cMembership" class="membership-values"></div>
+
+          <div class="input-group">
+            <label for="connectionsSlider" data-i18n="index.inputs.connections"></label>
+            <input type="range" id="connectionsSlider" min="0" max="100" step="0.1" value="50" />
+            <input type="number" id="connections" min="0" max="100" step="0.1" value="50" />
+            <span class="input-value" id="cValue">50.0</span>
           </div>
-          <div class="membership-section">
-            <h4 data-i18n="index.membership.bytes"></h4>
-            <div id="bMembership" class="membership-values"></div>
+
+          <div class="input-group">
+            <label for="bytesSlider" data-i18n="index.inputs.bytes"></label>
+            <input type="range" id="bytesSlider" min="0" max="100" step="0.1" value="50" />
+            <input type="number" id="bytes" min="0" max="100" step="0.1" value="50" />
+            <span class="input-value" id="bValue">50.0</span>
           </div>
-          <div class="membership-section">
-            <h4 data-i18n="index.membership.trust"></h4>
-            <div id="tMembership" class="membership-values"></div>
+        </div>
+
+        <div class="output-section">
+          <h2 class="workspace-heading" data-i18n="index.results.title"></h2>
+          <div class="result-display">
+            <div class="result-item">
+              <span class="result-label" data-i18n="index.results.value"></span>
+              <span class="result-value" id="trustIndexOutput">--</span>
+            </div>
+            <div class="result-item">
+              <span class="result-label" data-i18n="index.results.level"></span>
+              <span class="result-term" id="activeOutputTerm">--</span>
+              <small class="result-explanation" data-i18n="index.results.explanation"></small>
+            </div>
           </div>
         </div>
       </div>
 
-      <div class="graphs-section">
-        <h3 data-i18n="index.graphs.title"></h3>
-        <div class="graph-row">
-          <div class="graph-container">
-            <h4 data-i18n="index.membership.errors"></h4>
-            <canvas
-              id="errorsCanvas"
-              width="400"
-              height="250"
-            ></canvas>
-            <div id="eTooltip" class="graph-tooltip"></div>
-          </div>
-          <div class="graph-container">
-            <h4 data-i18n="index.membership.connections"></h4>
-            <canvas id="connectionsCanvas" width="400" height="250"></canvas>
-            <div id="cTooltip" class="graph-tooltip"></div>
-          </div>
-        </div>
-        <div class="graph-row">
-          <div class="graph-container">
-            <h4 data-i18n="index.membership.bytes"></h4>
-            <canvas
-              id="bytesCanvas"
-              width="400"
-              height="250"
-            ></canvas>
-            <div id="bTooltip" class="graph-tooltip"></div>
-          </div>
-          <div class="graph-container">
-            <h4 data-i18n="index.membership.trust"></h4>
-            <canvas id="trustIndexCanvas" width="400" height="250"></canvas>
-            <div id="tTooltip" class="graph-tooltip"></div>
+      <details class="process-step" data-step="fuzzification" open>
+        <summary>
+          <span class="process-step-num">1</span>
+          <span class="process-step-title" data-i18n="common.pipeline.fuzzification"></span>
+        </summary>
+        <div class="process-step-body">
+          <p class="process-step-hint" data-i18n="common.pipeline.fuzzificationHint"></p>
+          <div class="graph-grid graph-grid-3">
+            <div class="graph-container">
+              <h4 data-i18n="index.membership.errors"></h4>
+              <canvas id="errorsCanvas" width="400" height="220"></canvas>
+              <div id="eTooltip" class="graph-tooltip"></div>
+              <div id="eMembership" class="membership-values"></div>
+            </div>
+            <div class="graph-container">
+              <h4 data-i18n="index.membership.connections"></h4>
+              <canvas id="connectionsCanvas" width="400" height="220"></canvas>
+              <div id="cTooltip" class="graph-tooltip"></div>
+              <div id="cMembership" class="membership-values"></div>
+            </div>
+            <div class="graph-container">
+              <h4 data-i18n="index.membership.bytes"></h4>
+              <canvas id="bytesCanvas" width="400" height="220"></canvas>
+              <div id="bTooltip" class="graph-tooltip"></div>
+              <div id="bMembership" class="membership-values"></div>
+            </div>
           </div>
         </div>
-        <div class="graph-row graph-row-full">
-          <div class="graph-container">
-            <h4 data-i18n="index.membership.aggregated"></h4>
-            <canvas id="trustAggregatedCanvas" width="800" height="250"></canvas>
+      </details>
+
+      <details class="process-step" data-step="accumulation" open>
+        <summary>
+          <span class="process-step-num">2</span>
+          <span class="process-step-title" data-i18n="common.pipeline.accumulation"></span>
+        </summary>
+        <div class="process-step-body">
+          <p class="process-step-hint" data-i18n="common.pipeline.accumulationHintMamdani"></p>
+          <div class="graph-grid graph-grid-1">
+            <div class="graph-container">
+              <h4 data-i18n="index.membership.aggregated"></h4>
+              <canvas id="trustAggregatedCanvas" width="800" height="220"></canvas>
+            </div>
           </div>
         </div>
-      </div>
+      </details>
+
+      <details class="process-step" data-step="defuzzification" open>
+        <summary>
+          <span class="process-step-num">3</span>
+          <span class="process-step-title" data-i18n="common.pipeline.defuzzification"></span>
+        </summary>
+        <div class="process-step-body">
+          <p class="process-step-hint" data-i18n="common.pipeline.defuzzificationHintCog"></p>
+          <div class="graph-grid graph-grid-split">
+            <div class="graph-container">
+              <h4 data-i18n="index.membership.trust"></h4>
+              <canvas id="trustIndexCanvas" width="800" height="220"></canvas>
+              <div id="tTooltip" class="graph-tooltip"></div>
+            </div>
+            <div class="membership-section">
+              <h4 data-i18n="index.membership.trust"></h4>
+              <div id="tMembership" class="membership-values"></div>
+            </div>
+          </div>
+        </div>
+      </details>
 
     </div>
 
