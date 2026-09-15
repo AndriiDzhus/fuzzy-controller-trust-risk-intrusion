@@ -1060,6 +1060,171 @@ function decoratePipelineMuHints(config) {
   });
 }
 
+function setupGraphExpand(redraw) {
+  const expandIcon =
+    '<svg viewBox="0 0 24 24" aria-hidden="true"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg>';
+  const collapseIcon =
+    '<svg viewBox="0 0 24 24" aria-hidden="true"><polyline points="4 14 10 14 10 20"/><polyline points="20 10 14 10 14 4"/><line x1="10" y1="14" x2="3" y2="21"/><line x1="14" y1="10" x2="21" y2="3"/></svg>';
+
+  const rememberCanvasSize = (canvas) => {
+    if (!canvas.dataset.baseWidth) {
+      canvas.dataset.baseWidth = String(canvas.width);
+      canvas.dataset.baseHeight = String(canvas.height);
+    }
+  };
+
+  const restoreCanvasSize = (canvas) => {
+    const w = Number(canvas.dataset.baseWidth);
+    const h = Number(canvas.dataset.baseHeight);
+    if (w && h && (canvas.width !== w || canvas.height !== h)) {
+      canvas.width = w;
+      canvas.height = h;
+      return true;
+    }
+    return false;
+  };
+
+  const isMobileExpand = () => window.matchMedia("(max-width: 768px)").matches;
+
+  const appContainerWidth = () => {
+    const shell = document.querySelector(".container");
+    if (!shell) return Math.min(1200, Math.floor(window.innerWidth - 48));
+    return Math.max(280, Math.round(shell.getBoundingClientRect().width));
+  };
+
+  const applyExpandSize = (container, canvas) => {
+    if (isMobileExpand()) {
+      container.style.removeProperty("--expand-w");
+      container.style.removeProperty("--expand-h");
+      return;
+    }
+    const width = appContainerWidth();
+    const ratio =
+      (Number(canvas?.dataset.baseHeight || canvas?.height) || 220) /
+      (Number(canvas?.dataset.baseWidth || canvas?.width) || 400);
+    container.style.setProperty("--expand-w", `${width}px`);
+    container.style.setProperty("--expand-h", `${Math.round(width * ratio)}px`);
+  };
+
+  const fitExpandedCanvas = (canvas) => {
+    rememberCanvasSize(canvas);
+    const baseW = Number(canvas.dataset.baseWidth) || canvas.width;
+    const baseH = Number(canvas.dataset.baseHeight) || canvas.height;
+    const ratio = baseH / baseW;
+    let width;
+    let height;
+    if (isMobileExpand()) {
+      width = Math.max(baseW, Math.floor(canvas.clientWidth) || baseW);
+      height = Math.round(width * ratio);
+      const maxH = Math.floor(window.innerHeight * 0.72);
+      if (height > maxH) {
+        height = maxH;
+        width = Math.round(height / ratio);
+      }
+    } else {
+      width = appContainerWidth();
+      height = Math.round(width * ratio);
+      const maxH = Math.floor(window.innerHeight * 0.7);
+      if (height > maxH) {
+        height = maxH;
+        width = Math.round(height / ratio);
+      }
+    }
+    if (canvas.width !== width || canvas.height !== height) {
+      canvas.width = width;
+      canvas.height = height;
+      return true;
+    }
+    return false;
+  };
+
+  const syncExpandButtons = () => {
+    document.querySelectorAll(".graph-expand-btn").forEach((btn) => {
+      const expanded = btn.closest(".graph-container")?.classList.contains("is-expanded");
+      btn.innerHTML = expanded ? collapseIcon : expandIcon;
+      btn.setAttribute(
+        "aria-label",
+        i18nText(expanded ? "common.graph.collapse" : "common.graph.expand", expanded ? "Collapse" : "Expand")
+      );
+      btn.setAttribute("aria-pressed", expanded ? "true" : "false");
+    });
+  };
+
+  const collapseGraph = () => {
+    const container = document.querySelector(".graph-container.is-expanded");
+    if (!container) return;
+    const canvas = container.querySelector("canvas");
+    const placeholder = container.nextElementSibling;
+    container.classList.remove("is-expanded");
+    container.style.removeProperty("--expand-w");
+    container.style.removeProperty("--expand-h");
+    document.body.classList.remove("graph-expanded");
+    if (placeholder?.classList.contains("graph-expand-placeholder")) placeholder.remove();
+    if (canvas) restoreCanvasSize(canvas);
+    syncExpandButtons();
+    if (typeof redraw === "function") redraw();
+  };
+
+  const expandGraph = (container) => {
+    if (container.classList.contains("is-expanded")) {
+      collapseGraph();
+      return;
+    }
+    collapseGraph();
+    const canvas = container.querySelector("canvas");
+    if (canvas) rememberCanvasSize(canvas);
+    applyExpandSize(container, canvas);
+    const placeholder = document.createElement("div");
+    placeholder.className = "graph-expand-placeholder";
+    placeholder.style.height = `${container.offsetHeight}px`;
+    container.after(placeholder);
+    container.classList.add("is-expanded");
+    document.body.classList.add("graph-expanded");
+    syncExpandButtons();
+    requestAnimationFrame(() => {
+      const live = container.querySelector("canvas");
+      if (live) fitExpandedCanvas(live);
+      if (typeof redraw === "function") redraw();
+    });
+  };
+
+  document.querySelectorAll(".graph-container").forEach((container) => {
+    if (container.querySelector(".graph-expand-btn")) return;
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "graph-expand-btn";
+    container.appendChild(btn);
+    btn.addEventListener("click", (event) => {
+      event.stopPropagation();
+      expandGraph(container);
+    });
+  });
+  syncExpandButtons();
+
+  if (!document.documentElement.dataset.graphExpandBound) {
+    document.documentElement.dataset.graphExpandBound = "1";
+    document.addEventListener("keydown", (event) => {
+      if (event.key === "Escape") collapseGraph();
+    });
+    document.addEventListener("click", (event) => {
+      if (!document.body.classList.contains("graph-expanded")) return;
+      if (event.target.closest(".graph-container.is-expanded")) return;
+      collapseGraph();
+    });
+    window.addEventListener("resize", () => {
+      const container = document.querySelector(".graph-container.is-expanded");
+      const canvas = container?.querySelector("canvas");
+      if (!canvas) return;
+      applyExpandSize(container, canvas);
+      if (fitExpandedCanvas(canvas) && typeof redraw === "function") {
+        redraw();
+      }
+    });
+  }
+
+  window.addEventListener("languageChanged", syncExpandButtons);
+}
+
 function setupPipelineAccordions(config) {
   const page = window.location.pathname || "index.html";
   document.querySelectorAll(".process-step[data-step]").forEach((el) => {
@@ -1383,6 +1548,7 @@ async function createFuzzyPage(config) {
 
   setupStickyInputs(config, { applyInputValue, recalc });
   setupPipelineAccordions(config);
+  setupGraphExpand(drawAll);
   restoreControllerInputs(config, applyInputValue);
   if (window.setupDocsModals) window.setupDocsModals(config.controller);
 

@@ -51,6 +51,10 @@
       "sticky": {
         "result": "Результат"
       },
+      "graph": {
+        "expand": "Збільшити графік",
+        "collapse": "Згорнути графік"
+      },
       "pipeline": {
         "inputs": "Вхідні величини",
         "fuzzification": "Фазифікація",
@@ -347,6 +351,10 @@
       "noRuleFiredHint": "The security rule base has only 6 combinations of E, S and T. The current inputs do not activate any rule, so risk R cannot be calculated — there are no active singletons to defuzzify.",
       "sticky": {
         "result": "Result"
+      },
+      "graph": {
+        "expand": "Enlarge graph",
+        "collapse": "Collapse graph"
       },
       "pipeline": {
         "inputs": "Input values",
