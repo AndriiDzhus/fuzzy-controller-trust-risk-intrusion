@@ -119,33 +119,33 @@
         </div>
       </details>
 
-      <details class="process-step" data-step="output" open>
+      <details class="process-step" data-step="accumulation" open>
         <summary>
           <span class="process-step-num">2</span>
-          <span class="process-step-title" data-i18n="common.pipeline.output"></span>
+          <span class="process-step-title" data-i18n="common.pipeline.accumulation"></span>
         </summary>
         <div class="process-step-body">
-          <div class="output-step-toolbar">
-            <p class="process-step-hint" data-i18n="common.pipeline.outputHintSugeno"></p>
-            <div class="graph-layer-toggles" data-output-layers>
-              <label class="layer-toggle">
-                <input type="checkbox" data-layer="accumulation" checked />
-                <span data-i18n="common.pipeline.accumulation"></span>
-              </label>
-              <label class="layer-toggle">
-                <input type="checkbox" data-layer="defuzzification" checked />
-                <span data-i18n="common.pipeline.defuzzification"></span>
-              </label>
+          <p class="process-step-hint" data-i18n="common.pipeline.accumulationHintSugeno"></p>
+          <div class="graph-grid graph-grid-split">
+            <div class="membership-section membership-section-wide">
+              <h4 data-i18n="security.membership.risk"></h4>
+              <div id="riskMembership" class="membership-values"></div>
             </div>
           </div>
-          <div class="graph-grid graph-grid-split">
+        </div>
+      </details>
+
+      <details class="process-step" data-step="defuzzification" open>
+        <summary>
+          <span class="process-step-num">3</span>
+          <span class="process-step-title" data-i18n="common.pipeline.defuzzification"></span>
+        </summary>
+        <div class="process-step-body">
+          <p class="process-step-hint" data-i18n="common.pipeline.defuzzificationHintSugeno"></p>
+          <div class="graph-grid graph-grid-1">
             <div class="graph-container">
               <h4 data-i18n="security.membership.risk"></h4>
               <canvas id="riskCanvas" width="800" height="220"></canvas>
-            </div>
-            <div class="membership-section" data-layer-panel="accumulation">
-              <h4 data-i18n="security.membership.risk"></h4>
-              <div id="riskMembership" class="membership-values"></div>
             </div>
           </div>
         </div>
