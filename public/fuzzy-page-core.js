@@ -1291,7 +1291,7 @@ function readStoredOutputLayers(controller) {
 function setupOutputLayers(controller, onChange) {
   const root = document.querySelector("[data-output-layers]");
   let layers = readStoredOutputLayers(controller);
-  if (!root) return () => layers;
+  if (!root) return () => ({ ...OUTPUT_LAYER_DEFAULTS });
 
   const syncUi = () => {
     root.querySelectorAll("[data-layer]").forEach((input) => {
@@ -1304,9 +1304,11 @@ function setupOutputLayers(controller, onChange) {
     });
     if (grid) {
       const panel = grid.querySelector("[data-layer-panel]");
-      const panelVisible = Boolean(panel && !panel.hidden);
-      grid.classList.toggle("graph-grid-split", panelVisible);
-      grid.classList.toggle("graph-grid-1", !panelVisible);
+      if (panel) {
+        const panelVisible = !panel.hidden;
+        grid.classList.toggle("graph-grid-split", panelVisible);
+        grid.classList.toggle("graph-grid-1", !panelVisible);
+      }
     }
   };
 

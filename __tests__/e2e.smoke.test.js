@@ -151,9 +151,9 @@ describe("E2E smoke: navigation and i18n", () => {
   });
 
   test("all pages split inference into accordion pipeline steps", async () => {
-    const pages = ["/index.html", "/security.html", "/intrusion.html"];
+    const mamdaniPages = ["/index.html", "/intrusion.html"];
 
-    for (const page of pages) {
+    for (const page of mamdaniPages) {
       const res = await request(app).get(page);
       expect(res.status).toBe(200);
       expect(res.text).toContain('class="workspace"');
@@ -163,9 +163,16 @@ describe("E2E smoke: navigation and i18n", () => {
       expect(res.text).toContain('data-output-layers');
       expect(res.text).toContain('data-layer="accumulation"');
       expect(res.text).toContain('data-layer="defuzzification"');
-      expect(res.text).toContain('data-i18n="common.pipeline.fuzzification"');
       expect(res.text).toContain('data-i18n="common.pipeline.output"');
     }
+
+    const security = await request(app).get("/security.html");
+    expect(security.status).toBe(200);
+    expect(security.text).toContain('data-step="fuzzification"');
+    expect(security.text).toContain('data-step="accumulation"');
+    expect(security.text).toContain('data-step="defuzzification"');
+    expect(security.text).not.toContain('data-output-layers');
+    expect(security.text).not.toContain('data-i18n="common.pipeline.output"');
   });
 
   test("i18n dictionary has pipeline step labels", async () => {
