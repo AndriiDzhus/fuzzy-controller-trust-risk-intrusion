@@ -325,7 +325,8 @@ h3 {
 }
 
 .graph-row-full canvas,
-.graph-grid-1 canvas {
+.graph-grid-1 canvas,
+.graph-grid-split canvas {
   width: 100%;
   height: auto;
 }
@@ -1038,6 +1039,64 @@ body.graph-expanded::after {
   color: #5d6d7e;
   font-size: 0.88rem;
   line-height: 1.45;
+}
+
+.output-step-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px 16px;
+  margin-bottom: 12px;
+}
+
+.output-step-toolbar .process-step-hint {
+  flex: 1 1 16rem;
+  margin: 0;
+}
+
+.graph-layer-toggles {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  flex: 0 0 auto;
+}
+
+.layer-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  padding: 6px 12px;
+  border-radius: 999px;
+  border: 1px solid #dbe3ea;
+  background: #f4f8fb;
+  color: #2c3e50;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 0.82rem;
+  line-height: 1.2;
+  user-select: none;
+}
+
+.layer-toggle input {
+  margin: 0;
+  accent-color: #1d6aa5;
+}
+
+.layer-toggle:has(input:focus-visible) {
+  outline: 2px solid #3498db;
+  outline-offset: 2px;
+}
+
+.layer-toggle:has(input:checked) {
+  background: #3498db;
+  border-color: #3498db;
+  color: #fff;
+}
+
+.layer-toggle:has(input:checked) input {
+  accent-color: #fff;
 }
 
 .mu-ref {

@@ -168,6 +168,16 @@ function calculateTrustIndex(errorsVal, connectionsVal, bytesVal) {
   return centerOfGravity(union, fuzzySystem.outputs[0].range);
 }
 
+function getOutputTermActivations() {
+  const activations = {};
+  fuzzySystem.rules.forEach((rule) => {
+    const term = rule.conclusions[0];
+    if (!term) return;
+    activations[term] = Math.max(activations[term] || 0, Number(rule.beliefDegree) || 0);
+  });
+  return activations;
+}
+
 function sampleAggregatedOutput(union, range, points = 100) {
   const [start, end] = range;
   const series = [];
@@ -236,6 +246,7 @@ module.exports = {
   calculateTrustIndex,
   centerOfGravity,
   getAggregatedOutput,
+  getOutputTermActivations,
   calculateMembershipValues,
   getMostActiveTerm,
   membershipParams,

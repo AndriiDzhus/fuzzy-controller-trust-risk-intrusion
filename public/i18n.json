@@ -13,6 +13,7 @@
         "outputAxis": "Вихід",
         "memberships": "μ у цій точці",
         "aggregatedMu": "μ агрегованої множини",
+        "clippedMu": "μ зрізаних термів; контур — їх max",
         "current": "Поточний вхід",
         "result": "Результат",
         "singletonAt": "Синглтон",
@@ -60,12 +61,15 @@
         "fuzzification": "Фазифікація",
         "accumulation": "Акумуляція",
         "defuzzification": "Дефазифікація",
+        "output": "Акумуляція та дефазифікація",
         "fuzzificationHint": "Перетворення чітких входів на ступені приналежності μ(x) лінгвістичних термів. Вертикальна лінія — поточне значення входу.",
-        "accumulationHintMamdani": "{tip:clipped} вихідні терми об’єднуються в одну {mu} операцією {tip:max}. Вертикальна лінія — {tip:cog} цієї площі.",
+        "accumulationHintMamdani": "{tip:clipped} терми (напівпрозорі) об’єднуються операцією {tip:max} у контур {mu}. Вертикальна лінія — {tip:cog} цієї площі.",
         "accumulationHintSugeno": "Для кожного синглтона лишається {tip:maxAct} правил, що на нього вказують.",
         "defuzzificationHintCog": "Той самий результат на лінгвістичних термах виходу. Вертикальна лінія — чітке значення, підсвічений терм — його рівень.",
         "defuzzificationHintCentroid": "Той самий результат на лінгвістичних термах виходу. Вертикальна лінія — чітке значення, підсвічений терм — його рівень.",
-        "defuzzificationHintSugeno": "Чітке значення — {tip:wavg}; вага терму — його {tip:accAct}. Вертикальна лінія — отримане значення."
+        "defuzzificationHintSugeno": "Чітке значення — {tip:wavg}; вага терму — його {tip:accAct}. Вертикальна лінія — отримане значення.",
+        "outputHintMamdani": "{tip:clipped} терми збираються через {tip:max} у площу {mu}; вертикаль — {tip:cog} на лінгвістичних термах. Прапорці вмикають шари окремо.",
+        "outputHintSugeno": "Висота синглтона — {tip:accAct}; чітке значення — {tip:wavg}. Прапорці вмикають шари окремо."
       },
       "meta": {
         "model": "Модель:",
@@ -136,6 +140,7 @@
     },
     "index": {
       "pageTitle": "Індекс довіри | Платформа нечіткого виводу",
+      "headline": "Платформа нечіткого виводу для оцінки індексу довіри системи",
       "title": "Індекс довіри системи",
       "stickyTitle": "Оцінка індексу довіри (T)",
       "docs": {
@@ -192,6 +197,7 @@
     },
     "security": {
       "pageTitle": "Ризик безпеки | Платформа нечіткого виводу",
+      "headline": "Платформа нечіткого виводу для оцінки безпеки систем",
       "title": "Ризик безпеки системи зв'язку",
       "stickyTitle": "Оцінка ризику безпеки (R)",
       "docs": {
@@ -246,6 +252,7 @@
     },
     "intrusion": {
       "pageTitle": "Вторгнення | Платформа нечіткого виводу",
+      "headline": "Платформа нечіткого виводу для оцінки вірогідності вторгнення",
       "title": "Вірогідність вторгнення",
       "stickyTitle": "Оцінка вірогідності вторгнення (I)",
       "docs": {
@@ -314,6 +321,7 @@
         "outputAxis": "Output",
         "memberships": "μ at this x",
         "aggregatedMu": "Aggregated-set μ",
+        "clippedMu": "Clipped-term μ; the outline is their max",
         "current": "Current input",
         "result": "Result",
         "singletonAt": "Singleton",
@@ -361,12 +369,15 @@
         "fuzzification": "Fuzzification",
         "accumulation": "Accumulation",
         "defuzzification": "Defuzzification",
+        "output": "Accumulation and defuzzification",
         "fuzzificationHint": "Conversion of crisp inputs into membership degrees μ(x) of linguistic terms. The vertical line is the current input value.",
-        "accumulationHintMamdani": "{tip:clipped} output terms are merged into one {mu} by the {tip:max} operator. The vertical line is the {tip:cog} of this area.",
+        "accumulationHintMamdani": "{tip:clipped} terms (semitransparent) are merged by {tip:max} into the {mu} outline. The vertical line is the {tip:cog} of this area.",
         "accumulationHintSugeno": "Each output singleton keeps the {tip:maxAct} of the rules that point to it.",
         "defuzzificationHintCog": "The same result read on the output terms. The vertical line is the crisp value; the highlighted term is its linguistic level.",
         "defuzzificationHintCentroid": "The same result read on the output terms. The vertical line is the crisp value; the highlighted term is its linguistic level.",
-        "defuzzificationHintSugeno": "The crisp value is the {tip:wavg}; a term's weight is its {tip:accAct}. The vertical line is the obtained value."
+        "defuzzificationHintSugeno": "The crisp value is the {tip:wavg}; a term's weight is its {tip:accAct}. The vertical line is the obtained value.",
+        "outputHintMamdani": "{tip:clipped} terms are merged by {tip:max} into the {mu} area; the vertical line is the {tip:cog} on the linguistic terms. Use the checkboxes to show each layer.",
+        "outputHintSugeno": "Singleton height is the {tip:accAct}; the crisp value is the {tip:wavg}. Use the checkboxes to show each layer."
       },
       "meta": {
         "model": "Model:",
@@ -437,6 +448,7 @@
     },
     "index": {
       "pageTitle": "Trust Index | Fuzzy Security Platform",
+      "headline": "Fuzzy inference platform for system trust assessment",
       "title": "System trust index",
       "stickyTitle": "Trust index assessment (T)",
       "docs": {
@@ -493,6 +505,7 @@
     },
     "security": {
       "pageTitle": "Security Risk | Fuzzy Security Platform",
+      "headline": "Fuzzy inference platform for system security assessment",
       "title": "Communication security risk",
       "stickyTitle": "Security risk assessment (R)",
       "docs": {
@@ -547,6 +560,7 @@
     },
     "intrusion": {
       "pageTitle": "Intrusion | Fuzzy Security Platform",
+      "headline": "Fuzzy inference platform for intrusion probability assessment",
       "title": "Intrusion probability",
       "stickyTitle": "Intrusion probability assessment (I)",
       "docs": {

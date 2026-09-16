@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" role="img" aria-label="Fuzzy membership">
+  <defs>
+    <linearGradient id="bg" x1="6" y1="2" x2="26" y2="30" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#667eea"/>
+      <stop offset="1" stop-color="#764ba2"/>
+    </linearGradient>
+  </defs>
+  <rect width="32" height="32" rx="8" fill="url(#bg)"/>
+  <text
+    x="15.2"
+    y="24.2"
+    text-anchor="middle"
+    fill="#fff"
+    font-family="Georgia, 'Times New Roman', serif"
+    font-style="italic"
+    font-size="22"
+    font-weight="700"
+  >μ</text>
+  <circle cx="24.2" cy="17.6" r="2.15" fill="#f4c430"/>
+</svg>

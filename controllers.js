@@ -163,8 +163,12 @@ function calculateTrust(inputs) {
     value,
     dominantTerm: trustController.getMostActiveTerm(membershipData.trustIndex),
     membershipData,
-    ruleOutputs: null,
-    aggregatedOutput: trustController.getAggregatedOutput(),
+    ruleOutputs: trustController.getOutputTermActivations(),
+    aggregatedOutput: trustController.getAggregatedOutput(
+      inputs.errors,
+      inputs.connections,
+      inputs.bytes
+    ),
   };
 }
 

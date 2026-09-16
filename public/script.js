@@ -45,7 +45,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       },
       output: {
         key: "trustIndex",
-        canvasId: "trustIndexCanvas",
+        canvasId: "trustAggregatedCanvas",
         axisLabels: {
           xKey: "index.graphs.axes.trustX",
           yKey: "index.graphs.axes.trustY",
