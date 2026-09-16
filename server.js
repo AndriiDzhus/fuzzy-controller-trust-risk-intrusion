@@ -108,6 +108,7 @@ app.post("/api/controllers/:controller/calculate", (req, res) => {
       noRuleFired: Boolean(result.noRuleFired),
       membershipData: result.membershipData,
       ruleOutputs: result.ruleOutputs,
+      ruleEvaluations: result.ruleEvaluations || [],
       aggregatedOutput: result.aggregatedOutput || null,
       inputs,
     });

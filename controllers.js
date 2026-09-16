@@ -146,6 +146,27 @@ const intrusionDef = {
   },
 };
 
+function roundMu(value) {
+  return Math.round((Number(value) || 0) * 1e6) / 1e6;
+}
+
+function evaluateAndRules(rules, maps) {
+  return rules.map((rule, index) => {
+    const conditions = maps.map((item) => ({
+      key: item.key,
+      symbol: item.symbol,
+      term: rule[item.field],
+      mu: roundMu(item.terms[rule[item.field]]),
+    }));
+    return {
+      index: index + 1,
+      conditions,
+      out: rule.out,
+      alpha: roundMu(Math.min(...conditions.map((item) => item.mu))),
+    };
+  });
+}
+
 function validateRange(values) {
   return Object.values(values).every((v) => Number.isFinite(v) && v >= 0 && v <= 100);
 }
@@ -164,6 +185,7 @@ function calculateTrust(inputs) {
     dominantTerm: trustController.getMostActiveTerm(membershipData.trustIndex),
     membershipData,
     ruleOutputs: trustController.getOutputTermActivations(),
+    ruleEvaluations: trustController.getTrustRuleEvaluations(membershipData),
     aggregatedOutput: trustController.getAggregatedOutput(
       inputs.errors,
       inputs.connections,
@@ -238,6 +260,12 @@ function calculateSecurity(inputs) {
     ruleOutputs[rule.out] = Math.max(ruleOutputs[rule.out], alpha);
   });
 
+  const ruleEvaluations = evaluateAndRules(securityDef.rules, [
+    { key: "energy", symbol: "E", field: "E", terms: fuzzy.energy },
+    { key: "strength", symbol: "S", field: "S", terms: fuzzy.strength },
+    { key: "response", symbol: "T", field: "T", terms: fuzzy.response },
+  ]);
+
   let numerator = 0;
   let denominator = 0;
   Object.entries(ruleOutputs).forEach(([term, mu]) => {
@@ -260,6 +288,7 @@ function calculateSecurity(inputs) {
     noRuleFired,
     membershipData,
     ruleOutputs,
+    ruleEvaluations,
   };
 }
 
@@ -323,6 +352,12 @@ function calculateIntrusion(inputs) {
     ruleOutputs[rule.out] = Math.max(ruleOutputs[rule.out], alpha);
   });
 
+  const ruleEvaluations = evaluateAndRules(intrusionDef.rules, [
+    { key: "packets", symbol: "N", field: "N", terms: fuzzy.packets },
+    { key: "rate", symbol: "R", field: "R", terms: fuzzy.rate },
+    { key: "delivery", symbol: "D", field: "D", terms: fuzzy.delivery },
+  ]);
+
   let numerator = 0;
   let denominator = 0;
   const aggregatedOutput = [];
@@ -357,6 +392,7 @@ function calculateIntrusion(inputs) {
     dominantTerm: maxTerm(outputMemberships),
     membershipData,
     ruleOutputs,
+    ruleEvaluations,
     aggregatedOutput,
   };
 }

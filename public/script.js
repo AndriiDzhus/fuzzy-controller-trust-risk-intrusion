@@ -10,6 +10,9 @@ document.addEventListener("DOMContentLoaded", async () => {
       valueId: "trustIndexOutput",
       termId: "activeOutputTerm",
     },
+    rules: {
+      containerId: "trustRuleEval",
+    },
     membership: {
       errors: "eMembership",
       connections: "cMembership",
@@ -45,7 +48,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       },
       output: {
         key: "trustIndex",
-        canvasId: "trustAggregatedCanvas",
+        canvasId: "trustCanvas",
         axisLabels: {
           xKey: "index.graphs.axes.trustX",
           yKey: "index.graphs.axes.trustY",
@@ -54,6 +57,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       },
       aggregated: {
         canvasId: "trustAggregatedCanvas",
+        membershipId: "tActivations",
         axisLabels: {
           xKey: "index.graphs.axes.trustX",
           yKey: "index.graphs.axes.trustY",

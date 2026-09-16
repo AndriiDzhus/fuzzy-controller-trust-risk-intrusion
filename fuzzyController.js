@@ -178,6 +178,32 @@ function getOutputTermActivations() {
   return activations;
 }
 
+function roundMu(value) {
+  return Math.round((Number(value) || 0) * 1e6) / 1e6;
+}
+
+function getTrustRuleEvaluations(membershipData) {
+  const inputs = [
+    { key: "errors", symbol: "E", terms: membershipData.errors || {} },
+    { key: "connections", symbol: "C", terms: membershipData.connections || {} },
+    { key: "bytes", symbol: "B", terms: membershipData.bytes || {} },
+  ];
+  return fuzzySystem.rules.map((rule, index) => {
+    const conditions = inputs.map((input, i) => ({
+      key: input.key,
+      symbol: input.symbol,
+      term: rule.conditions[i],
+      mu: roundMu(input.terms[rule.conditions[i]]),
+    }));
+    return {
+      index: index + 1,
+      conditions,
+      out: rule.conclusions[0],
+      alpha: roundMu(Math.min(...conditions.map((item) => item.mu))),
+    };
+  });
+}
+
 function sampleAggregatedOutput(union, range, points = 100) {
   const [start, end] = range;
   const series = [];
@@ -247,6 +273,7 @@ module.exports = {
   centerOfGravity,
   getAggregatedOutput,
   getOutputTermActivations,
+  getTrustRuleEvaluations,
   calculateMembershipValues,
   getMostActiveTerm,
   membershipParams,

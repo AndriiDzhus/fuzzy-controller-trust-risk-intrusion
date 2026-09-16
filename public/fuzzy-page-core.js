@@ -287,6 +287,10 @@ function escapeHtml(value) {
     .replace(/"/g, "&quot;");
 }
 
+function wrapMathLetters(escapedHtml) {
+  return String(escapedHtml).replace(/[αμ]/g, (ch) => `<span class="sym-greek">${ch}</span>`);
+}
+
 function interpolateSeriesY(points, x) {
   if (!Array.isArray(points) || !points.length) return 0;
   if (x <= points[0].x) return Number(points[0].y) || 0;
@@ -527,6 +531,7 @@ function findPeakPoint(points) {
 
 function drawCurveGraph(canvasId, termSeries, currentValue, options = {}) {
   const canvas = document.getElementById(canvasId);
+  if (!canvas) return;
   const ctx = canvas.getContext("2d");
   const w = canvas.width;
   const h = canvas.height;
@@ -578,15 +583,19 @@ function drawCurveGraph(canvasId, termSeries, currentValue, options = {}) {
   });
 
   if (currentValue !== null && currentValue !== undefined) {
-    const vx = p + (currentValue / 100) * (w - 2 * p);
-    ctx.strokeStyle = "#111";
-    ctx.setLineDash([5, 5]);
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-    ctx.moveTo(vx, p);
-    ctx.lineTo(vx, h - p);
-    ctx.stroke();
-    ctx.setLineDash([]);
+    if (options.showResultLabel) {
+      drawResultMarker(ctx, w, h, p, currentValue);
+    } else {
+      const vx = p + (currentValue / 100) * (w - 2 * p);
+      ctx.strokeStyle = "#111";
+      ctx.setLineDash([5, 5]);
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(vx, p);
+      ctx.lineTo(vx, h - p);
+      ctx.stroke();
+      ctx.setLineDash([]);
+    }
   }
 
   ensureLegend(canvasId, terms, highlightTerm);
@@ -685,7 +694,7 @@ function drawAggregatedSetGraph(canvasId, points, resultValue, options = {}) {
     }
   }
 
-  drawResultMarker(ctx, w, h, p, resultValue);
+  if (showDefuzz) drawResultMarker(ctx, w, h, p, resultValue);
   ensureLegend(canvasId, ["aggregated"]);
   syncAggregatedGraphKey(canvas, Boolean(showAcc && Array.isArray(points) && points.length));
 }
@@ -741,7 +750,10 @@ function renderMembership(containerId, data) {
   const container = document.getElementById(containerId);
   if (!container) return;
   container.innerHTML = "";
+  appendMembershipItems(container, data);
+}
 
+function appendMembershipItems(container, data) {
   const entries = Object.entries(data || {});
   const maxValue = entries.reduce((best, [, value]) => Math.max(best, Number(value) || 0), 0);
 
@@ -761,6 +773,147 @@ function renderMembership(containerId, data) {
       })}</span>
     `;
     container.appendChild(item);
+  });
+}
+
+function completeTermMap(termSeries, values) {
+  const keys = Object.keys(termSeries || {}).length
+    ? Object.keys(termSeries)
+    : Object.keys(values || {});
+  const out = {};
+  keys.forEach((term) => {
+    out[term] = Number(values?.[term]) || 0;
+  });
+  return out;
+}
+
+function renderControllerMemberships(config, result, mfData) {
+  if (!result) return;
+  Object.entries(config.membership || {}).forEach(([key, containerId]) => {
+    renderMembership(containerId, result.membershipData?.[key]);
+  });
+  const activationsId = config.graphs.aggregated?.membershipId;
+  if (!activationsId) return;
+  const termSeries = mfData?.output?.[config.graphs.output.key];
+  renderMembership(activationsId, completeTermMap(termSeries, result.ruleOutputs));
+}
+
+const RULE_FIRE_EPS = 0.001;
+
+function formatMembership(value) {
+  return formatNumber(value, { minimumFractionDigits: 3, maximumFractionDigits: 3 });
+}
+
+function outputTermOrder(config, mfData) {
+  if (mfData?.meta?.singletonValues) return Object.keys(mfData.meta.singletonValues);
+  const key = config.graphs?.output?.key;
+  return Object.keys(mfData?.output?.[key] || {});
+}
+
+function renderRuleRow(rule, maxAlpha) {
+  const isMax = maxAlpha >= RULE_FIRE_EPS && rule.alpha >= maxAlpha - 1e-9;
+  const idle = rule.alpha < RULE_FIRE_EPS;
+  const conditions = (rule.conditions || [])
+    .map((cond, index) => {
+      const isMin = Math.abs(Number(cond.mu) - Number(rule.alpha)) <= 1e-9;
+      const join = index
+        ? `<span class="rule-op" aria-hidden="true">∧</span>`
+        : "";
+      return `${join}<span class="rule-cond${isMin ? " is-min" : ""}">
+        <span class="rule-cond-sym">${escapeHtml(cond.symbol)}</span>
+        <span class="rule-cond-term">${escapeHtml(termLabel(cond.term))}</span>
+        <span class="rule-cond-mu">${formatMembership(cond.mu)}</span>
+      </span>`;
+    })
+    .join("");
+
+  return `<li class="rule-row${isMax ? " is-max" : ""}${idle ? " is-idle" : ""}">
+    <span class="rule-index">#${rule.index}</span>
+    <div class="rule-conds">${conditions}</div>
+    <span class="rule-alpha"><span class="sym-greek">α</span> = ${formatMembership(rule.alpha)}</span>
+  </li>`;
+}
+
+function renderRuleEvaluations(config, result, mfData) {
+  const root = document.getElementById(config.rules?.containerId);
+  if (!root) return;
+
+  const rules = result?.ruleEvaluations || [];
+  const showIdle = root.dataset.showIdle === "1";
+  const clipLabel = mfData?.meta?.singletonValues
+    ? i18nText("common.pipeline.rulesSingleton", "висота синглтона")
+    : i18nText("common.pipeline.rulesClip", "висота зрізу");
+
+  if (!rules.length) {
+    root.innerHTML = `<p class="rule-eval-empty">${escapeHtml(
+      i18nText("common.pipeline.rulesEmpty", "Жодне правило не спрацювало.")
+    )}</p>`;
+    return;
+  }
+
+  const grouped = new Map();
+  rules.forEach((rule) => {
+    if (!grouped.has(rule.out)) grouped.set(rule.out, []);
+    grouped.get(rule.out).push(rule);
+  });
+
+  const groupOrder = [];
+  outputTermOrder(config, mfData).forEach((term) => {
+    if (grouped.has(term) && !groupOrder.includes(term)) groupOrder.push(term);
+  });
+  grouped.forEach((_, term) => {
+    if (!groupOrder.includes(term)) groupOrder.push(term);
+  });
+
+  const cards = [];
+  groupOrder.forEach((out) => {
+    const items = grouped
+      .get(out)
+      .slice()
+      .sort((a, b) => b.alpha - a.alpha || a.index - b.index);
+    const maxAlpha = items.reduce((best, rule) => Math.max(best, Number(rule.alpha) || 0), 0);
+    const visible = items.filter((rule) => showIdle || rule.alpha >= RULE_FIRE_EPS);
+    if (!visible.length) return;
+    const color = termColor(out, 0);
+    cards.push(`<article class="rule-group" style="border-top-color:${color}">
+      <header class="rule-group-head">
+        <span class="rule-group-term">${escapeHtml(termLabel(out))}</span>
+        <span class="rule-group-max">max <span class="sym-greek">α</span> = ${formatMembership(maxAlpha)} · ${escapeHtml(clipLabel)}</span>
+      </header>
+      <ul class="rule-group-list">${visible.map((rule) => renderRuleRow(rule, maxAlpha)).join("")}</ul>
+    </article>`);
+  });
+
+  const idleCount = rules.filter((rule) => rule.alpha < RULE_FIRE_EPS).length;
+  let footer = "";
+  if (!cards.length) {
+    footer = `<p class="rule-eval-empty">${escapeHtml(
+      i18nText("common.pipeline.rulesEmpty", "Жодне правило не спрацювало.")
+    )}</p>`;
+  }
+  if (idleCount) {
+    const toggleLabel = showIdle
+      ? i18nText("common.pipeline.rulesHideIdle", "Сховати неактивні")
+      : i18nText("common.pipeline.rulesShowIdle", "Показати неактивні ({n})").replace(
+          "{n}",
+          String(idleCount)
+        );
+    footer += `<button type="button" class="rule-eval-toggle" data-rule-idle-toggle>${escapeHtml(
+      toggleLabel
+    )}</button>`;
+  }
+
+  root.innerHTML = `${cards.length ? `<div class="rule-eval-grid">${cards.join("")}</div>` : ""}${footer}`;
+}
+
+function bindRuleEvalToggle(config, state) {
+  const root = document.getElementById(config.rules?.containerId);
+  if (!root || root.dataset.bound) return;
+  root.dataset.bound = "1";
+  root.addEventListener("click", (event) => {
+    if (!event.target.closest("[data-rule-idle-toggle]")) return;
+    root.dataset.showIdle = root.dataset.showIdle === "1" ? "0" : "1";
+    renderRuleEvaluations(config, state.result, state.mfData);
   });
 }
 
@@ -1041,6 +1194,15 @@ function outputMuLabel(config) {
   return getGraphOptions(source).axisLabels?.y || "μ(y)";
 }
 
+function outputAxisSymbol(config) {
+  const source = config.graphs?.aggregated || config.graphs?.output;
+  return getGraphOptions(source).axisLabels?.x || "y";
+}
+
+function withOutputVar(text, config) {
+  return String(text || "").replaceAll("{var}", outputAxisSymbol(config));
+}
+
 function muRefCaption(variable, config) {
   if (variable === "x") {
     const vars = joinPrettyList(inputMuLabels(config));
@@ -1113,18 +1275,32 @@ function decoratePipelineMuHints(config) {
   bindMuRefTooltips(config);
   const mu = outputMuLabel(config);
   document.querySelectorAll(".process-step-hint[data-i18n]").forEach((el) => {
-    const text = i18nText(el.getAttribute("data-i18n"), el.textContent).replaceAll("{mu}", mu);
-    el.innerHTML = escapeHtml(text)
-      .replace(/\{tip:([a-zA-Z]+)\}/g, (_, key) => {
-        return `<span class="mu-ref" tabindex="0" data-tip="${key}">${escapeHtml(glossaryLabel(key))}</span>`;
-      })
-      .replace(/μ\(([^)]+)\)/g, (_, variable) => {
-        const safe = escapeHtml(variable);
-        return `<span class="mu-ref" tabindex="0" data-mu="${safe}">μ(${safe})</span>`;
-      });
+    const text = withOutputVar(
+      i18nText(el.getAttribute("data-i18n"), el.textContent).replaceAll("{mu}", mu),
+      config
+    );
+    el.innerHTML = wrapMathLetters(
+      escapeHtml(text)
+        .replace(/\{tip:([a-zA-Z]+)\}/g, (_, key) => {
+          return `<span class="mu-ref" tabindex="0" data-tip="${key}">${escapeHtml(glossaryLabel(key))}</span>`;
+        })
+        .replace(/μ\(([^)]+)\)/g, (_, variable) => {
+          const safe = escapeHtml(variable);
+          return `<span class="mu-ref" tabindex="0" data-mu="${safe}">μ(${safe})</span>`;
+        })
+    );
     el.querySelectorAll(".mu-ref").forEach((span) => {
       span.setAttribute("aria-label", `${span.textContent}. ${hintRefCaption(span, config)}`);
     });
+  });
+
+  document.querySelectorAll("[data-i18n]").forEach((el) => {
+    if (el.classList.contains("process-step-hint")) return;
+    let text = i18nText(el.getAttribute("data-i18n"), el.textContent);
+    if (text.includes("{var}")) text = withOutputVar(text, config);
+    else if (!/[αμ]/.test(text)) return;
+    if (/[αμ]/.test(text)) el.innerHTML = wrapMathLetters(escapeHtml(text));
+    else el.textContent = text;
   });
 }
 
@@ -1293,63 +1469,6 @@ function setupGraphExpand(redraw) {
   window.addEventListener("languageChanged", syncExpandButtons);
 }
 
-const OUTPUT_LAYER_DEFAULTS = { accumulation: true, defuzzification: true };
-
-function readStoredOutputLayers(controller) {
-  try {
-    const raw = localStorage.getItem(`fuzzyOutputLayers:${controller}`);
-    if (!raw) return { ...OUTPUT_LAYER_DEFAULTS };
-    const parsed = JSON.parse(raw);
-    return {
-      accumulation: parsed.accumulation !== false,
-      defuzzification: parsed.defuzzification !== false,
-    };
-  } catch {
-    return { ...OUTPUT_LAYER_DEFAULTS };
-  }
-}
-
-function setupOutputLayers(controller, onChange) {
-  const root = document.querySelector("[data-output-layers]");
-  let layers = readStoredOutputLayers(controller);
-  if (!root) return () => ({ ...OUTPUT_LAYER_DEFAULTS });
-
-  const syncUi = () => {
-    root.querySelectorAll("[data-layer]").forEach((input) => {
-      input.checked = Boolean(layers[input.dataset.layer]);
-    });
-    const stepBody = root.closest(".process-step-body");
-    const grid = stepBody?.querySelector(".graph-grid");
-    stepBody?.querySelectorAll("[data-layer-panel]").forEach((panel) => {
-      panel.hidden = !layers[panel.dataset.layerPanel];
-    });
-    if (grid) {
-      const panel = grid.querySelector("[data-layer-panel]");
-      if (panel) {
-        const panelVisible = !panel.hidden;
-        grid.classList.toggle("graph-grid-split", panelVisible);
-        grid.classList.toggle("graph-grid-1", !panelVisible);
-      }
-    }
-  };
-
-  root.querySelectorAll("[data-layer]").forEach((input) => {
-    input.addEventListener("change", () => {
-      layers = { ...layers, [input.dataset.layer]: input.checked };
-      try {
-        localStorage.setItem(`fuzzyOutputLayers:${controller}`, JSON.stringify(layers));
-      } catch {
-        // Ignore private-mode failures.
-      }
-      syncUi();
-      onChange?.(layers);
-    });
-  });
-
-  syncUi();
-  return () => layers;
-}
-
 function setupPipelineAccordions(config) {
   const page = window.location.pathname || "index.html";
   document.querySelectorAll(".process-step[data-step]").forEach((el) => {
@@ -1438,7 +1557,7 @@ function setupStickyInputs(config, { applyInputValue, recalc }) {
   observer.observe(inputSection);
 }
 
-function setupTooltips(config, state, getLayers) {
+function setupTooltips(config, state) {
   Object.entries(config.graphs.inputs).forEach(([key, canvasId]) => {
     bindCanvasTooltip(getGraphCanvasId(canvasId), () => {
       if (!state.mfData) return null;
@@ -1455,11 +1574,8 @@ function setupTooltips(config, state, getLayers) {
     });
   });
 
-  const outputTooltip = () => {
+  bindCanvasTooltip(config.graphs.output.canvasId, () => {
     if (!state.mfData || !state.result) return null;
-    const layers = getLayers();
-    const axisSource = config.graphs.aggregated || config.graphs.output;
-
     if (state.mfData.meta?.singletonValues) {
       return {
         type: "singleton",
@@ -1473,32 +1589,37 @@ function setupTooltips(config, state, getLayers) {
     }
 
     const outputKey = config.graphs.output.key;
-    const outputSeries = state.mfData.output?.[outputKey] || {};
-    const series = {};
-    if (layers.defuzzification) Object.assign(series, outputSeries);
-    if (layers.accumulation) {
-      if (!layers.defuzzification) {
-        Object.assign(series, clipTermSeries(outputSeries, state.result.ruleOutputs));
-      }
-      if (state.result.aggregatedOutput) series.aggregated = state.result.aggregatedOutput;
-    }
-
     return {
       type: "curve",
-      kind: layers.accumulation ? "aggregated" : "output",
-      series,
+      kind: "output",
+      series: state.mfData.output?.[outputKey] || {},
       resultValue: hasFiredOutput(state.result) ? state.result.value : null,
       resultTerm: hasFiredOutput(state.result) ? state.result.dominantTerm : null,
-      xLabel: getGraphOptions(axisSource).axisLabels?.x || "x",
+      xLabel: getGraphOptions(config.graphs.output).axisLabels?.x || "x",
     };
-  };
+  });
 
-  bindCanvasTooltip(config.graphs.output.canvasId, outputTooltip);
   if (
     config.graphs.aggregated?.canvasId &&
     config.graphs.aggregated.canvasId !== config.graphs.output.canvasId
   ) {
-    bindCanvasTooltip(config.graphs.aggregated.canvasId, outputTooltip);
+    bindCanvasTooltip(config.graphs.aggregated.canvasId, () => {
+      if (!state.mfData || !state.result) return null;
+      const outputKey = config.graphs.output.key;
+      const outputSeries = state.mfData.output?.[outputKey] || {};
+      const series = {
+        ...clipTermSeries(outputSeries, state.result.ruleOutputs),
+      };
+      if (state.result.aggregatedOutput) series.aggregated = state.result.aggregatedOutput;
+      return {
+        type: "curve",
+        kind: "aggregated",
+        series,
+        resultValue: null,
+        resultTerm: null,
+        xLabel: getGraphOptions(config.graphs.aggregated).axisLabels?.x || "x",
+      };
+    });
   }
 }
 
@@ -1509,6 +1630,7 @@ function normalizeCalculateResult(result, payload) {
     noRuleFired: Boolean(result.noRuleFired),
     membershipData: result.membershipData,
     ruleOutputs: result.ruleOutputs ?? null,
+    ruleEvaluations: result.ruleEvaluations || [],
     aggregatedOutput: result.aggregatedOutput || null,
     inputs: payload,
   };
@@ -1576,8 +1698,6 @@ async function createFuzzyPage(config) {
     persistControllerInputs(config.controller, buildMapFromSpecs(config.inputs));
   };
 
-  let getOutputLayers = () => ({ ...OUTPUT_LAYER_DEFAULTS });
-
   const recalc = async () => {
     const payload = buildMapFromSpecs(config.inputs);
     const data = await calculateController(config.controller, payload);
@@ -1591,11 +1711,8 @@ async function createFuzzyPage(config) {
       data
     );
     updateStickyResult(data);
-
-    Object.entries(config.membership).forEach(([key, containerId]) => {
-      renderMembership(containerId, data.membershipData[key]);
-    });
-
+    renderControllerMemberships(config, data, state.mfData);
+    renderRuleEvaluations(config, data, state.mfData);
     drawAll();
   };
 
@@ -1614,54 +1731,53 @@ async function createFuzzyPage(config) {
       );
     });
 
-    const layers = getOutputLayers();
     const outputKey = config.graphs.output.key;
     const outputCanvasId = config.graphs.output.canvasId;
     const aggregatedCanvasId = config.graphs.aggregated?.canvasId;
     const outputSeries = state.mfData.output?.[outputKey];
     const hasOutputCurves = outputSeries && Object.keys(outputSeries).length > 0;
     const outputHighlight = hasFiredOutput(state.result) ? state.result.dominantTerm : null;
-    const layerOptions = {
-      showAccumulation: layers.accumulation,
-      showDefuzzification: layers.defuzzification,
-    };
+    const crispValue = hasFiredOutput(state.result) ? state.result.value : null;
 
     if (state.mfData.meta?.singletonValues) {
       drawSingletonGraph(
         outputCanvasId,
         state.mfData.meta.singletonValues,
         state.result.ruleOutputs,
-        hasFiredOutput(state.result) ? state.result.value : null,
-        {
-          ...getGraphOptions(config.graphs.output),
-          highlightTerm: outputHighlight,
-          ...layerOptions,
-        }
-      );
-    } else if (aggregatedCanvasId) {
-      drawAggregatedSetGraph(
-        aggregatedCanvasId,
-        state.result.aggregatedOutput,
-        hasFiredOutput(state.result) ? state.result.value : null,
-        {
-          ...getGraphOptions(config.graphs.aggregated || config.graphs.output),
-          termSeries: hasOutputCurves ? outputSeries : null,
-          activations: state.result.ruleOutputs,
-          showPeakLabels: true,
-          highlightTerm: outputHighlight,
-          ...layerOptions,
-        }
-      );
-    } else if (hasOutputCurves) {
-      drawCurveGraph(
-        outputCanvasId,
-        outputSeries,
-        hasFiredOutput(state.result) ? state.result.value : null,
+        crispValue,
         {
           ...getGraphOptions(config.graphs.output),
           highlightTerm: outputHighlight,
         }
       );
+    } else {
+      if (aggregatedCanvasId) {
+        drawAggregatedSetGraph(
+          aggregatedCanvasId,
+          state.result.aggregatedOutput,
+          null,
+          {
+            ...getGraphOptions(config.graphs.aggregated || config.graphs.output),
+            termSeries: hasOutputCurves ? outputSeries : null,
+            activations: state.result.ruleOutputs,
+            showPeakLabels: true,
+            showAccumulation: true,
+            showDefuzzification: false,
+          }
+        );
+      }
+      if (hasOutputCurves && outputCanvasId !== aggregatedCanvasId) {
+        drawCurveGraph(
+          outputCanvasId,
+          outputSeries,
+          crispValue,
+          {
+            ...getGraphOptions(config.graphs.output),
+            highlightTerm: outputHighlight,
+            showResultLabel: true,
+          }
+        );
+      }
     }
   };
 
@@ -1684,14 +1800,14 @@ async function createFuzzyPage(config) {
 
   setupStickyInputs(config, { applyInputValue, recalc });
   setupPipelineAccordions(config);
-  getOutputLayers = setupOutputLayers(config.controller, drawAll);
+  bindRuleEvalToggle(config, state);
   setupGraphExpand(drawAll);
   restoreControllerInputs(config, applyInputValue);
   if (window.setupDocsModals) window.setupDocsModals(config.controller);
 
   state.mfData = await loadMembershipFunctions(config.controller);
 
-  setupTooltips(config, state, getOutputLayers);
+  setupTooltips(config, state);
 
   window.addEventListener("languageChanged", () => {
     decoratePipelineMuHints(config);
@@ -1703,9 +1819,8 @@ async function createFuzzyPage(config) {
       state.result
     );
     updateStickyResult(state.result);
-    Object.entries(config.membership).forEach(([key, containerId]) => {
-      renderMembership(containerId, state.result.membershipData[key]);
-    });
+    renderControllerMemberships(config, state.result, state.mfData);
+    renderRuleEvaluations(config, state.result, state.mfData);
     drawAll();
   });
 

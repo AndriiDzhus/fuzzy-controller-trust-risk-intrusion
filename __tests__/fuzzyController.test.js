@@ -5,6 +5,7 @@ const {
   getOutputTermActivations,
   calculateMembershipValues,
   getMostActiveTerm,
+  getTrustRuleEvaluations,
   trapezoidalMF,
   triangularMF,
 } = require("../fuzzyController");
@@ -52,6 +53,23 @@ describe("Trust controller calculations", () => {
     const memberships = calculateMembershipValues("trustIndex", 62.5);
     const term = getMostActiveTerm(memberships);
     expect(Object.keys(memberships)).toContain(term);
+  });
+
+  test("rule evaluations use min of condition memberships", () => {
+    calculateTrustIndex(50, 50, 50);
+    const rules = getTrustRuleEvaluations({
+      errors: calculateMembershipValues("errors", 50),
+      connections: calculateMembershipValues("connections", 50),
+      bytes: calculateMembershipValues("bytes", 50),
+    });
+
+    expect(rules).toHaveLength(27);
+    expect(rules[13].out).toBe("Medium");
+    expect(rules[13].alpha).toBeCloseTo(1, 5);
+    rules.forEach((rule) => {
+      const expected = Math.min(...rule.conditions.map((item) => item.mu));
+      expect(rule.alpha).toBeCloseTo(expected, 6);
+    });
   });
 
   test("output term activations follow the fired conclusions", () => {
