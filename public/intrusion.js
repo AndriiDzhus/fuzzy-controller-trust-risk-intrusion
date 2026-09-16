@@ -45,7 +45,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       },
       output: {
         key: "intrusion",
-        canvasId: "intrusionCanvas",
+        canvasId: "intrusionAggregatedCanvas",
         axisLabels: {
           xKey: "intrusion.graphs.axes.intrusionX",
           yKey: "intrusion.graphs.axes.intrusionY",

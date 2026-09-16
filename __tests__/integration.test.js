@@ -15,6 +15,7 @@ describe("Unified controllers API", () => {
     expect(response.body.aggregatedOutput.length).toBeGreaterThan(0);
     expect(response.body.aggregatedOutput[0]).toHaveProperty("x");
     expect(response.body.aggregatedOutput[0]).toHaveProperty("y");
+    expect(response.body.ruleOutputs).toHaveProperty("Medium");
   });
 
   test("security calculate endpoint works", async () => {

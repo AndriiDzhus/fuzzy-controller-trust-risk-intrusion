@@ -3,7 +3,11 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title data-i18n="intrusion.pageTitle"></title>
+    <title data-i18n="intrusion.pageTitle">Вторгнення | Платформа нечіткого виводу</title>
+    <link rel="icon" href="favicon.svg" type="image/svg+xml" />
+    <link rel="icon" href="favicon-32.png" type="image/png" sizes="32x32" />
+    <link rel="apple-touch-icon" href="apple-touch-icon.png" />
+    <meta name="theme-color" content="#667eea" />
     <link rel="stylesheet" href="style.css" />
     <link rel="stylesheet" href="navigation.css" />
     <link rel="stylesheet" href="vendor/katex/katex.min.css" />
@@ -12,7 +16,7 @@
     <div class="container">
       <header class="app-header">
         <div class="app-header-top">
-          <p class="app-brand-name" data-i18n="app.name"></p>
+          <h1 class="app-brand-name" data-i18n="intrusion.headline">Платформа нечіткого виводу для оцінки вірогідності вторгнення</h1>
           <div class="lang-wrap">
             <select id="languageSwitcher" class="lang-select">
               <option value="uk" data-i18n="common.languages.uk"></option>
@@ -29,7 +33,6 @@
         </nav>
         <div class="page-head">
           <div class="page-head-copy">
-            <h1 data-i18n="intrusion.title"></h1>
             <p class="description" data-i18n="intrusion.description"></p>
           </div>
           <div class="page-head-tools">
@@ -116,33 +119,29 @@
         </div>
       </details>
 
-      <details class="process-step" data-step="accumulation" open>
+      <details class="process-step" data-step="output" open>
         <summary>
           <span class="process-step-num">2</span>
-          <span class="process-step-title" data-i18n="common.pipeline.accumulation"></span>
+          <span class="process-step-title" data-i18n="common.pipeline.output"></span>
         </summary>
         <div class="process-step-body">
-          <p class="process-step-hint" data-i18n="common.pipeline.accumulationHintMamdani"></p>
-          <div class="graph-grid graph-grid-1">
-            <div class="graph-container">
-              <h4 data-i18n="intrusion.membership.aggregated"></h4>
-              <canvas id="intrusionAggregatedCanvas" width="800" height="220"></canvas>
+          <div class="output-step-toolbar">
+            <p class="process-step-hint" data-i18n="common.pipeline.outputHintMamdani"></p>
+            <div class="graph-layer-toggles" data-output-layers>
+              <label class="layer-toggle">
+                <input type="checkbox" data-layer="accumulation" checked />
+                <span data-i18n="common.pipeline.accumulation"></span>
+              </label>
+              <label class="layer-toggle">
+                <input type="checkbox" data-layer="defuzzification" checked />
+                <span data-i18n="common.pipeline.defuzzification"></span>
+              </label>
             </div>
           </div>
-        </div>
-      </details>
-
-      <details class="process-step" data-step="defuzzification" open>
-        <summary>
-          <span class="process-step-num">3</span>
-          <span class="process-step-title" data-i18n="common.pipeline.defuzzification"></span>
-        </summary>
-        <div class="process-step-body">
-          <p class="process-step-hint" data-i18n="common.pipeline.defuzzificationHintCentroid"></p>
           <div class="graph-grid graph-grid-split">
             <div class="graph-container">
               <h4 data-i18n="intrusion.membership.intrusion"></h4>
-              <canvas id="intrusionCanvas" width="800" height="220"></canvas>
+              <canvas id="intrusionAggregatedCanvas" width="800" height="220"></canvas>
             </div>
             <div class="membership-section">
               <h4 data-i18n="intrusion.membership.intrusion"></h4>

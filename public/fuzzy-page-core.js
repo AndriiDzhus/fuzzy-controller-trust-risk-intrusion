@@ -198,7 +198,7 @@ function dominantTermFromMemberships(memberships) {
   return bestValue > 0 ? bestTerm : null;
 }
 
-function fillTermArea(ctx, points, color, w, h, p) {
+function fillTermArea(ctx, points, color, w, h, p, alpha = 0.28) {
   if (!Array.isArray(points) || points.length < 2) return;
   const toX = (x) => p + (x / 100) * (w - 2 * p);
   const toY = (y) => h - p - y * (h - 2 * p);
@@ -210,14 +210,58 @@ function fillTermArea(ctx, points, color, w, h, p) {
   });
   ctx.lineTo(toX(points[points.length - 1].x), toY(0));
   ctx.closePath();
-  ctx.fillStyle = hexToRgba(color, 0.28);
+  ctx.fillStyle = hexToRgba(color, alpha);
   ctx.fill();
+}
+
+function strokePlotCurve(ctx, points, w, h, p) {
+  if (!Array.isArray(points) || !points.length) return;
+  const toX = (x) => p + (x / 100) * (w - 2 * p);
+  const toY = (y) => h - p - y * (h - 2 * p);
+  ctx.beginPath();
+  points.forEach((point, i) => {
+    const x = toX(point.x);
+    const y = toY(point.y);
+    if (i === 0) ctx.moveTo(x, y);
+    else ctx.lineTo(x, y);
+  });
+  ctx.stroke();
+}
+
+function clipTermSeries(termSeries, activations) {
+  const clipped = {};
+  Object.entries(termSeries || {}).forEach(([term, points]) => {
+    const alpha = Number(activations?.[term]) || 0;
+    if (alpha <= 1e-6 || !Array.isArray(points)) return;
+    clipped[term] = points.map((point) => ({ x: point.x, y: Math.min(Number(point.y) || 0, alpha) }));
+  });
+  return clipped;
 }
 
 function ensureLegend(canvasId) {
   const canvas = document.getElementById(canvasId);
   const legend = canvas?.closest(".graph-container")?.querySelector(".graph-legend");
   if (legend) legend.remove();
+}
+
+function syncAggregatedGraphKey(canvas, visible) {
+  const container = canvas?.closest(".graph-container");
+  if (!container) return;
+  let key = container.querySelector(".graph-key");
+  if (!visible) {
+    key?.remove();
+    return;
+  }
+  if (!key) {
+    key = document.createElement("p");
+    key.className = "graph-key";
+    canvas.after(key);
+  }
+  const name = i18nText("common.graph.aggregatedKey", "Агрегована вихідна множина");
+  const mark = i18nText("common.graph.aggregatedMark", "темний контур (max зрізаних термів)");
+  key.innerHTML = `<span class="graph-key-item"><i class="graph-key-swatch-aggregated" aria-hidden="true"></i>${escapeHtml(
+    name
+  )} — ${escapeHtml(mark)}</span>`;
 }
 
 const PLOT_PAD = 46;
@@ -397,7 +441,7 @@ function buildCurveTooltip(model, x) {
   const max = rows.reduce((best, row) => Math.max(best, row.value), 0);
   const caption =
     model.kind === "aggregated"
-      ? i18nText("common.tooltip.aggregatedMu")
+      ? i18nText("common.tooltip.clippedMu", i18nText("common.tooltip.aggregatedMu"))
       : i18nText("common.tooltip.memberships");
 
   return `
@@ -548,66 +592,102 @@ function drawCurveGraph(canvasId, termSeries, currentValue, options = {}) {
   ensureLegend(canvasId, terms, highlightTerm);
 }
 
+function drawResultMarker(ctx, w, h, p, resultValue) {
+  if (resultValue === null || resultValue === undefined || !Number.isFinite(Number(resultValue))) return;
+  const vx = p + (Number(resultValue) / 100) * (w - 2 * p);
+  ctx.strokeStyle = "#111";
+  ctx.setLineDash([5, 5]);
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(vx, p);
+  ctx.lineTo(vx, h - p);
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  ctx.fillStyle = "#111";
+  ctx.font = "bold 12px Arial";
+  ctx.textAlign = "left";
+  ctx.fillText(
+    formatNumber(resultValue, { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
+    Math.min(w - 70, vx + 8),
+    p + 12
+  );
+}
+
+function drawTermPeakLabel(ctx, w, h, p, term, points, color) {
+  const peak = findPeakPoint(points);
+  if (!peak || peak.y <= 0.04) return;
+  const labelX = p + (peak.x / 100) * (w - 2 * p);
+  const labelY = h - p - peak.y * (h - 2 * p);
+  ctx.fillStyle = color;
+  ctx.font = "11px Arial";
+  ctx.textAlign = "center";
+  ctx.fillText(termLabel(term), labelX, Math.max(14, labelY - 16));
+}
+
 function drawAggregatedSetGraph(canvasId, points, resultValue, options = {}) {
   const canvas = document.getElementById(canvasId);
-  if (!canvas || !Array.isArray(points) || !points.length) return;
+  if (!canvas) return;
 
   const ctx = canvas.getContext("2d");
   const w = canvas.width;
   const h = canvas.height;
   const p = PLOT_PAD;
-  const fill = "rgba(44, 62, 80, 0.28)";
-  const stroke = "#2c3e50";
+  const termSeries = options.termSeries || null;
+  const showAcc = options.showAccumulation !== false;
+  const showDefuzz = options.showDefuzzification !== false;
+  const highlightTerm = options.highlightTerm || null;
+  const clipped = showAcc ? clipTermSeries(termSeries, options.activations) : {};
+  const clippedTerms = Object.keys(clipped);
 
   ctx.clearRect(0, 0, w, h);
   drawAxes(ctx, w, h, p, options.axisLabels || null);
 
-  const toX = (x) => p + (x / 100) * (w - 2 * p);
-  const toY = (y) => h - p - y * (h - 2 * p);
-
-  ctx.beginPath();
-  ctx.moveTo(toX(points[0].x), toY(0));
-  points.forEach((point) => {
-    ctx.lineTo(toX(point.x), toY(point.y));
-  });
-  ctx.lineTo(toX(points[points.length - 1].x), toY(0));
-  ctx.closePath();
-  ctx.fillStyle = fill;
-  ctx.fill();
-
-  ctx.beginPath();
-  points.forEach((point, i) => {
-    const x = toX(point.x);
-    const y = toY(point.y);
-    if (i === 0) ctx.moveTo(x, y);
-    else ctx.lineTo(x, y);
-  });
-  ctx.strokeStyle = stroke;
-  ctx.lineWidth = 2;
-  ctx.stroke();
-
-  if (resultValue !== null && resultValue !== undefined) {
-    const vx = toX(resultValue);
-    ctx.strokeStyle = "#111";
-    ctx.setLineDash([5, 5]);
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-    ctx.moveTo(vx, p);
-    ctx.lineTo(vx, h - p);
-    ctx.stroke();
-    ctx.setLineDash([]);
-
-    ctx.fillStyle = "#111";
-    ctx.font = "bold 12px Arial";
-    ctx.textAlign = "left";
-    ctx.fillText(
-      formatNumber(resultValue, { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
-      Math.min(w - 70, vx + 8),
-      p + 12
-    );
+  if (showDefuzz && termSeries) {
+    if (highlightTerm && termSeries[highlightTerm]) {
+      fillTermArea(
+        ctx,
+        termSeries[highlightTerm],
+        termColor(highlightTerm, Object.keys(termSeries).indexOf(highlightTerm)),
+        w,
+        h,
+        p,
+        0.16
+      );
+    }
+    Object.entries(termSeries).forEach(([term, series], idx) => {
+      ctx.strokeStyle = termColor(term, idx);
+      ctx.lineWidth = term === highlightTerm ? 3 : 2;
+      ctx.globalAlpha = showAcc ? 0.5 : 1;
+      strokePlotCurve(ctx, series, w, h, p);
+      ctx.globalAlpha = 1;
+      if (options.showPeakLabels) drawTermPeakLabel(ctx, w, h, p, term, series, termColor(term, idx));
+    });
   }
 
+  if (showAcc) {
+    clippedTerms.forEach((term) => {
+      const color = termColor(term, Math.max(0, Object.keys(termSeries || {}).indexOf(term)));
+      fillTermArea(ctx, clipped[term], color, w, h, p, 0.22);
+      ctx.strokeStyle = hexToRgba(color, 0.9);
+      ctx.lineWidth = 1.6;
+      strokePlotCurve(ctx, clipped[term], w, h, p);
+      if (options.showPeakLabels && !showDefuzz) {
+        drawTermPeakLabel(ctx, w, h, p, term, clipped[term], color);
+      }
+    });
+
+    if (Array.isArray(points) && points.length) {
+      fillTermArea(ctx, points, "#2c3e50", w, h, p, 0.1);
+      ctx.strokeStyle = "#1a252f";
+      ctx.lineWidth = 2.4;
+      strokePlotCurve(ctx, points, w, h, p);
+    }
+  }
+
+  drawResultMarker(ctx, w, h, p, resultValue);
   ensureLegend(canvasId, ["aggregated"]);
+  syncAggregatedGraphKey(canvas, Boolean(showAcc && Array.isArray(points) && points.length));
 }
 
 function drawSingletonGraph(canvasId, singletonValues, ruleOutputs, resultValue, options = {}) {
@@ -622,6 +702,8 @@ function drawSingletonGraph(canvasId, singletonValues, ruleOutputs, resultValue,
 
   const terms = Object.keys(singletonValues);
   const highlightTerm = options.highlightTerm || null;
+  const showAcc = options.showAccumulation !== false;
+  const showDefuzz = options.showDefuzzification !== false;
   const plotH = h - 2 * p;
   terms.forEach((term, idx) => {
     const x = singletonValues[term];
@@ -631,40 +713,26 @@ function drawSingletonGraph(canvasId, singletonValues, ruleOutputs, resultValue,
     const fired = activation > 0;
     const top = h - p - plotH;
 
-    if (term === highlightTerm) {
+    if (showDefuzz && term === highlightTerm) {
       ctx.fillStyle = hexToRgba(color, 0.2);
       ctx.fillRect(px - 10, p, 20, plotH);
     }
 
     ctx.strokeStyle = color;
-    ctx.globalAlpha = fired ? 1 : 0.55;
-    ctx.lineWidth = fired ? 2 + activation * 4 + (term === highlightTerm ? 2 : 0) : 2;
+    ctx.globalAlpha = showAcc ? (fired ? 1 : 0.55) : 0.28;
+    ctx.lineWidth = showAcc
+      ? fired
+        ? 2 + activation * 4 + (term === highlightTerm ? 2 : 0)
+        : 2
+      : 2;
     ctx.beginPath();
     ctx.moveTo(px, h - p);
-    ctx.lineTo(px, top);
+    ctx.lineTo(px, showAcc ? top : h - p - plotH * 0.18);
     ctx.stroke();
     ctx.globalAlpha = 1;
   });
 
-  if (Number.isFinite(Number(resultValue))) {
-    const rx = p + (resultValue / 100) * (w - 2 * p);
-    ctx.strokeStyle = "#111";
-    ctx.setLineDash([6, 6]);
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-    ctx.moveTo(rx, p);
-    ctx.lineTo(rx, h - p);
-    ctx.stroke();
-    ctx.setLineDash([]);
-
-    ctx.fillStyle = "#111";
-    ctx.font = "bold 12px Arial";
-    ctx.fillText(
-      formatNumber(resultValue, { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
-      Math.min(w - 70, rx + 8),
-      p + 12
-    );
-  }
+  if (showDefuzz) drawResultMarker(ctx, w, h, p, resultValue);
 
   ensureLegend(canvasId, terms, highlightTerm);
 }
@@ -1225,6 +1293,63 @@ function setupGraphExpand(redraw) {
   window.addEventListener("languageChanged", syncExpandButtons);
 }
 
+const OUTPUT_LAYER_DEFAULTS = { accumulation: true, defuzzification: true };
+
+function readStoredOutputLayers(controller) {
+  try {
+    const raw = localStorage.getItem(`fuzzyOutputLayers:${controller}`);
+    if (!raw) return { ...OUTPUT_LAYER_DEFAULTS };
+    const parsed = JSON.parse(raw);
+    return {
+      accumulation: parsed.accumulation !== false,
+      defuzzification: parsed.defuzzification !== false,
+    };
+  } catch {
+    return { ...OUTPUT_LAYER_DEFAULTS };
+  }
+}
+
+function setupOutputLayers(controller, onChange) {
+  const root = document.querySelector("[data-output-layers]");
+  let layers = readStoredOutputLayers(controller);
+  if (!root) return () => ({ ...OUTPUT_LAYER_DEFAULTS });
+
+  const syncUi = () => {
+    root.querySelectorAll("[data-layer]").forEach((input) => {
+      input.checked = Boolean(layers[input.dataset.layer]);
+    });
+    const stepBody = root.closest(".process-step-body");
+    const grid = stepBody?.querySelector(".graph-grid");
+    stepBody?.querySelectorAll("[data-layer-panel]").forEach((panel) => {
+      panel.hidden = !layers[panel.dataset.layerPanel];
+    });
+    if (grid) {
+      const panel = grid.querySelector("[data-layer-panel]");
+      if (panel) {
+        const panelVisible = !panel.hidden;
+        grid.classList.toggle("graph-grid-split", panelVisible);
+        grid.classList.toggle("graph-grid-1", !panelVisible);
+      }
+    }
+  };
+
+  root.querySelectorAll("[data-layer]").forEach((input) => {
+    input.addEventListener("change", () => {
+      layers = { ...layers, [input.dataset.layer]: input.checked };
+      try {
+        localStorage.setItem(`fuzzyOutputLayers:${controller}`, JSON.stringify(layers));
+      } catch {
+        // Ignore private-mode failures.
+      }
+      syncUi();
+      onChange?.(layers);
+    });
+  });
+
+  syncUi();
+  return () => layers;
+}
+
 function setupPipelineAccordions(config) {
   const page = window.location.pathname || "index.html";
   document.querySelectorAll(".process-step[data-step]").forEach((el) => {
@@ -1313,7 +1438,7 @@ function setupStickyInputs(config, { applyInputValue, recalc }) {
   observer.observe(inputSection);
 }
 
-function setupTooltips(config, state) {
+function setupTooltips(config, state, getLayers) {
   Object.entries(config.graphs.inputs).forEach(([key, canvasId]) => {
     bindCanvasTooltip(getGraphCanvasId(canvasId), () => {
       if (!state.mfData) return null;
@@ -1330,8 +1455,10 @@ function setupTooltips(config, state) {
     });
   });
 
-  bindCanvasTooltip(config.graphs.output.canvasId, () => {
+  const outputTooltip = () => {
     if (!state.mfData || !state.result) return null;
+    const layers = getLayers();
+    const axisSource = config.graphs.aggregated || config.graphs.output;
 
     if (state.mfData.meta?.singletonValues) {
       return {
@@ -1345,28 +1472,33 @@ function setupTooltips(config, state) {
       };
     }
 
+    const outputKey = config.graphs.output.key;
+    const outputSeries = state.mfData.output?.[outputKey] || {};
+    const series = {};
+    if (layers.defuzzification) Object.assign(series, outputSeries);
+    if (layers.accumulation) {
+      if (!layers.defuzzification) {
+        Object.assign(series, clipTermSeries(outputSeries, state.result.ruleOutputs));
+      }
+      if (state.result.aggregatedOutput) series.aggregated = state.result.aggregatedOutput;
+    }
+
     return {
       type: "curve",
-      kind: "output",
-      series: state.mfData.output[config.graphs.output.key],
+      kind: layers.accumulation ? "aggregated" : "output",
+      series,
       resultValue: hasFiredOutput(state.result) ? state.result.value : null,
       resultTerm: hasFiredOutput(state.result) ? state.result.dominantTerm : null,
-      xLabel: getGraphOptions(config.graphs.output).axisLabels?.x || "x",
+      xLabel: getGraphOptions(axisSource).axisLabels?.x || "x",
     };
-  });
+  };
 
-  if (config.graphs.aggregated?.canvasId) {
-    bindCanvasTooltip(config.graphs.aggregated.canvasId, () => {
-      if (!state.result?.aggregatedOutput) return null;
-      return {
-        type: "curve",
-        kind: "aggregated",
-        series: { aggregated: state.result.aggregatedOutput },
-        resultValue: hasFiredOutput(state.result) ? state.result.value : null,
-        resultTerm: hasFiredOutput(state.result) ? state.result.dominantTerm : null,
-        xLabel: getGraphOptions(config.graphs.aggregated).axisLabels?.x || "x",
-      };
-    });
+  bindCanvasTooltip(config.graphs.output.canvasId, outputTooltip);
+  if (
+    config.graphs.aggregated?.canvasId &&
+    config.graphs.aggregated.canvasId !== config.graphs.output.canvasId
+  ) {
+    bindCanvasTooltip(config.graphs.aggregated.canvasId, outputTooltip);
   }
 }
 
@@ -1444,6 +1576,8 @@ async function createFuzzyPage(config) {
     persistControllerInputs(config.controller, buildMapFromSpecs(config.inputs));
   };
 
+  let getOutputLayers = () => ({ ...OUTPUT_LAYER_DEFAULTS });
+
   const recalc = async () => {
     const payload = buildMapFromSpecs(config.inputs);
     const data = await calculateController(config.controller, payload);
@@ -1480,11 +1614,17 @@ async function createFuzzyPage(config) {
       );
     });
 
+    const layers = getOutputLayers();
     const outputKey = config.graphs.output.key;
     const outputCanvasId = config.graphs.output.canvasId;
+    const aggregatedCanvasId = config.graphs.aggregated?.canvasId;
     const outputSeries = state.mfData.output?.[outputKey];
     const hasOutputCurves = outputSeries && Object.keys(outputSeries).length > 0;
     const outputHighlight = hasFiredOutput(state.result) ? state.result.dominantTerm : null;
+    const layerOptions = {
+      showAccumulation: layers.accumulation,
+      showDefuzzification: layers.defuzzification,
+    };
 
     if (state.mfData.meta?.singletonValues) {
       drawSingletonGraph(
@@ -1495,6 +1635,21 @@ async function createFuzzyPage(config) {
         {
           ...getGraphOptions(config.graphs.output),
           highlightTerm: outputHighlight,
+          ...layerOptions,
+        }
+      );
+    } else if (aggregatedCanvasId) {
+      drawAggregatedSetGraph(
+        aggregatedCanvasId,
+        state.result.aggregatedOutput,
+        hasFiredOutput(state.result) ? state.result.value : null,
+        {
+          ...getGraphOptions(config.graphs.aggregated || config.graphs.output),
+          termSeries: hasOutputCurves ? outputSeries : null,
+          activations: state.result.ruleOutputs,
+          showPeakLabels: true,
+          highlightTerm: outputHighlight,
+          ...layerOptions,
         }
       );
     } else if (hasOutputCurves) {
@@ -1506,25 +1661,6 @@ async function createFuzzyPage(config) {
           ...getGraphOptions(config.graphs.output),
           highlightTerm: outputHighlight,
         }
-      );
-    } else {
-      drawCurveGraph(
-        outputCanvasId,
-        state.mfData.output[outputKey],
-        hasFiredOutput(state.result) ? state.result.value : null,
-        {
-          ...getGraphOptions(config.graphs.output),
-          highlightTerm: outputHighlight,
-        }
-      );
-    }
-
-    if (config.graphs.aggregated?.canvasId && state.result.aggregatedOutput) {
-      drawAggregatedSetGraph(
-        config.graphs.aggregated.canvasId,
-        state.result.aggregatedOutput,
-        state.result.value,
-        getGraphOptions(config.graphs.aggregated)
       );
     }
   };
@@ -1548,13 +1684,14 @@ async function createFuzzyPage(config) {
 
   setupStickyInputs(config, { applyInputValue, recalc });
   setupPipelineAccordions(config);
+  getOutputLayers = setupOutputLayers(config.controller, drawAll);
   setupGraphExpand(drawAll);
   restoreControllerInputs(config, applyInputValue);
   if (window.setupDocsModals) window.setupDocsModals(config.controller);
 
   state.mfData = await loadMembershipFunctions(config.controller);
 
-  setupTooltips(config, state);
+  setupTooltips(config, state, getOutputLayers);
 
   window.addEventListener("languageChanged", () => {
     decoratePipelineMuHints(config);
