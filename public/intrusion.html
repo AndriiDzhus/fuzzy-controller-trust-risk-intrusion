@@ -119,32 +119,51 @@
         </div>
       </details>
 
-      <details class="process-step" data-step="output" open>
+      <details class="process-step" data-step="rules" open>
         <summary>
           <span class="process-step-num">2</span>
-          <span class="process-step-title" data-i18n="common.pipeline.output"></span>
+          <span class="process-step-title" data-i18n="common.pipeline.rules"></span>
         </summary>
         <div class="process-step-body">
-          <div class="output-step-toolbar">
-            <p class="process-step-hint" data-i18n="common.pipeline.outputHintMamdani"></p>
-            <div class="graph-layer-toggles" data-output-layers>
-              <label class="layer-toggle">
-                <input type="checkbox" data-layer="accumulation" checked />
-                <span data-i18n="common.pipeline.accumulation"></span>
-              </label>
-              <label class="layer-toggle">
-                <input type="checkbox" data-layer="defuzzification" checked />
-                <span data-i18n="common.pipeline.defuzzification"></span>
-              </label>
-            </div>
-          </div>
+          <p class="process-step-hint" data-i18n="common.pipeline.rulesHintMamdani"></p>
+          <div id="intrusionRuleEval" class="rule-eval"></div>
+        </div>
+      </details>
+
+      <details class="process-step" data-step="accumulation" open>
+        <summary>
+          <span class="process-step-num">3</span>
+          <span class="process-step-title" data-i18n="common.pipeline.accumulation"></span>
+        </summary>
+        <div class="process-step-body">
+          <p class="process-step-hint" data-i18n="common.pipeline.accumulationHintMamdani"></p>
           <div class="graph-grid graph-grid-split">
             <div class="graph-container">
-              <h4 data-i18n="intrusion.membership.intrusion"></h4>
+              <h4 data-i18n="common.pipeline.graphTitleSet"></h4>
               <canvas id="intrusionAggregatedCanvas" width="800" height="220"></canvas>
             </div>
             <div class="membership-section">
-              <h4 data-i18n="intrusion.membership.intrusion"></h4>
+              <h4 data-i18n="common.pipeline.panelActivations"></h4>
+              <div id="intrusionActivations" class="membership-values"></div>
+            </div>
+          </div>
+        </div>
+      </details>
+
+      <details class="process-step" data-step="defuzzification" open>
+        <summary>
+          <span class="process-step-num">4</span>
+          <span class="process-step-title" data-i18n="common.pipeline.defuzzification"></span>
+        </summary>
+        <div class="process-step-body">
+          <p class="process-step-hint" data-i18n="common.pipeline.defuzzificationHintCentroid"></p>
+          <div class="graph-grid graph-grid-split">
+            <div class="graph-container">
+              <h4 data-i18n="common.pipeline.graphTitleCentroid"></h4>
+              <canvas id="intrusionCanvas" width="800" height="220"></canvas>
+            </div>
+            <div class="membership-section">
+              <h4 data-i18n="common.pipeline.panelAtResult"></h4>
               <div id="intrusionMembership" class="membership-values"></div>
             </div>
           </div>

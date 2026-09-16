@@ -16,6 +16,9 @@ describe("Unified controllers API", () => {
     expect(response.body.aggregatedOutput[0]).toHaveProperty("x");
     expect(response.body.aggregatedOutput[0]).toHaveProperty("y");
     expect(response.body.ruleOutputs).toHaveProperty("Medium");
+    expect(response.body.ruleEvaluations).toHaveLength(27);
+    expect(response.body.ruleEvaluations[13].out).toBe("Medium");
+    expect(response.body.ruleEvaluations[13].alpha).toBeCloseTo(1, 5);
   });
 
   test("security calculate endpoint works", async () => {
@@ -28,6 +31,9 @@ describe("Unified controllers API", () => {
     expect(response.body.dominantTerm).toBe("none");
     expect(response.body.noRuleFired).toBe(false);
     expect(response.body.membershipData).toHaveProperty("risk");
+    expect(response.body.ruleEvaluations).toHaveLength(6);
+    expect(response.body.ruleEvaluations[0].out).toBe("none");
+    expect(response.body.ruleEvaluations[0].alpha).toBeCloseTo(1, 5);
   });
 
   test("security calculate endpoint reports uncovered inputs", async () => {
@@ -50,6 +56,7 @@ describe("Unified controllers API", () => {
     expect(response.body.value).toBeGreaterThanOrEqual(0);
     expect(response.body.value).toBeLessThanOrEqual(100);
     expect(response.body.membershipData).toHaveProperty("intrusion");
+    expect(response.body.ruleEvaluations).toHaveLength(12);
   });
 
   test("membership functions endpoint works for each controller", async () => {

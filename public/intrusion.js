@@ -10,6 +10,9 @@ document.addEventListener("DOMContentLoaded", async () => {
       valueId: "intrusionValue",
       termId: "intrusionTerm",
     },
+    rules: {
+      containerId: "intrusionRuleEval",
+    },
     membership: {
       packets: "packetsMembership",
       rate: "rateMembership",
@@ -45,7 +48,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       },
       output: {
         key: "intrusion",
-        canvasId: "intrusionAggregatedCanvas",
+        canvasId: "intrusionCanvas",
         axisLabels: {
           xKey: "intrusion.graphs.axes.intrusionX",
           yKey: "intrusion.graphs.axes.intrusionY",
@@ -54,6 +57,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       },
       aggregated: {
         canvasId: "intrusionAggregatedCanvas",
+        membershipId: "intrusionActivations",
         axisLabels: {
           xKey: "intrusion.graphs.axes.intrusionX",
           yKey: "intrusion.graphs.axes.intrusionY",
