@@ -117,6 +117,22 @@ describe("Security controller logic", () => {
     expect(a).toBeCloseTo(b, 10);
   });
 
+  test("rule evaluations use min of condition memberships", () => {
+    const result = calculateSecurity({ energy: 0, strength: 100, response: 0 });
+    expect(result.ruleEvaluations).toHaveLength(6);
+    result.ruleEvaluations.forEach((rule) => {
+      const expected = Math.min(...rule.conditions.map((item) => item.mu));
+      expect(rule.alpha).toBeCloseTo(expected, 6);
+    });
+    const byOut = {};
+    result.ruleEvaluations.forEach((rule) => {
+      byOut[rule.out] = Math.max(byOut[rule.out] || 0, rule.alpha);
+    });
+    Object.entries(result.ruleOutputs).forEach(([term, alpha]) => {
+      expect(byOut[term] || 0).toBeCloseTo(alpha, 6);
+    });
+  });
+
   test("sparse-rule gap does not invent a risk value", () => {
     const result = calculateSecurity({ energy: 25, strength: 50, response: 75 });
     expect(result.value).toBeNull();

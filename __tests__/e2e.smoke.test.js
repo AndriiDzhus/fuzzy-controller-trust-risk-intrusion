@@ -151,52 +151,70 @@ describe("E2E smoke: navigation and i18n", () => {
   });
 
   test("all pages split inference into accordion pipeline steps", async () => {
-    const mamdaniPages = ["/index.html", "/intrusion.html"];
+    const pages = ["/index.html", "/security.html", "/intrusion.html"];
 
-    for (const page of mamdaniPages) {
+    for (const page of pages) {
       const res = await request(app).get(page);
       expect(res.status).toBe(200);
       expect(res.text).toContain('class="workspace"');
       expect(res.text).toContain('class="process-step"');
       expect(res.text).toContain('data-step="fuzzification"');
-      expect(res.text).toContain('data-step="output"');
-      expect(res.text).toContain('data-output-layers');
-      expect(res.text).toContain('data-layer="accumulation"');
-      expect(res.text).toContain('data-layer="defuzzification"');
-      expect(res.text).toContain('data-i18n="common.pipeline.output"');
+      expect(res.text).toContain('data-step="rules"');
+      expect(res.text).toContain('data-step="accumulation"');
+      expect(res.text).toContain('data-step="defuzzification"');
+      expect(res.text).not.toContain('data-output-layers');
+      expect(res.text).not.toContain('data-i18n="common.pipeline.output"');
     }
 
+    const trust = await request(app).get("/index.html");
+    expect(trust.text).toContain('id="trustAggregatedCanvas"');
+    expect(trust.text).toContain('id="trustCanvas"');
+    expect(trust.text).toContain('id="tActivations"');
+    expect(trust.text).toContain('id="trustRuleEval"');
+    expect(trust.text).toContain('data-i18n="common.pipeline.rulesHintMamdani"');
+    expect(trust.text).toContain('data-i18n="common.pipeline.accumulationHintMamdani"');
+    expect(trust.text).toContain('data-i18n="common.pipeline.defuzzificationHintCog"');
+
+    const intrusion = await request(app).get("/intrusion.html");
+    expect(intrusion.text).toContain('id="intrusionAggregatedCanvas"');
+    expect(intrusion.text).toContain('id="intrusionCanvas"');
+    expect(intrusion.text).toContain('id="intrusionActivations"');
+    expect(intrusion.text).toContain('id="intrusionRuleEval"');
+
     const security = await request(app).get("/security.html");
-    expect(security.status).toBe(200);
-    expect(security.text).toContain('data-step="fuzzification"');
-    expect(security.text).toContain('data-step="accumulation"');
-    expect(security.text).toContain('data-step="defuzzification"');
-    expect(security.text).not.toContain('data-output-layers');
-    expect(security.text).not.toContain('data-i18n="common.pipeline.output"');
+    expect(security.text).toContain('id="securityRuleEval"');
+    expect(security.text).toContain('data-i18n="common.pipeline.rulesHintSugeno"');
   });
 
   test("i18n dictionary has pipeline step labels", async () => {
     const res = await request(app).get("/i18n.json");
     expect(res.status).toBe(200);
     expect(res.body.uk.common.pipeline.fuzzification).toBe("Фазифікація");
+    expect(res.body.uk.common.pipeline.rules).toBe("Оцінка правил");
+    expect(res.body.uk.common.pipeline.rulesHintMamdani).toContain("{tip:min}");
     expect(res.body.uk.common.pipeline.fuzzificationHint).toContain("μ(x)");
     expect(res.body.uk.common.pipeline.fuzzificationHint).toContain("лінгвістичних термів");
     expect(res.body.en.common.pipeline.fuzzificationHint).toContain("μ(x)");
     expect(res.body.uk.common.tooltip.muX).toContain("{vars}");
     expect(res.body.en.common.tooltip.muOut).toContain("{var}");
     expect(res.body.uk.common.pipeline.output).toBe("Акумуляція та дефазифікація");
-    expect(res.body.uk.common.pipeline.outputHintMamdani).toContain("{tip:max}");
-    expect(res.body.uk.common.pipeline.outputHintMamdani).toContain("{tip:cog}");
+    expect(res.body.uk.common.pipeline.accumulation).toBe("Акумуляція");
+    expect(res.body.uk.common.pipeline.defuzzification).toBe("Дефазифікація");
+    expect(res.body.uk.common.pipeline.graphTitleSet).toContain("{var}");
+    expect(res.body.uk.common.pipeline.graphTitleCentroid).toContain("Дефазифікація");
+    expect(res.body.uk.common.pipeline.accumulationHintMamdani).toContain("{tip:max}");
+    expect(res.body.uk.common.pipeline.accumulationHintMamdani).not.toContain("{tip:cog}");
+    expect(res.body.uk.common.pipeline.defuzzificationHintCog).toContain("{tip:cog}");
+    expect(res.body.uk.common.pipeline.defuzzificationHintCog).toContain("не висота зрізу");
+    expect(res.body.uk.common.glossary.min.label).toBe("min");
     expect(res.body.uk.common.tooltip.clippedMu).toBeTruthy();
-    expect(res.body.uk.common.pipeline.accumulationHintMamdani).toContain("{tip:cog}");
     expect(res.body.uk.common.pipeline.defuzzificationHintCog).toBe(
       res.body.uk.common.pipeline.defuzzificationHintCentroid
     );
-    expect(res.body.uk.common.pipeline.outputHintMamdani).toContain("лінгвістичних термах");
     expect(res.body.uk.common.glossary.max.hint).toContain("max");
     expect(res.body.uk.common.glossary.cog.hint).toContain("Σ");
     expect(res.body.uk.common.glossary.wavg.hint).toContain("w");
-    expect(res.body.uk.common.pipeline.outputHintSugeno).toContain("{tip:wavg}");
+    expect(res.body.uk.common.pipeline.defuzzificationHintSugeno).toContain("{tip:wavg}");
     expect(res.body.uk.common.graph.expand).toBeTruthy();
     expect(res.body.uk.common.graph.aggregatedKey).toBe("Агрегована вихідна множина");
     expect(res.body.uk.common.graph.aggregatedMark).toContain("темний контур");
@@ -205,6 +223,7 @@ describe("E2E smoke: navigation and i18n", () => {
     expect(res.body.uk.common.pipeline.defuzzification).toBe("Дефазифікація");
     expect(res.body.en.common.pipeline.fuzzification).toBe("Fuzzification");
     expect(res.body.en.common.pipeline.accumulation).toBe("Accumulation");
+    expect(res.body.en.common.pipeline.rules).toBe("Rule evaluation");
     expect(res.body.en.common.pipeline.defuzzification).toBe("Defuzzification");
     expect(res.body.en.common.pipeline.output).toBe("Accumulation and defuzzification");
   });
