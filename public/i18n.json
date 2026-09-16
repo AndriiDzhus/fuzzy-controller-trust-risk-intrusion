@@ -54,7 +54,9 @@
       },
       "graph": {
         "expand": "Збільшити графік",
-        "collapse": "Згорнути графік"
+        "collapse": "Згорнути графік",
+        "aggregatedKey": "Агрегована вихідна множина",
+        "aggregatedMark": "темний контур (max зрізаних термів)"
       },
       "pipeline": {
         "inputs": "Вхідні величини",
@@ -362,7 +364,9 @@
       },
       "graph": {
         "expand": "Enlarge graph",
-        "collapse": "Collapse graph"
+        "collapse": "Collapse graph",
+        "aggregatedKey": "Aggregated output set",
+        "aggregatedMark": "dark outline (max of clipped terms)"
       },
       "pipeline": {
         "inputs": "Input values",
