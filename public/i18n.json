@@ -42,6 +42,10 @@
           "label": "максимальна активація",
           "hint": "Кілька правил на один синглтон — лишається найбільше спрацювання (max), не сума."
         },
+        "min": {
+          "label": "min",
+          "hint": "Сила правила α — найменше μ серед умов, з’єднаних через ТА."
+        },
         "accAct": {
           "label": "акумульована активація",
           "hint": "Вага wᵢ дорівнює max спрацювань цього синглтона після акумуляції."
@@ -61,17 +65,27 @@
       "pipeline": {
         "inputs": "Вхідні величини",
         "fuzzification": "Фазифікація",
+        "rules": "Оцінка правил",
         "accumulation": "Акумуляція",
         "defuzzification": "Дефазифікація",
         "output": "Акумуляція та дефазифікація",
+        "panelActivations": "Сили правил α",
+        "panelAtResult": "μ у точці {var}*",
+        "graphTitleSet": "Агрегована вихідна множина ({var})",
+        "graphTitleCentroid": "Дефазифікація: {var}* на термах",
         "fuzzificationHint": "Перетворення чітких входів на ступені приналежності μ(x) лінгвістичних термів. Вертикальна лінія — поточне значення входу.",
-        "accumulationHintMamdani": "{tip:clipped} терми (напівпрозорі) об’єднуються операцією {tip:max} у контур {mu}. Вертикальна лінія — {tip:cog} цієї площі.",
+        "rulesHintMamdani": "Для кожного правила α = {tip:min} μ умов. У групі терму виходу лишається {tip:max} — це висота зрізу на наступному кроці.",
+        "rulesHintSugeno": "Для кожного правила α = {tip:min} μ умов. У групі синглтона лишається {tip:maxAct} — це його вага.",
+        "rulesClip": "висота зрізу",
+        "rulesSingleton": "висота синглтона",
+        "rulesShowIdle": "Показати неактивні ({n})",
+        "rulesHideIdle": "Сховати неактивні",
+        "rulesEmpty": "Жодне правило не спрацювало для цих входів.",
+        "accumulationHintMamdani": "{tip:clipped} терми збираються через {tip:max} у темний контур. Панель — сили правил α, тобто висота зрізу.",
         "accumulationHintSugeno": "Для кожного синглтона лишається {tip:maxAct} правил, що на нього вказують.",
-        "defuzzificationHintCog": "Той самий результат на лінгвістичних термах виходу. Вертикальна лінія — чітке значення, підсвічений терм — його рівень.",
-        "defuzzificationHintCentroid": "Той самий результат на лінгвістичних термах виходу. Вертикальна лінія — чітке значення, підсвічений терм — його рівень.",
-        "defuzzificationHintSugeno": "Чітке значення — {tip:wavg}; вага терму — його {tip:accAct}. Вертикальна лінія — отримане значення.",
-        "outputHintMamdani": "{tip:clipped} терми збираються через {tip:max} у площу {mu}; вертикаль — {tip:cog} на лінгвістичних термах. Прапорці вмикають шари окремо.",
-        "outputHintSugeno": "Висота синглтона — {tip:accAct}; чітке значення — {tip:wavg}. Прапорці вмикають шари окремо."
+        "defuzzificationHintCog": "Вертикаль — {tip:cog} {var}*. Панель — μ термів у цій точці, не висота зрізу α; підсвічений терм має найбільше μ.",
+        "defuzzificationHintCentroid": "Вертикаль — {tip:cog} {var}*. Панель — μ термів у цій точці, не висота зрізу α; підсвічений терм має найбільше μ.",
+        "defuzzificationHintSugeno": "Чітке значення — {tip:wavg}; вага терму — його {tip:accAct}. Вертикальна лінія — отримане значення."
       },
       "meta": {
         "model": "Модель:",
@@ -352,6 +366,10 @@
           "label": "maximum activation",
           "hint": "Several rules, one singleton — keep the highest firing (max), not the sum."
         },
+        "min": {
+          "label": "min",
+          "hint": "Rule strength α is the smallest μ among the AND conditions."
+        },
         "accAct": {
           "label": "accumulated activation",
           "hint": "Weight wᵢ is that singleton's max firing after accumulation."
@@ -371,17 +389,27 @@
       "pipeline": {
         "inputs": "Input values",
         "fuzzification": "Fuzzification",
+        "rules": "Rule evaluation",
         "accumulation": "Accumulation",
         "defuzzification": "Defuzzification",
         "output": "Accumulation and defuzzification",
+        "panelActivations": "Rule strengths α",
+        "panelAtResult": "μ at {var}*",
+        "graphTitleSet": "Aggregated output set ({var})",
+        "graphTitleCentroid": "Defuzzification: {var}* on the terms",
         "fuzzificationHint": "Conversion of crisp inputs into membership degrees μ(x) of linguistic terms. The vertical line is the current input value.",
-        "accumulationHintMamdani": "{tip:clipped} terms (semitransparent) are merged by {tip:max} into the {mu} outline. The vertical line is the {tip:cog} of this area.",
+        "rulesHintMamdani": "For each rule α = {tip:min} of the condition μ values. In an output-term group the {tip:max} remains — that is the clip height on the next step.",
+        "rulesHintSugeno": "For each rule α = {tip:min} of the condition μ values. In a singleton group the {tip:maxAct} remains — that is its weight.",
+        "rulesClip": "clip height",
+        "rulesSingleton": "singleton height",
+        "rulesShowIdle": "Show inactive ({n})",
+        "rulesHideIdle": "Hide inactive",
+        "rulesEmpty": "No rule fired for these inputs.",
+        "accumulationHintMamdani": "{tip:clipped} terms are merged by {tip:max} into the dark outline. The panel shows rule strengths α — the clip height.",
         "accumulationHintSugeno": "Each output singleton keeps the {tip:maxAct} of the rules that point to it.",
-        "defuzzificationHintCog": "The same result read on the output terms. The vertical line is the crisp value; the highlighted term is its linguistic level.",
-        "defuzzificationHintCentroid": "The same result read on the output terms. The vertical line is the crisp value; the highlighted term is its linguistic level.",
-        "defuzzificationHintSugeno": "The crisp value is the {tip:wavg}; a term's weight is its {tip:accAct}. The vertical line is the obtained value.",
-        "outputHintMamdani": "{tip:clipped} terms are merged by {tip:max} into the {mu} area; the vertical line is the {tip:cog} on the linguistic terms. Use the checkboxes to show each layer.",
-        "outputHintSugeno": "Singleton height is the {tip:accAct}; the crisp value is the {tip:wavg}. Use the checkboxes to show each layer."
+        "defuzzificationHintCog": "The vertical line is the {tip:cog} {var}*. The panel shows μ of the terms at that point, not the clip height α; the highlighted term has the largest μ.",
+        "defuzzificationHintCentroid": "The vertical line is the {tip:cog} {var}*. The panel shows μ of the terms at that point, not the clip height α; the highlighted term has the largest μ.",
+        "defuzzificationHintSugeno": "The crisp value is the {tip:wavg}; a term's weight is its {tip:accAct}. The vertical line is the obtained value."
       },
       "meta": {
         "model": "Model:",

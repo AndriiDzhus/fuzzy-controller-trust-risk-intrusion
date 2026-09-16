@@ -10,6 +10,9 @@ document.addEventListener("DOMContentLoaded", async () => {
       valueId: "riskValue",
       termId: "riskTerm",
     },
+    rules: {
+      containerId: "securityRuleEval",
+    },
     membership: {
       energy: "energyMembership",
       strength: "strengthMembership",
