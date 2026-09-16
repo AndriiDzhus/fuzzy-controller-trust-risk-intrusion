@@ -2,6 +2,7 @@ const {
   calculateTrustIndex,
   centerOfGravity,
   getAggregatedOutput,
+  getOutputTermActivations,
   calculateMembershipValues,
   getMostActiveTerm,
   trapezoidalMF,
@@ -51,6 +52,14 @@ describe("Trust controller calculations", () => {
     const memberships = calculateMembershipValues("trustIndex", 62.5);
     const term = getMostActiveTerm(memberships);
     expect(Object.keys(memberships)).toContain(term);
+  });
+
+  test("output term activations follow the fired conclusions", () => {
+    calculateTrustIndex(50, 50, 50);
+    const activations = getOutputTermActivations();
+    expect(activations.Medium).toBeCloseTo(1, 5);
+    expect(activations.Low).toBe(0);
+    expect(activations.VeryLow).toBe(0);
   });
 
   test("aggregated output comes from fuzzyis UnionOfTerms after inference", () => {

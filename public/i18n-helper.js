@@ -42,6 +42,15 @@ class I18nHelper {
       el.textContent = translated;
     });
 
+    if (root === document) {
+      const titleEl = document.querySelector("title[data-i18n]");
+      if (titleEl) {
+        const translated = this.t(titleEl.getAttribute("data-i18n"), titleEl.textContent);
+        titleEl.textContent = translated;
+        document.title = translated;
+      }
+    }
+
     root.querySelectorAll("[data-i18n-placeholder]").forEach((el) => {
       const key = el.getAttribute("data-i18n-placeholder");
       el.setAttribute("placeholder", this.t(key, el.getAttribute("placeholder") || ""));
