@@ -198,6 +198,9 @@ describe("E2E smoke: navigation and i18n", () => {
     expect(res.body.uk.common.glossary.wavg.hint).toContain("w");
     expect(res.body.uk.common.pipeline.outputHintSugeno).toContain("{tip:wavg}");
     expect(res.body.uk.common.graph.expand).toBeTruthy();
+    expect(res.body.uk.common.graph.aggregatedKey).toBe("Агрегована вихідна множина");
+    expect(res.body.uk.common.graph.aggregatedMark).toContain("темний контур");
+    expect(res.body.en.common.graph.aggregatedKey).toBe("Aggregated output set");
     expect(res.body.en.common.graph.collapse).toBeTruthy();
     expect(res.body.uk.common.pipeline.defuzzification).toBe("Дефазифікація");
     expect(res.body.en.common.pipeline.fuzzification).toBe("Fuzzification");
@@ -234,7 +237,9 @@ describe("E2E smoke: navigation and i18n", () => {
     expect(js.status).toBe(200);
     expect(js.text).toContain("setupGraphExpand");
     expect(js.text).toContain('querySelector(".container")');
+    expect(js.text).toContain("syncAggregatedGraphKey");
     expect(css.text).toContain(".graph-expand-btn");
+    expect(css.text).toContain(".graph-key-swatch-aggregated");
   });
 
   test("favicon assets are served", async () => {

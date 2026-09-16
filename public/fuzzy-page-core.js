@@ -244,6 +244,26 @@ function ensureLegend(canvasId) {
   if (legend) legend.remove();
 }
 
+function syncAggregatedGraphKey(canvas, visible) {
+  const container = canvas?.closest(".graph-container");
+  if (!container) return;
+  let key = container.querySelector(".graph-key");
+  if (!visible) {
+    key?.remove();
+    return;
+  }
+  if (!key) {
+    key = document.createElement("p");
+    key.className = "graph-key";
+    canvas.after(key);
+  }
+  const name = i18nText("common.graph.aggregatedKey", "Агрегована вихідна множина");
+  const mark = i18nText("common.graph.aggregatedMark", "темний контур (max зрізаних термів)");
+  key.innerHTML = `<span class="graph-key-item"><i class="graph-key-swatch-aggregated" aria-hidden="true"></i>${escapeHtml(
+    name
+  )} — ${escapeHtml(mark)}</span>`;
+}
+
 const PLOT_PAD = 46;
 const SINGLETON_SNAP = 7;
 
@@ -667,6 +687,7 @@ function drawAggregatedSetGraph(canvasId, points, resultValue, options = {}) {
 
   drawResultMarker(ctx, w, h, p, resultValue);
   ensureLegend(canvasId, ["aggregated"]);
+  syncAggregatedGraphKey(canvas, Boolean(showAcc && Array.isArray(points) && points.length));
 }
 
 function drawSingletonGraph(canvasId, singletonValues, ruleOutputs, resultValue, options = {}) {
