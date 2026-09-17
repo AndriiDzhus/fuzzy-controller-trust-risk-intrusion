@@ -52,7 +52,7 @@
         }
       },
       "noRuleFired": "Жодне правило не спрацювало",
-      "noRuleFiredHint": "База правил безпеки має лише 6 комбінацій E, S і T. Поточні входи не активують жодне правило, тому ризик R не можна обчислити — немає активних сінглтонів для дефазифікації.",
+      "noRuleFiredHint": "База правил безпеки має лише 6 комбінацій EC, TP і Lat. Поточні входи не активують жодне правило, тому індекс ризику SR не можна обчислити — немає активних сінглтонів для дефазифікації.",
       "sticky": {
         "result": "Результат"
       },
@@ -112,9 +112,9 @@
         "or": "або",
         "domain": "Область визначення",
         "ifThenHint": "Кожне правило: якщо всі вхідні терми істинні одночасно, вихід набуває зазначеного терму.",
-        "piecewiseHint": "Кусково-лінійні функції приналежності на шкалі 0–100.",
+        "piecewiseHint": "Кусково-лінійні функції приналежності на області визначення кожної величини.",
         "gaussianHint": "Гаусівські функції: μ(x) = exp(−(x − c)² / (2σ²)), де c — центр, σ — розмах.",
-        "singletonHint": "Вихід задано синглтонами (Sugeno): кожен терм відповідає одному чіткому значенню R.",
+        "singletonHint": "Вихід задано синглтонами (Sugeno): кожен терм відповідає одному чіткому значенню SR.",
         "ling": {
           "lowF": "Мала",
           "mediumF": "Середня",
@@ -215,7 +215,7 @@
       "pageTitle": "Ризик безпеки | Платформа нечіткого виводу",
       "headline": "Платформа нечіткого виводу для оцінки безпеки систем",
       "title": "Ризик безпеки системи зв'язку",
-      "stickyTitle": "Оцінка ризику безпеки (R)",
+      "stickyTitle": "Оцінка ризику безпеки (SR)",
       "docs": {
         "formulasTitle": "Безпека: функції приналежності",
         "rulesTitle": "Безпека: база правил"
@@ -223,47 +223,47 @@
       "sticky": {
         "inputs": {
           "energy": "Енергія",
-          "strength": "Потужність",
-          "response": "Відгук"
+          "strength": "Передача",
+          "response": "Затримка"
         }
       },
-      "description": "Оцінка ризику безпеки (R) на основі споживання енергії (E), потужності з'єднання (S) та часу відгуку (T).",
+      "description": "Оцінка індексу ризику безпеки (SR) на основі споживаної енергії (EC), потужності передачі (TP) та затримки (Lat).",
       "inputs": {
-        "energy": "Споживання енергії (E) (0-100):",
-        "strength": "Потужність з'єднання (S) (0-100):",
-        "response": "Час очікування відгуку (T) (0-100):"
+        "energy": "Споживана енергія (EC) (0–0,05 кВт·год/ГБ):",
+        "strength": "Потужність передачі (TP) (0–40 дБм):",
+        "response": "Затримка (Lat) (0–10 мс):"
       },
       "results": {
         "title": "Результат обчислення",
-        "value": "Значення ризику (R):",
+        "value": "Значення ризику (SR):",
         "level": "Рівень ризику:"
       },
       "membership": {
         "title": "Значення приналежності",
-        "energy": "Споживання енергії (E)",
-        "strength": "Потужність з'єднання (S)",
-        "response": "Час відгуку (T)",
-        "risk": "Ризик безпеки (R)"
+        "energy": "Споживана енергія (EC)",
+        "strength": "Потужність передачі (TP)",
+        "response": "Затримка (Lat)",
+        "risk": "Індекс ризику безпеки (SR)"
       },
       "graphs": {
         "title": "Функції приналежності",
         "axes": {
-          "energyY": "μ(E)",
-          "energyX": "E",
-          "strengthY": "μ(S)",
-          "strengthX": "S",
-          "responseY": "μ(T)",
-          "responseX": "T",
-          "riskY": "μ(R)",
-          "riskX": "R"
+          "energyY": "μ(EC)",
+          "energyX": "EC",
+          "strengthY": "μ(TP)",
+          "strengthX": "TP",
+          "responseY": "μ(Lat)",
+          "responseX": "Lat",
+          "riskY": "μ(SR)",
+          "riskX": "SR"
         }
       },
       "rules": {
         "title": "База Правил та Інтерпретація Результатів",
-        "description": "Система використовує 6 правил нечіткого виводу для визначення ризику безпеки на основі комбінацій вхідних параметрів: E (Energy), S (Strength), T (Response) → R (Security Risk).",
-        "category1": "Низьке споживання енергії (E): мінімальний ризик за сильного з'єднання та швидкого відгуку.",
-        "category2": "Середнє споживання енергії (E): рівень ризику залежить від потужності з'єднання та часу відгуку.",
-        "category3": "Високе споживання енергії (E): підвищений ризик, особливо при слабкому з'єднанні та повільному відгуку."
+        "description": "Система використовує 6 правил нечіткого виводу для визначення індексу ризику безпеки: EC (Energy Consumption), TP (Transmit Power), Lat (Latency) → SR (Security Risk).",
+        "category1": "Мала споживана енергія (EC): мінімальний ризик за малої потужності передачі та малої затримки.",
+        "category2": "Середня споживана енергія (EC): рівень ризику залежить від потужності передачі та затримки.",
+        "category3": "Велика споживана енергія (EC): підвищений ризик, особливо за великої потужності передачі та великої затримки."
       }
     },
     "intrusion": {
@@ -376,7 +376,7 @@
         }
       },
       "noRuleFired": "No rule fired",
-      "noRuleFiredHint": "The security rule base has only 6 combinations of E, S and T. The current inputs do not activate any rule, so risk R cannot be calculated — there are no active singletons to defuzzify.",
+      "noRuleFiredHint": "The security rule base has only 6 combinations of EC, TP and Lat. The current inputs do not activate any rule, so risk SR cannot be calculated — there are no active singletons to defuzzify.",
       "sticky": {
         "result": "Result"
       },
@@ -436,9 +436,9 @@
         "or": "or",
         "domain": "Domain",
         "ifThenHint": "Each rule: if all input terms hold at once, the output takes the listed term.",
-        "piecewiseHint": "Piecewise-linear membership functions on the 0–100 scale.",
+        "piecewiseHint": "Piecewise-linear membership functions on each variable's domain.",
         "gaussianHint": "Gaussian functions: μ(x) = exp(−(x − c)² / (2σ²)), where c is the center and σ is the spread.",
-        "singletonHint": "The output uses Sugeno singletons: each term maps to one crisp R value.",
+        "singletonHint": "The output uses Sugeno singletons: each term maps to one crisp SR value.",
         "ling": {
           "lowF": "Small",
           "mediumF": "Medium",
@@ -539,7 +539,7 @@
       "pageTitle": "Security Risk | Fuzzy Security Platform",
       "headline": "Fuzzy inference platform for system security assessment",
       "title": "Communication security risk",
-      "stickyTitle": "Security risk assessment (R)",
+      "stickyTitle": "Security risk assessment (SR)",
       "docs": {
         "formulasTitle": "Security: membership functions",
         "rulesTitle": "Security: rule base"
@@ -547,47 +547,47 @@
       "sticky": {
         "inputs": {
           "energy": "Energy",
-          "strength": "Strength",
-          "response": "Response"
+          "strength": "Power",
+          "response": "Latency"
         }
       },
-      "description": "Evaluates security risk (R) based on energy consumption (E), connection strength (S), and response time (T).",
+      "description": "Evaluates security risk (SR) based on energy consumption (EC), transmit power (TP), and latency (Lat).",
       "inputs": {
-        "energy": "Energy Consumption (E) (0-100):",
-        "strength": "Connection Strength (S) (0-100):",
-        "response": "Response Waiting Time (T) (0-100):"
+        "energy": "Energy Consumption (EC) (0–0.05 kWh/GB):",
+        "strength": "Transmit Power (TP) (0–40 dBm):",
+        "response": "Latency (Lat) (0–10 ms):"
       },
       "results": {
         "title": "Calculation Result",
-        "value": "Security risk value (R):",
+        "value": "Security risk value (SR):",
         "level": "Risk level:"
       },
       "membership": {
         "title": "Membership Values",
-        "energy": "Energy Consumption (E)",
-        "strength": "Connection Strength (S)",
-        "response": "Response Time (T)",
-        "risk": "Security Risk (R)"
+        "energy": "Energy Consumption (EC)",
+        "strength": "Transmit Power (TP)",
+        "response": "Latency (Lat)",
+        "risk": "Security Risk (SR)"
       },
       "graphs": {
         "title": "Membership Functions",
         "axes": {
-          "energyY": "μ(E)",
-          "energyX": "E",
-          "strengthY": "μ(S)",
-          "strengthX": "S",
-          "responseY": "μ(T)",
-          "responseX": "T",
-          "riskY": "μ(R)",
-          "riskX": "R"
+          "energyY": "μ(EC)",
+          "energyX": "EC",
+          "strengthY": "μ(TP)",
+          "strengthX": "TP",
+          "responseY": "μ(Lat)",
+          "responseX": "Lat",
+          "riskY": "μ(SR)",
+          "riskX": "SR"
         }
       },
       "rules": {
         "title": "Rule Base and Result Interpretation",
-        "description": "The system uses 6 fuzzy inference rules to determine security risk based on input combinations: E (Energy), S (Strength), T (Response) → R (Security Risk).",
-        "category1": "Low energy consumption (E): minimal risk when connection is strong and response is fast.",
-        "category2": "Medium energy consumption (E): risk level depends on connection strength and response time.",
-        "category3": "High energy consumption (E): elevated risk, especially with weak connection and slow response."
+        "description": "The system uses 6 fuzzy inference rules to determine security risk: EC (Energy Consumption), TP (Transmit Power), Lat (Latency) → SR (Security Risk).",
+        "category1": "Low energy consumption (EC): minimal risk when transmit power and latency are low.",
+        "category2": "Medium energy consumption (EC): risk level depends on transmit power and latency.",
+        "category3": "High energy consumption (EC): elevated risk, especially with high transmit power and high latency."
       }
     },
     "intrusion": {

@@ -96,7 +96,7 @@ app.post("/api/controllers/:controller/calculate", (req, res) => {
     const inputs = req.body || {};
     if (!controller.validate(inputs)) {
       return res.status(400).json({
-        error: "Invalid input values. All values must be between 0 and 100.",
+        error: "Invalid input values. All values must be within the allowed range.",
       });
     }
 

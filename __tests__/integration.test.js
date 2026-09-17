@@ -24,7 +24,7 @@ describe("Unified controllers API", () => {
   test("security calculate endpoint works", async () => {
     const response = await request(app)
       .post("/api/controllers/security/calculate")
-      .send({ energy: 0, strength: 100, response: 0 });
+      .send({ energy: 0, strength: 0, response: 0 });
 
     expect(response.status).toBe(200);
     expect(response.body.value).toBe(0);
@@ -39,7 +39,7 @@ describe("Unified controllers API", () => {
   test("security calculate endpoint reports uncovered inputs", async () => {
     const response = await request(app)
       .post("/api/controllers/security/calculate")
-      .send({ energy: 50, strength: 50, response: 50 });
+      .send({ energy: 0.025, strength: 0, response: 0 });
 
     expect(response.status).toBe(200);
     expect(response.body.value).toBeNull();
