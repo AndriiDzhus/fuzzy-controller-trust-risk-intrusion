@@ -22,10 +22,30 @@ function gaussianMF(x, center, sigma) {
 
 function sampleMF(fn, step = 1, max = 100) {
   const out = [];
-  for (let x = 0; x <= max; x += step) {
+  const n = Math.round(max / step);
+  for (let i = 0; i <= n; i += 1) {
+    const x = i === n ? max : Number((i * step).toFixed(10));
     out.push({ x, y: fn(x) });
   }
   return out;
+}
+
+function leftShoulderMF(x, peak) {
+  if (x <= 0) return 1;
+  if (x <= peak) return 1 - x / peak;
+  return 0;
+}
+
+function trianglePeakMF(x, peak, max) {
+  if (x < 0 || x > max) return 0;
+  if (x <= peak) return x / peak;
+  return (max - x) / (max - peak);
+}
+
+function rightRampMF(x, start, max) {
+  if (x < start) return 0;
+  if (x <= max) return (x - start) / (max - start);
+  return 1;
 }
 
 function maxTerm(memberships) {
@@ -58,6 +78,12 @@ function nearestSingletonTerm(singletons, value) {
   return bestTerm;
 }
 
+const securityRanges = {
+  energy: { min: 0, max: 0.05 },
+  strength: { min: 0, max: 40 },
+  response: { min: 0, max: 10 },
+};
+
 const securityDef = {
   singletons: {
     none: 0,
@@ -68,40 +94,28 @@ const securityDef = {
     veryHigh: 100,
   },
   rules: [
-    { E: "low", S: "high", T: "low", out: "none" },
-    { E: "low", S: "high", T: "medium", out: "veryLow" },
-    { E: "medium", S: "medium", T: "low", out: "low" },
-    { E: "medium", S: "low", T: "medium", out: "medium" },
-    { E: "high", S: "medium", T: "high", out: "high" },
-    { E: "high", S: "low", T: "high", out: "veryHigh" },
+    { EC: "low", TP: "low", Lat: "low", out: "none" },
+    { EC: "medium", TP: "medium", Lat: "medium", out: "veryLow" },
+    { EC: "high", TP: "low", Lat: "low", out: "low" },
+    { EC: "medium", TP: "high", Lat: "medium", out: "medium" },
+    { EC: "high", TP: "medium", Lat: "high", out: "high" },
+    { EC: "high", TP: "high", Lat: "high", out: "veryHigh" },
   ],
   mfs: {
-    E: {
-      low: (x) => (x <= 0 ? 1 : x <= 20 ? (20 - x) / 20 : 0),
-      medium: (x) => {
-        if (x <= 10 || x >= 70) return 0;
-        if (x <= 40) return (x - 10) / 30;
-        return (70 - x) / 30;
-      },
-      high: (x) => (x <= 50 ? 0 : x <= 100 ? (x - 50) / 50 : 1),
+    EC: {
+      low: (x) => leftShoulderMF(x, 0.025),
+      medium: (x) => trianglePeakMF(x, 0.025, 0.05),
+      high: (x) => rightRampMF(x, 0.025, 0.05),
     },
-    S: {
-      low: (x) => (x <= 0 ? 1 : x <= 50 ? (50 - x) / 50 : 0),
-      medium: (x) => {
-        if (x <= 30 || x >= 90) return 0;
-        if (x <= 60) return (x - 30) / 30;
-        return (90 - x) / 30;
-      },
-      high: (x) => (x <= 70 ? 0 : x <= 100 ? (x - 70) / 30 : 1),
+    TP: {
+      low: (x) => leftShoulderMF(x, 20),
+      medium: (x) => trianglePeakMF(x, 20, 40),
+      high: (x) => rightRampMF(x, 20, 40),
     },
-    T: {
-      low: (x) => (x <= 0 ? 1 : x <= 20 ? (20 - x) / 20 : 0),
-      medium: (x) => {
-        if (x <= 10 || x >= 90) return 0;
-        if (x <= 50) return (x - 10) / 40;
-        return (90 - x) / 40;
-      },
-      high: (x) => (x <= 80 ? 0 : x <= 100 ? (x - 80) / 20 : 1),
+    Lat: {
+      low: (x) => leftShoulderMF(x, 5),
+      medium: (x) => trianglePeakMF(x, 5, 10),
+      high: (x) => rightRampMF(x, 5, 10),
     },
   },
 };
@@ -171,6 +185,13 @@ function validateRange(values) {
   return Object.values(values).every((v) => Number.isFinite(v) && v >= 0 && v <= 100);
 }
 
+function validateInputRanges(inputs, ranges) {
+  return Object.entries(ranges).every(([key, range]) => {
+    const value = Number(inputs[key]);
+    return Number.isFinite(value) && value >= range.min && value <= range.max;
+  });
+}
+
 function calculateTrust(inputs) {
   const value = trustController.calculateTrustIndex(inputs.errors, inputs.connections, inputs.bytes);
   const membershipData = {
@@ -226,19 +247,19 @@ function trustMembershipFunctions() {
 function calculateSecurity(inputs) {
   const fuzzy = {
     energy: {
-      low: securityDef.mfs.E.low(inputs.energy),
-      medium: securityDef.mfs.E.medium(inputs.energy),
-      high: securityDef.mfs.E.high(inputs.energy),
+      low: securityDef.mfs.EC.low(inputs.energy),
+      medium: securityDef.mfs.EC.medium(inputs.energy),
+      high: securityDef.mfs.EC.high(inputs.energy),
     },
     strength: {
-      low: securityDef.mfs.S.low(inputs.strength),
-      medium: securityDef.mfs.S.medium(inputs.strength),
-      high: securityDef.mfs.S.high(inputs.strength),
+      low: securityDef.mfs.TP.low(inputs.strength),
+      medium: securityDef.mfs.TP.medium(inputs.strength),
+      high: securityDef.mfs.TP.high(inputs.strength),
     },
     response: {
-      low: securityDef.mfs.T.low(inputs.response),
-      medium: securityDef.mfs.T.medium(inputs.response),
-      high: securityDef.mfs.T.high(inputs.response),
+      low: securityDef.mfs.Lat.low(inputs.response),
+      medium: securityDef.mfs.Lat.medium(inputs.response),
+      high: securityDef.mfs.Lat.high(inputs.response),
     },
   };
 
@@ -253,17 +274,17 @@ function calculateSecurity(inputs) {
 
   securityDef.rules.forEach((rule) => {
     const alpha = Math.min(
-      fuzzy.energy[rule.E],
-      fuzzy.strength[rule.S],
-      fuzzy.response[rule.T]
+      fuzzy.energy[rule.EC],
+      fuzzy.strength[rule.TP],
+      fuzzy.response[rule.Lat]
     );
     ruleOutputs[rule.out] = Math.max(ruleOutputs[rule.out], alpha);
   });
 
   const ruleEvaluations = evaluateAndRules(securityDef.rules, [
-    { key: "energy", symbol: "E", field: "E", terms: fuzzy.energy },
-    { key: "strength", symbol: "S", field: "S", terms: fuzzy.strength },
-    { key: "response", symbol: "T", field: "T", terms: fuzzy.response },
+    { key: "energy", symbol: "EC", field: "EC", terms: fuzzy.energy },
+    { key: "strength", symbol: "TP", field: "TP", terms: fuzzy.strength },
+    { key: "response", symbol: "Lat", field: "Lat", terms: fuzzy.response },
   ]);
 
   let numerator = 0;
@@ -296,19 +317,19 @@ function securityMembershipFunctions() {
   return {
     inputs: {
       energy: {
-        low: sampleMF(securityDef.mfs.E.low),
-        medium: sampleMF(securityDef.mfs.E.medium),
-        high: sampleMF(securityDef.mfs.E.high),
+        low: sampleMF(securityDef.mfs.EC.low, 0.0005, 0.05),
+        medium: sampleMF(securityDef.mfs.EC.medium, 0.0005, 0.05),
+        high: sampleMF(securityDef.mfs.EC.high, 0.0005, 0.05),
       },
       strength: {
-        low: sampleMF(securityDef.mfs.S.low),
-        medium: sampleMF(securityDef.mfs.S.medium),
-        high: sampleMF(securityDef.mfs.S.high),
+        low: sampleMF(securityDef.mfs.TP.low, 0.2, 40),
+        medium: sampleMF(securityDef.mfs.TP.medium, 0.2, 40),
+        high: sampleMF(securityDef.mfs.TP.high, 0.2, 40),
       },
       response: {
-        low: sampleMF(securityDef.mfs.T.low),
-        medium: sampleMF(securityDef.mfs.T.medium),
-        high: sampleMF(securityDef.mfs.T.high),
+        low: sampleMF(securityDef.mfs.Lat.low, 0.05, 10),
+        medium: sampleMF(securityDef.mfs.Lat.medium, 0.05, 10),
+        high: sampleMF(securityDef.mfs.Lat.high, 0.05, 10),
       },
     },
     output: {
@@ -316,6 +337,11 @@ function securityMembershipFunctions() {
     },
     meta: {
       inputKeys: ["energy", "strength", "response"],
+      inputDomains: {
+        energy: { min: 0, max: 0.05 },
+        strength: { min: 0, max: 40 },
+        response: { min: 0, max: 10 },
+      },
       outputKey: "risk",
       singletonValues: securityDef.singletons,
     },
@@ -438,7 +464,7 @@ const controllers = {
     membershipFunctions: trustMembershipFunctions,
   },
   security: {
-    validate: (inputs) => validateRange(inputs),
+    validate: (inputs) => validateInputRanges(inputs, securityRanges),
     calculate: calculateSecurity,
     membershipFunctions: securityMembershipFunctions,
   },
