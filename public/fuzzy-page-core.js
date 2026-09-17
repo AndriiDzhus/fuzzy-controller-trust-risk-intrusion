@@ -2,10 +2,54 @@ const graphPalette = ["#e74c3c", "#3498db", "#27ae60", "#8e44ad", "#1abc9c", "#f
 
 const INPUTS_STORAGE_KEY = "fuzzyControllerInputs";
 
-function clampInputValue(value) {
+function inputSpecMeta(spec = {}) {
+  return {
+    min: Number.isFinite(Number(spec.min)) ? Number(spec.min) : 0,
+    max: Number.isFinite(Number(spec.max)) ? Number(spec.max) : 100,
+    step: Number.isFinite(Number(spec.step)) ? Number(spec.step) : 0.1,
+    digits: Number.isFinite(Number(spec.digits)) ? Number(spec.digits) : 1,
+  };
+}
+
+function clampInputValue(value, spec = {}) {
   const numeric = Number(value);
   if (!Number.isFinite(numeric)) return null;
-  return Math.min(100, Math.max(0, numeric));
+  const { min, max } = inputSpecMeta(spec);
+  return Math.min(max, Math.max(min, numeric));
+}
+
+function formatInputValue(value, spec = {}) {
+  const { digits } = inputSpecMeta(spec);
+  return formatNumber(value, { minimumFractionDigits: digits, maximumFractionDigits: digits });
+}
+
+function resolveXMax(options = {}) {
+  const xMax = Number(options.xMax);
+  return Number.isFinite(xMax) && xMax > 0 ? xMax : 100;
+}
+
+function xTickValues(xMax) {
+  if (Math.abs(xMax - 100) < 1e-9) return [0, 20, 40, 60, 80, 100];
+  if (Math.abs(xMax - 40) < 1e-9) return [0, 10, 20, 30, 40];
+  if (Math.abs(xMax - 10) < 1e-9) return [0, 2, 4, 6, 8, 10];
+  const steps = xMax <= 0.1 ? 5 : 4;
+  return Array.from({ length: steps + 1 }, (_, i) => Number(((xMax * i) / steps).toFixed(10)));
+}
+
+function formatAxisTick(tick, xMax) {
+  if (xMax <= 0.1) return formatNumber(tick, { minimumFractionDigits: 2, maximumFractionDigits: 3 });
+  if (xMax < 20) return formatNumber(tick, { maximumFractionDigits: 1 });
+  return formatNumber(tick, { maximumFractionDigits: 0 });
+}
+
+function xFormatOptions(xMax) {
+  if (xMax <= 0.1) return { minimumFractionDigits: 3, maximumFractionDigits: 3 };
+  if (xMax <= 10) return { minimumFractionDigits: 1, maximumFractionDigits: 2 };
+  return { minimumFractionDigits: 1, maximumFractionDigits: 1 };
+}
+
+function toPlotX(x, width, pad, xMax) {
+  return pad + (x / xMax) * (width - 2 * pad);
 }
 
 function readPersistedInputs() {
@@ -34,7 +78,7 @@ function restoreControllerInputs(config, applyInputValue) {
   if (!stored || typeof stored !== "object") return;
 
   config.inputs.forEach((spec) => {
-    const value = clampInputValue(stored[spec.key]);
+    const value = clampInputValue(stored[spec.key], spec);
     if (value === null) return;
     applyInputValue(spec, value);
   });
@@ -48,8 +92,8 @@ function buildMapFromSpecs(specs) {
   return data;
 }
 
-function drawPlotGrid(ctx, width, height, pad) {
-  const xTicks = [20, 40, 60, 80];
+function drawPlotGrid(ctx, width, height, pad, xMax = 100) {
+  const xTicks = xTickValues(xMax).filter((tick) => tick > 0 && tick < xMax);
   const yTicks = [0.25, 0.5, 0.75, 1];
 
   ctx.save();
@@ -58,7 +102,7 @@ function drawPlotGrid(ctx, width, height, pad) {
   ctx.setLineDash([2, 4]);
 
   xTicks.forEach((tick) => {
-    const x = pad + (tick / 100) * (width - 2 * pad);
+    const x = toPlotX(tick, width, pad, xMax);
     ctx.beginPath();
     ctx.moveTo(x, pad);
     ctx.lineTo(x, height - pad);
@@ -76,8 +120,8 @@ function drawPlotGrid(ctx, width, height, pad) {
   ctx.restore();
 }
 
-function drawAxes(ctx, width, height, pad, axisLabels = null) {
-  drawPlotGrid(ctx, width, height, pad);
+function drawAxes(ctx, width, height, pad, axisLabels = null, xMax = 100) {
+  drawPlotGrid(ctx, width, height, pad, xMax);
 
   ctx.strokeStyle = "#bdc3c7";
   ctx.lineWidth = 1;
@@ -88,19 +132,19 @@ function drawAxes(ctx, width, height, pad, axisLabels = null) {
   ctx.lineTo(pad, pad);
   ctx.stroke();
 
-  const xTicks = [0, 20, 40, 60, 80, 100];
+  const xTicks = xTickValues(xMax);
   const yTicks = [0, 0.5, 1];
 
   ctx.fillStyle = "#6b7280";
   ctx.font = "12px Arial";
   ctx.textAlign = "center";
   xTicks.forEach((tick) => {
-    const x = pad + (tick / 100) * (width - 2 * pad);
+    const x = toPlotX(tick, width, pad, xMax);
     ctx.beginPath();
     ctx.moveTo(x, height - pad);
     ctx.lineTo(x, height - pad + 4);
     ctx.stroke();
-    ctx.fillText(formatNumber(tick, { maximumFractionDigits: 0 }), x, height - pad + 16);
+    ctx.fillText(formatAxisTick(tick, xMax), x, height - pad + 16);
   });
 
   ctx.textAlign = "right";
@@ -198,9 +242,9 @@ function dominantTermFromMemberships(memberships) {
   return bestValue > 0 ? bestTerm : null;
 }
 
-function fillTermArea(ctx, points, color, w, h, p, alpha = 0.28) {
+function fillTermArea(ctx, points, color, w, h, p, alpha = 0.28, xMax = 100) {
   if (!Array.isArray(points) || points.length < 2) return;
-  const toX = (x) => p + (x / 100) * (w - 2 * p);
+  const toX = (x) => toPlotX(x, w, p, xMax);
   const toY = (y) => h - p - y * (h - 2 * p);
 
   ctx.beginPath();
@@ -214,9 +258,9 @@ function fillTermArea(ctx, points, color, w, h, p, alpha = 0.28) {
   ctx.fill();
 }
 
-function strokePlotCurve(ctx, points, w, h, p) {
+function strokePlotCurve(ctx, points, w, h, p, xMax = 100) {
   if (!Array.isArray(points) || !points.length) return;
-  const toX = (x) => p + (x / 100) * (w - 2 * p);
+  const toX = (x) => toPlotX(x, w, p, xMax);
   const toY = (y) => h - p - y * (h - 2 * p);
   ctx.beginPath();
   points.forEach((point, i) => {
@@ -325,7 +369,7 @@ function getPlotGeometry(canvas) {
   };
 }
 
-function readCursorX(canvas, event) {
+function readCursorX(canvas, event, xMax = 100) {
   const geo = getPlotGeometry(canvas);
   const cssX = event.clientX - geo.rect.left;
   const cssY = event.clientY - geo.rect.top;
@@ -336,8 +380,8 @@ function readCursorX(canvas, event) {
     cssY <= geo.plotBottom;
   if (!inPlot) return { inPlot: false, x: null, geo, cssX };
   const span = geo.plotRight - geo.plotLeft;
-  const x = span <= 0 ? 0 : ((cssX - geo.plotLeft) / span) * 100;
-  return { inPlot: true, x: Math.min(100, Math.max(0, x)), geo, cssX };
+  const x = span <= 0 ? 0 : ((cssX - geo.plotLeft) / span) * xMax;
+  return { inPlot: true, x: Math.min(xMax, Math.max(0, x)), geo, cssX };
 }
 
 function graphTitle(canvas) {
@@ -388,13 +432,12 @@ function muRowHtml(term, value, color, { dominant = false, zero = false } = {}) 
 
 function formatCursorX(model, x) {
   const symbol = model.xLabel || "x";
-  return `${escapeHtml(symbol)} = ${formatNumber(x, {
-    minimumFractionDigits: 1,
-    maximumFractionDigits: 1,
-  })}`;
+  return `${escapeHtml(symbol)} = ${formatNumber(x, xFormatOptions(resolveXMax(model)))}`;
 }
 
 function snapCursorX(x, model) {
+  const xMax = resolveXMax(model);
+  const snapStep = xMax <= 0.1 ? 0.001 : xMax <= 10 ? 0.01 : 0.1;
   const candidates = [];
   if (Number.isFinite(Number(model.currentValue))) candidates.push(Number(model.currentValue));
   if (Number.isFinite(Number(model.resultValue))) candidates.push(Number(model.resultValue));
@@ -403,7 +446,7 @@ function snapCursorX(x, model) {
   });
 
   let best = x;
-  let bestDist = 0.4;
+  let bestDist = 0.004 * xMax;
   candidates.forEach((value) => {
     const dist = Math.abs(value - x);
     if (dist < bestDist) {
@@ -411,17 +454,14 @@ function snapCursorX(x, model) {
       bestDist = dist;
     }
   });
-  return Math.round(best * 10) / 10;
+  return Number((Math.round(best / snapStep) * snapStep).toFixed(10));
 }
 
 function tooltipFooter(model) {
   if (model.kind === "input" && Number.isFinite(Number(model.currentValue))) {
     return `<div class="tt-foot">${i18nText("common.tooltip.current")}: ${formatNumber(
       Number(model.currentValue),
-      {
-        minimumFractionDigits: 1,
-        maximumFractionDigits: 1,
-      }
+      xFormatOptions(resolveXMax(model))
     )}</div>`;
   }
 
@@ -536,9 +576,10 @@ function drawCurveGraph(canvasId, termSeries, currentValue, options = {}) {
   const w = canvas.width;
   const h = canvas.height;
   const p = PLOT_PAD;
+  const xMax = resolveXMax(options);
 
   ctx.clearRect(0, 0, w, h);
-  drawAxes(ctx, w, h, p, options.axisLabels || null);
+  drawAxes(ctx, w, h, p, options.axisLabels || null, xMax);
 
   const terms = Object.keys(termSeries);
   const highlightTerm = options.highlightTerm || null;
@@ -549,7 +590,9 @@ function drawCurveGraph(canvasId, termSeries, currentValue, options = {}) {
       termColor(highlightTerm, terms.indexOf(highlightTerm)),
       w,
       h,
-      p
+      p,
+      0.28,
+      xMax
     );
   }
 
@@ -562,7 +605,7 @@ function drawCurveGraph(canvasId, termSeries, currentValue, options = {}) {
     ctx.beginPath();
 
     points.forEach((point, i) => {
-      const x = p + (point.x / 100) * (w - 2 * p);
+      const x = toPlotX(point.x, w, p, xMax);
       const y = h - p - point.y * (h - 2 * p);
       if (i === 0) ctx.moveTo(x, y);
       else ctx.lineTo(x, y);
@@ -572,7 +615,7 @@ function drawCurveGraph(canvasId, termSeries, currentValue, options = {}) {
     if (options.showPeakLabels) {
       const peak = findPeakPoint(points);
       if (peak) {
-        const labelX = p + (peak.x / 100) * (w - 2 * p);
+        const labelX = toPlotX(peak.x, w, p, xMax);
         const labelY = h - p - peak.y * (h - 2 * p);
         ctx.fillStyle = color;
         ctx.font = "11px Arial";
@@ -584,9 +627,9 @@ function drawCurveGraph(canvasId, termSeries, currentValue, options = {}) {
 
   if (currentValue !== null && currentValue !== undefined) {
     if (options.showResultLabel) {
-      drawResultMarker(ctx, w, h, p, currentValue);
+      drawResultMarker(ctx, w, h, p, currentValue, xMax);
     } else {
-      const vx = p + (currentValue / 100) * (w - 2 * p);
+      const vx = toPlotX(currentValue, w, p, xMax);
       ctx.strokeStyle = "#111";
       ctx.setLineDash([5, 5]);
       ctx.lineWidth = 2;
@@ -601,9 +644,9 @@ function drawCurveGraph(canvasId, termSeries, currentValue, options = {}) {
   ensureLegend(canvasId, terms, highlightTerm);
 }
 
-function drawResultMarker(ctx, w, h, p, resultValue) {
+function drawResultMarker(ctx, w, h, p, resultValue, xMax = 100) {
   if (resultValue === null || resultValue === undefined || !Number.isFinite(Number(resultValue))) return;
-  const vx = p + (Number(resultValue) / 100) * (w - 2 * p);
+  const vx = toPlotX(Number(resultValue), w, p, xMax);
   ctx.strokeStyle = "#111";
   ctx.setLineDash([5, 5]);
   ctx.lineWidth = 2;
@@ -623,10 +666,10 @@ function drawResultMarker(ctx, w, h, p, resultValue) {
   );
 }
 
-function drawTermPeakLabel(ctx, w, h, p, term, points, color) {
+function drawTermPeakLabel(ctx, w, h, p, term, points, color, xMax = 100) {
   const peak = findPeakPoint(points);
   if (!peak || peak.y <= 0.04) return;
-  const labelX = p + (peak.x / 100) * (w - 2 * p);
+  const labelX = toPlotX(peak.x, w, p, xMax);
   const labelY = h - p - peak.y * (h - 2 * p);
   ctx.fillStyle = color;
   ctx.font = "11px Arial";
@@ -642,6 +685,7 @@ function drawAggregatedSetGraph(canvasId, points, resultValue, options = {}) {
   const w = canvas.width;
   const h = canvas.height;
   const p = PLOT_PAD;
+  const xMax = resolveXMax(options);
   const termSeries = options.termSeries || null;
   const showAcc = options.showAccumulation !== false;
   const showDefuzz = options.showDefuzzification !== false;
@@ -650,7 +694,7 @@ function drawAggregatedSetGraph(canvasId, points, resultValue, options = {}) {
   const clippedTerms = Object.keys(clipped);
 
   ctx.clearRect(0, 0, w, h);
-  drawAxes(ctx, w, h, p, options.axisLabels || null);
+  drawAxes(ctx, w, h, p, options.axisLabels || null, xMax);
 
   if (showDefuzz && termSeries) {
     if (highlightTerm && termSeries[highlightTerm]) {
@@ -661,40 +705,41 @@ function drawAggregatedSetGraph(canvasId, points, resultValue, options = {}) {
         w,
         h,
         p,
-        0.16
+        0.16,
+        xMax
       );
     }
     Object.entries(termSeries).forEach(([term, series], idx) => {
       ctx.strokeStyle = termColor(term, idx);
       ctx.lineWidth = term === highlightTerm ? 3 : 2;
       ctx.globalAlpha = showAcc ? 0.5 : 1;
-      strokePlotCurve(ctx, series, w, h, p);
+      strokePlotCurve(ctx, series, w, h, p, xMax);
       ctx.globalAlpha = 1;
-      if (options.showPeakLabels) drawTermPeakLabel(ctx, w, h, p, term, series, termColor(term, idx));
+      if (options.showPeakLabels) drawTermPeakLabel(ctx, w, h, p, term, series, termColor(term, idx), xMax);
     });
   }
 
   if (showAcc) {
     clippedTerms.forEach((term) => {
       const color = termColor(term, Math.max(0, Object.keys(termSeries || {}).indexOf(term)));
-      fillTermArea(ctx, clipped[term], color, w, h, p, 0.22);
+      fillTermArea(ctx, clipped[term], color, w, h, p, 0.22, xMax);
       ctx.strokeStyle = hexToRgba(color, 0.9);
       ctx.lineWidth = 1.6;
-      strokePlotCurve(ctx, clipped[term], w, h, p);
+      strokePlotCurve(ctx, clipped[term], w, h, p, xMax);
       if (options.showPeakLabels && !showDefuzz) {
-        drawTermPeakLabel(ctx, w, h, p, term, clipped[term], color);
+        drawTermPeakLabel(ctx, w, h, p, term, clipped[term], color, xMax);
       }
     });
 
     if (Array.isArray(points) && points.length) {
-      fillTermArea(ctx, points, "#2c3e50", w, h, p, 0.1);
+      fillTermArea(ctx, points, "#2c3e50", w, h, p, 0.1, xMax);
       ctx.strokeStyle = "#1a252f";
       ctx.lineWidth = 2.4;
-      strokePlotCurve(ctx, points, w, h, p);
+      strokePlotCurve(ctx, points, w, h, p, xMax);
     }
   }
 
-  if (showDefuzz) drawResultMarker(ctx, w, h, p, resultValue);
+  if (showDefuzz) drawResultMarker(ctx, w, h, p, resultValue, xMax);
   ensureLegend(canvasId, ["aggregated"]);
   syncAggregatedGraphKey(canvas, Boolean(showAcc && Array.isArray(points) && points.length));
 }
@@ -705,9 +750,10 @@ function drawSingletonGraph(canvasId, singletonValues, ruleOutputs, resultValue,
   const w = canvas.width;
   const h = canvas.height;
   const p = PLOT_PAD;
+  const xMax = resolveXMax(options);
 
   ctx.clearRect(0, 0, w, h);
-  drawAxes(ctx, w, h, p, options.axisLabels || null);
+  drawAxes(ctx, w, h, p, options.axisLabels || null, xMax);
 
   const terms = Object.keys(singletonValues);
   const highlightTerm = options.highlightTerm || null;
@@ -717,7 +763,7 @@ function drawSingletonGraph(canvasId, singletonValues, ruleOutputs, resultValue,
   terms.forEach((term, idx) => {
     const x = singletonValues[term];
     const activation = ruleOutputs?.[term] || 0;
-    const px = p + (x / 100) * (w - 2 * p);
+    const px = toPlotX(x, w, p, xMax);
     const color = termColor(term, idx);
     const fired = activation > 0;
     const top = h - p - plotH;
@@ -741,7 +787,7 @@ function drawSingletonGraph(canvasId, singletonValues, ruleOutputs, resultValue,
     ctx.globalAlpha = 1;
   });
 
-  if (showDefuzz) drawResultMarker(ctx, w, h, p, resultValue);
+  if (showDefuzz) drawResultMarker(ctx, w, h, p, resultValue, xMax);
 
   ensureLegend(canvasId, terms, highlightTerm);
 }
@@ -878,7 +924,7 @@ function renderRuleEvaluations(config, result, mfData) {
     cards.push(`<article class="rule-group" style="border-top-color:${color}">
       <header class="rule-group-head">
         <span class="rule-group-term">${escapeHtml(termLabel(out))}</span>
-        <span class="rule-group-max">max <span class="sym-greek">α</span> = ${formatMembership(maxAlpha)} · ${escapeHtml(clipLabel)}</span>
+        <span class="rule-group-max">max <span class="sym-greek">α</span> = ${formatMembership(maxAlpha)} (${escapeHtml(clipLabel)})</span>
       </header>
       <ul class="rule-group-list">${visible.map((rule) => renderRuleRow(rule, maxAlpha)).join("")}</ul>
     </article>`);
@@ -935,6 +981,7 @@ function getGraphOptions(graphConfig) {
   return {
     axisLabels: xLabel || yLabel ? { x: xLabel, y: yLabel } : null,
     showPeakLabels: Boolean(graphConfig.showPeakLabels),
+    xMax: Number.isFinite(Number(graphConfig.xMax)) ? Number(graphConfig.xMax) : 100,
   };
 }
 
@@ -960,7 +1007,7 @@ function bindCanvasTooltip(canvasId, getTooltipModel) {
       return;
     }
 
-    const cursor = readCursorX(canvas, lastPoint);
+    const cursor = readCursorX(canvas, lastPoint, resolveXMax(model));
     if (!cursor.inPlot) {
       hide();
       return;
@@ -993,7 +1040,7 @@ function stickyLabelKey(spec) {
 
 function stickyShortLabel(spec, fullLabel) {
   if (spec.shortLabel) return spec.shortLabel;
-  const match = String(fullLabel || "").match(/\(([A-Za-z])\)/);
+  const match = String(fullLabel || "").match(/\(([A-Za-z]{1,4})\)/);
   if (match) return match[1].toUpperCase();
   return String(spec.key || "?").slice(0, 1).toUpperCase();
 }
@@ -1515,7 +1562,8 @@ function setupStickyInputs(config, { applyInputValue, recalc }) {
 
   const controls = bar.querySelector(".sticky-inputs-controls");
   config.inputs.forEach((spec) => {
-    const current = document.getElementById(spec.numberId)?.value ?? "50";
+    const current = document.getElementById(spec.numberId)?.value ?? String(inputSpecMeta(spec).max / 2);
+    const { min, max, step } = inputSpecMeta(spec);
     const group = document.createElement("div");
     group.className = "sticky-input-group";
     group.innerHTML = `
@@ -1523,8 +1571,8 @@ function setupStickyInputs(config, { applyInputValue, recalc }) {
         <span class="sticky-input-letter"></span>
         <span class="sticky-input-name"></span>
       </label>
-      <input type="range" id="${spec.sliderId}Sticky" min="0" max="100" step="0.1" value="${current}" />
-      <input type="number" id="${spec.numberId}Sticky" min="0" max="100" step="0.1" value="${current}" />
+      <input type="range" id="${spec.sliderId}Sticky" min="${min}" max="${max}" step="${step}" value="${current}" />
+      <input type="number" id="${spec.numberId}Sticky" min="${min}" max="${max}" step="${step}" value="${current}" />
     `;
     controls.appendChild(group);
 
@@ -1536,7 +1584,8 @@ function setupStickyInputs(config, { applyInputValue, recalc }) {
       recalc();
     });
     number.addEventListener("input", () => {
-      const val = Math.min(100, Math.max(0, Number(number.value)));
+      const val = clampInputValue(number.value, spec);
+      if (val === null) return;
       applyInputValue(spec, val);
       recalc();
     });
@@ -1562,6 +1611,7 @@ function setupTooltips(config, state) {
     bindCanvasTooltip(getGraphCanvasId(canvasId), () => {
       if (!state.mfData) return null;
       const spec = config.inputs.find((item) => item.key === key);
+      const graphOptions = getGraphOptions(canvasId);
       const fromResult = Number(state.result?.inputs?.[key]);
       const fromInput = spec ? Number(document.getElementById(spec.numberId)?.value) : NaN;
       return {
@@ -1569,13 +1619,15 @@ function setupTooltips(config, state) {
         kind: "input",
         series: state.mfData.inputs[key],
         currentValue: Number.isFinite(fromResult) ? fromResult : fromInput,
-        xLabel: getGraphOptions(canvasId).axisLabels?.x || "x",
+        xLabel: graphOptions.axisLabels?.x || "x",
+        xMax: spec?.max ?? graphOptions.xMax,
       };
     });
   });
 
   bindCanvasTooltip(config.graphs.output.canvasId, () => {
     if (!state.mfData || !state.result) return null;
+    const graphOptions = getGraphOptions(config.graphs.output);
     if (state.mfData.meta?.singletonValues) {
       return {
         type: "singleton",
@@ -1584,7 +1636,8 @@ function setupTooltips(config, state) {
         activations: state.result.ruleOutputs || {},
         resultValue: hasFiredOutput(state.result) ? state.result.value : null,
         resultTerm: hasFiredOutput(state.result) ? state.result.dominantTerm : null,
-        xLabel: getGraphOptions(config.graphs.output).axisLabels?.x || "x",
+        xLabel: graphOptions.axisLabels?.x || "x",
+        xMax: graphOptions.xMax,
       };
     }
 
@@ -1595,7 +1648,8 @@ function setupTooltips(config, state) {
       series: state.mfData.output?.[outputKey] || {},
       resultValue: hasFiredOutput(state.result) ? state.result.value : null,
       resultTerm: hasFiredOutput(state.result) ? state.result.dominantTerm : null,
-      xLabel: getGraphOptions(config.graphs.output).axisLabels?.x || "x",
+      xLabel: graphOptions.axisLabels?.x || "x",
+      xMax: graphOptions.xMax,
     };
   });
 
@@ -1689,10 +1743,7 @@ async function createFuzzyPage(config) {
     if (spec.valueId) {
       const valueEl = document.getElementById(spec.valueId);
       if (valueEl) {
-        valueEl.textContent = formatNumber(value, {
-          minimumFractionDigits: 1,
-          maximumFractionDigits: 1,
-        });
+        valueEl.textContent = formatInputValue(value, spec);
       }
     }
     persistControllerInputs(config.controller, buildMapFromSpecs(config.inputs));
@@ -1784,7 +1835,8 @@ async function createFuzzyPage(config) {
   config.inputs.forEach((spec) => {
     const numberEl = document.getElementById(spec.numberId);
     numberEl.addEventListener("input", () => {
-      const val = Math.min(100, Math.max(0, Number(numberEl.value)));
+      const val = clampInputValue(numberEl.value, spec);
+      if (val === null) return;
       applyInputValue(spec, val);
       recalc();
     });
