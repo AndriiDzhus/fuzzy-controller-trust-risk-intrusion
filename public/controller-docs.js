@@ -10,129 +10,211 @@ const controllerDocs = {
     hintKey: "common.docs.piecewiseHint",
     inputs: [
       {
-        symbol: "E",
+        symbol: "ER",
         titleKey: "index.membership.errors",
         gender: "f",
+        domain: [0, 1],
+        unitKey: "index.docs.units.errors",
+        noteKey: "index.docs.notes.errors",
         terms: [
-          { term: L, mu: "L", pieces: [["1", "0 ≤ E ≤ 30"], ["(50 − E) / (50 − 30)", "30 < E < 50"], ["0", "E ≥ 50"]] },
+          {
+            term: L,
+            mu: "L",
+            pieces: [
+              ["1", "ER ≤ 0.05"],
+              ["(0.15 − ER) / (0.15 − 0.05)", "0.05 < ER ≤ 0.15"],
+              ["0", "ER > 0.15"],
+            ],
+          },
           {
             term: M,
             mu: "M",
             pieces: [
-              ["0", "E ≤ 30 або E ≥ 90"],
-              ["(E − 30) / (50 − 30)", "30 < E < 50"],
-              ["1", "50 ≤ E ≤ 70"],
-              ["(90 − E) / (90 − 70)", "70 < E < 90"],
+              ["0", "ER ≤ 0.05"],
+              ["(ER − 0.05) / (0.15 − 0.05)", "0.05 < ER ≤ 0.15"],
+              ["1", "0.15 < ER ≤ 0.4"],
+              ["(0.6 − ER) / (0.6 − 0.4)", "0.4 < ER < 0.6"],
+              ["0", "ER ≥ 0.6"],
             ],
           },
-          { term: H, mu: "H", pieces: [["0", "E ≤ 70"], ["(E − 70) / (90 − 70)", "70 < E < 90"], ["1", "90 ≤ E ≤ 100"]] },
+          {
+            term: H,
+            mu: "H",
+            pieces: [
+              ["0", "ER ≤ 0.4"],
+              ["(ER − 0.4) / (0.6 − 0.4)", "0.4 < ER ≤ 0.6"],
+              ["1", "ER > 0.6"],
+            ],
+          },
         ],
       },
       {
-        symbol: "C",
+        symbol: "CC",
         titleKey: "index.membership.connections",
         gender: "f",
+        domain: [0, 200],
+        unitKey: "index.docs.units.connections",
+        noteKey: "index.docs.notes.connections",
         terms: [
-          { term: L, mu: "L", pieces: [["1", "0 ≤ C ≤ 10"], ["(30 − C) / (30 − 10)", "10 < C < 30"], ["0", "C ≥ 30"]] },
+          {
+            term: L,
+            mu: "L",
+            pieces: [
+              ["1", "CC ≤ 15"],
+              ["(30 − CC) / (30 − 15)", "15 < CC ≤ 30"],
+              ["0", "CC > 30"],
+            ],
+          },
           {
             term: M,
             mu: "M",
             pieces: [
-              ["0", "C ≤ 10 або C ≥ 70"],
-              ["(C − 10) / (30 − 10)", "10 < C < 30"],
-              ["1", "30 ≤ C ≤ 50"],
-              ["(70 − C) / (70 − 50)", "50 < C < 70"],
+              ["0", "CC ≤ 15"],
+              ["(CC − 15) / (30 − 15)", "15 < CC ≤ 30"],
+              ["1", "30 < CC ≤ 80"],
+              ["(120 − CC) / (120 − 80)", "80 < CC < 120"],
+              ["0", "CC ≥ 120"],
             ],
           },
-          { term: H, mu: "H", pieces: [["0", "C ≤ 50"], ["(C − 50) / (70 − 50)", "50 < C < 70"], ["1", "70 ≤ C ≤ 100"]] },
+          {
+            term: H,
+            mu: "H",
+            pieces: [
+              ["0", "CC ≤ 80"],
+              ["(CC − 80) / (120 − 80)", "80 < CC ≤ 120"],
+              ["1", "CC > 120"],
+            ],
+          },
         ],
       },
       {
-        symbol: "B",
+        symbol: "BS",
         titleKey: "index.membership.bytes",
         gender: "f",
+        domain: [0, 12],
+        unitKey: "index.docs.units.bytes",
+        noteKey: "index.docs.notes.bytes",
         terms: [
-          { term: L, mu: "L", pieces: [["1", "0 ≤ B ≤ 20"], ["(40 − B) / (40 − 20)", "20 < B < 40"], ["0", "B ≥ 40"]] },
+          {
+            term: L,
+            mu: "L",
+            pieces: [
+              ["1", "BS ≤ 4"],
+              ["(6.5 − BS) / (6.5 − 4)", "4 < BS ≤ 6.5"],
+              ["0", "BS > 6.5"],
+            ],
+          },
           {
             term: M,
             mu: "M",
             pieces: [
-              ["0", "B ≤ 20 або B ≥ 80"],
-              ["(B − 20) / (40 − 20)", "20 < B < 40"],
-              ["1", "40 ≤ B ≤ 60"],
-              ["(80 − B) / (80 − 60)", "60 < B < 80"],
+              ["0", "BS ≤ 4"],
+              ["(BS − 4) / (6.5 − 4)", "4 < BS ≤ 6.5"],
+              ["1", "6.5 < BS ≤ 9"],
+              ["(11 − BS) / (11 − 9)", "9 < BS < 11"],
+              ["0", "BS ≥ 11"],
             ],
           },
-          { term: H, mu: "H", pieces: [["0", "B ≤ 60"], ["(B − 60) / (80 − 60)", "60 < B < 80"], ["1", "80 ≤ B ≤ 100"]] },
+          {
+            term: H,
+            mu: "H",
+            pieces: [
+              ["0", "BS ≤ 9"],
+              ["(BS − 9) / (11 − 9)", "9 < BS ≤ 11"],
+              ["1", "BS > 11"],
+            ],
+          },
         ],
       },
     ],
     output: {
-      symbol: "T",
+      symbol: "TI",
       titleKey: "index.membership.trust",
       gender: "m",
+      domain: [0, 100],
+      unitKey: "index.docs.units.trust",
+      noteKey: "index.docs.notes.trust",
       terms: [
-        { term: VL, mu: "VL", pieces: [["(25 − T) / (25 − 0)", "0 ≤ T ≤ 25"], ["0", "T > 25"]] },
+        {
+          term: VL,
+          mu: "VL",
+          pieces: [
+            ["1", "TI ≤ 0"],
+            ["(25 − TI) / 25", "0 < TI ≤ 25"],
+            ["0", "TI > 25"],
+          ],
+        },
         {
           term: L,
           mu: "L",
           pieces: [
-            ["(T − 0) / (25 − 0)", "0 ≤ T ≤ 25"],
-            ["(50 − T) / (50 − 25)", "25 < T ≤ 50"],
-            ["0", "інакше"],
+            ["0", "TI ≤ 0"],
+            ["TI / 25", "0 < TI ≤ 25"],
+            ["(50 − TI) / (50 − 25)", "25 < TI ≤ 50"],
+            ["0", "50 < TI"],
           ],
         },
         {
           term: M,
           mu: "M",
           pieces: [
-            ["(T − 25) / (50 − 25)", "25 ≤ T ≤ 50"],
-            ["(75 − T) / (75 − 50)", "50 < T ≤ 75"],
-            ["0", "інакше"],
+            ["0", "TI ≤ 25"],
+            ["(TI − 25) / (50 − 25)", "25 < TI ≤ 50"],
+            ["(75 − TI) / (75 − 50)", "50 < TI ≤ 75"],
+            ["0", "75 < TI"],
           ],
         },
         {
           term: H,
           mu: "H",
           pieces: [
-            ["(T − 50) / (75 − 50)", "50 ≤ T ≤ 75"],
-            ["(100 − T) / (100 − 75)", "75 < T ≤ 100"],
-            ["0", "інакше"],
+            ["0", "TI ≤ 50"],
+            ["(TI − 50) / (75 − 50)", "50 < TI ≤ 75"],
+            ["(100 − TI) / (100 − 75)", "75 < TI ≤ 100"],
+            ["0", "100 < TI"],
           ],
         },
-        { term: VH, mu: "VH", pieces: [["0", "T < 75"], ["(T − 75) / (100 − 75)", "75 ≤ T ≤ 100"]] },
+        {
+          term: VH,
+          mu: "VH",
+          pieces: [
+            ["0", "TI ≤ 75"],
+            ["(TI − 75) / (100 − 75)", "75 < TI ≤ 100"],
+            ["1", "TI > 100"],
+          ],
+        },
       ],
     },
     rules: {
       columns: [
-        { key: "E", gender: "f", titleKey: "index.membership.errors" },
-        { key: "C", gender: "f", titleKey: "index.membership.connections" },
-        { key: "B", gender: "f", titleKey: "index.membership.bytes" },
-        { key: "T", gender: "m", titleKey: "index.membership.trust", output: true },
+        { key: "ER", gender: "f", titleKey: "index.membership.errors" },
+        { key: "CC", gender: "f", titleKey: "index.membership.connections" },
+        { key: "BS", gender: "f", titleKey: "index.membership.bytes" },
+        { key: "TI", gender: "m", titleKey: "index.membership.trust", output: true },
       ],
       rows: [
         [L, L, L, VH],
-        [L, L, M, VH],
-        [L, L, H, VH],
-        [L, M, L, VH],
-        [L, M, M, VH],
-        [L, M, H, H],
-        [L, H, L, H],
-        [L, H, M, H],
-        [L, H, H, H],
-        [M, L, L, H],
-        [M, L, M, H],
-        [M, L, H, M],
-        [M, M, L, M],
-        [M, M, M, M],
-        [M, M, H, M],
-        [M, H, L, M],
-        [M, H, M, L],
-        [M, H, H, L],
+        [L, L, M, H],
+        [L, L, H, M],
+        [L, M, L, H],
+        [L, M, M, M],
+        [L, M, H, L],
+        [L, H, L, L],
+        [L, H, M, L],
+        [L, H, H, VL],
+        [M, L, L, M],
+        [M, L, M, M],
+        [M, L, H, L],
+        [M, M, L, L],
+        [M, M, M, L],
+        [M, M, H, VL],
+        [M, H, L, VL],
+        [M, H, M, VL],
+        [M, H, H, VL],
         [H, L, L, L],
-        [H, L, M, L],
-        [H, L, H, L],
-        [H, M, L, L],
+        [H, L, M, VL],
+        [H, L, H, VL],
+        [H, M, L, VL],
         [H, M, M, VL],
         [H, M, H, VL],
         [H, H, L, VL],
@@ -150,6 +232,8 @@ const controllerDocs = {
         titleKey: "security.membership.energy",
         gender: "f",
         domain: [0, 0.05],
+        unitKey: "security.docs.units.energy",
+        noteKey: "security.docs.notes.energy",
         terms: [
           { term: L, mu: "L", pieces: [["(0.025 − EC) / 0.025", "0 ≤ EC ≤ 0.025"], ["0", "EC > 0.025"]] },
           {
@@ -169,6 +253,8 @@ const controllerDocs = {
         titleKey: "security.membership.strength",
         gender: "f",
         domain: [0, 40],
+        unitKey: "security.docs.units.strength",
+        noteKey: "security.docs.notes.strength",
         terms: [
           { term: L, mu: "L", pieces: [["(20 − TP) / 20", "0 ≤ TP ≤ 20"], ["0", "TP > 20"]] },
           {
@@ -188,6 +274,8 @@ const controllerDocs = {
         titleKey: "security.membership.response",
         gender: "f",
         domain: [0, 10],
+        unitKey: "security.docs.units.response",
+        noteKey: "security.docs.notes.response",
         terms: [
           { term: L, mu: "L", pieces: [["(5 − Lat) / 5", "0 ≤ Lat ≤ 5"], ["0", "Lat > 5"]] },
           {
@@ -209,6 +297,8 @@ const controllerDocs = {
       gender: "m",
       kind: "singleton",
       domainValues: [0, 20, 40, 60, 80, 100],
+      unitKey: "security.docs.units.risk",
+      noteKey: "security.docs.notes.risk",
       terms: [
         { term: NONE, mu: "SR1", singleton: 0 },
         { term: VL, mu: "SR2", singleton: 20 },
@@ -242,6 +332,8 @@ const controllerDocs = {
         symbol: "N",
         titleKey: "intrusion.membership.packets",
         gender: "f",
+        domain: [0, 100],
+        unitKey: "intrusion.docs.units.packets",
         terms: [
           { term: L, mu: "L", gaussian: { center: 0, sigma: 18 } },
           { term: M, mu: "M", gaussian: { center: 60, sigma: 20 } },
@@ -252,6 +344,8 @@ const controllerDocs = {
         symbol: "R",
         titleKey: "intrusion.membership.rate",
         gender: "f",
+        domain: [0, 100],
+        unitKey: "intrusion.docs.units.rate",
         terms: [
           { term: L, mu: "L", gaussian: { center: 0, sigma: 8 } },
           { term: M, mu: "M", gaussian: { center: 45, sigma: 24 } },
@@ -262,6 +356,8 @@ const controllerDocs = {
         symbol: "D",
         titleKey: "intrusion.membership.delivery",
         gender: "f",
+        domain: [0, 100],
+        unitKey: "intrusion.docs.units.delivery",
         terms: [
           { term: L, mu: "L", gaussian: { center: 0, sigma: 20 } },
           { term: M, mu: "M", gaussian: { center: 65, sigma: 16 } },
@@ -273,6 +369,8 @@ const controllerDocs = {
       symbol: "I",
       titleKey: "intrusion.membership.intrusion",
       gender: "f",
+      domain: [0, 100],
+      unitKey: "intrusion.docs.units.intrusion",
       terms: [
         { term: NONE, mu: "none", gaussian: { center: 0, sigma: 12 } },
         { term: L, mu: "L", gaussian: { center: 35, sigma: 12 } },
@@ -375,34 +473,36 @@ function wrapKatex(tex, displayMode = true) {
   return `<div class="docs-katex">${renderKatex(tex, displayMode)}</div>`;
 }
 
-function renderGaussian(symbol, term) {
+function renderGaussian(symbol, term, punct = "") {
   const { center, sigma } = term.gaussian;
   const deviation = center === 0 ? symbol : `${symbol} - ${center}`;
   return wrapKatex(
-    `\\mu_{${latexMu(term.mu)}}(${symbol}) = \\exp\\!\\left(-\\dfrac{(${deviation})^{2}}{2 \\cdot ${sigma}^{2}}\\right)`
+    `\\mu_{${latexMu(term.mu)}}(${symbol}) = \\exp\\!\\left(-\\dfrac{(${deviation})^{2}}{2 \\cdot ${sigma}^{2}}\\right)${punct}`
   );
 }
 
 function renderPiecewise(symbol, term) {
   const rows = term.pieces
-    .map(([expr, cond]) => `${latexExpr(expr)} & ${latexCond(cond)}`)
+    .map(([expr, cond], index, all) => {
+      const end = index === all.length - 1 ? "." : ",";
+      return `${latexExpr(expr)}, & ${latexCond(cond)}${end}`;
+    })
     .join(" \\\\ ");
   return wrapKatex(`\\mu_{${latexMu(term.mu)}}(${symbol}) = \\begin{cases} ${rows} \\end{cases}`);
 }
 
 function renderSingleton(symbol, term) {
-  const otherwise = docsText("common.docs.otherwise", "інакше");
   return (
     wrapKatex(
-      `\\mu_{${latexMu(term.mu)}}(${symbol}) = \\begin{cases} 1, & ${symbol} = ${term.singleton} \\\\ 0, & \\text{${otherwise}} \\end{cases}`
-    ) + wrapKatex(`${symbol}^{*} = ${term.singleton}`)
+      `\\mu_{${latexMu(term.mu)}}(${symbol}) = \\begin{cases} 1, & ${symbol} = ${term.singleton}, \\\\ 0, & ${symbol} \\ne ${term.singleton}. \\end{cases}`
+    ) + wrapKatex(`${symbol}^{*} = ${term.singleton}.`)
   );
 }
 
-function renderTermBlock(variable, term) {
+function renderTermBlock(variable, term, punct = "") {
   const color = docsTermColor[term.term] || "#3498db";
   let body = "";
-  if (term.gaussian) body = renderGaussian(variable.symbol, term);
+  if (term.gaussian) body = renderGaussian(variable.symbol, term, punct);
   else if (term.singleton !== undefined) body = renderSingleton(variable.symbol, term);
   else body = renderPiecewise(variable.symbol, term);
 
@@ -423,20 +523,32 @@ function renderDomain(variable) {
     ? `${variable.symbol} \\in \\{ ${variable.domainValues.join(",\\ ") } \\}`
     : `${variable.symbol} \\in [${variable.domain?.[0] ?? 0}${sep} ${variable.domain?.[1] ?? 100}]`;
 
+  const unit = variable.unitKey ? docsText(variable.unitKey) : "";
+  const note = variable.noteKey ? docsText(variable.noteKey) : "";
+
   return `
     <p class="docs-domain">
       <span>${docsEscape(docsText("common.docs.domain"))}:</span>
       <span class="docs-katex">${renderKatex(tex, false)}</span>
     </p>
+    ${
+      unit
+        ? `<p class="docs-unit"><span>${docsEscape(docsText("common.docs.units"))}:</span> ${docsEscape(unit)}</p>`
+        : ""
+    }
+    ${note ? `<p class="docs-note">${docsEscape(note)}</p>` : ""}
   `;
 }
 
 function renderVariable(variable) {
+  const last = variable.terms.length - 1;
   return `
     <section class="docs-variable">
       <h3>${docsEscape(docsText(variable.titleKey, variable.symbol))}</h3>
       ${renderDomain(variable)}
-      <div class="docs-terms">${variable.terms.map((term) => renderTermBlock(variable, term)).join("")}</div>
+      <div class="docs-terms">${variable.terms
+        .map((term, index) => renderTermBlock(variable, term, index === last ? "." : ","))
+        .join("")}</div>
     </section>
   `;
 }

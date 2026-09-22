@@ -30,22 +30,27 @@ function resolveXMax(options = {}) {
 
 function xTickValues(xMax) {
   if (Math.abs(xMax - 100) < 1e-9) return [0, 20, 40, 60, 80, 100];
+  if (Math.abs(xMax - 200) < 1e-9) return [0, 40, 80, 120, 160, 200];
   if (Math.abs(xMax - 40) < 1e-9) return [0, 10, 20, 30, 40];
+  if (Math.abs(xMax - 12) < 1e-9) return [0, 2, 4, 6, 8, 10, 12];
   if (Math.abs(xMax - 10) < 1e-9) return [0, 2, 4, 6, 8, 10];
+  if (Math.abs(xMax - 1) < 1e-9) return [0, 0.2, 0.4, 0.6, 0.8, 1];
   const steps = xMax <= 0.1 ? 5 : 4;
   return Array.from({ length: steps + 1 }, (_, i) => Number(((xMax * i) / steps).toFixed(10)));
 }
 
 function formatAxisTick(tick, xMax) {
   if (xMax <= 0.1) return formatNumber(tick, { minimumFractionDigits: 2, maximumFractionDigits: 3 });
+  if (Math.abs(xMax - 1) < 1e-9) return formatNumber(tick, { minimumFractionDigits: 1, maximumFractionDigits: 1 });
   if (xMax < 20) return formatNumber(tick, { maximumFractionDigits: 1 });
   return formatNumber(tick, { maximumFractionDigits: 0 });
 }
 
 function xFormatOptions(xMax) {
   if (xMax <= 0.1) return { minimumFractionDigits: 3, maximumFractionDigits: 3 };
-  if (xMax <= 10) return { minimumFractionDigits: 1, maximumFractionDigits: 2 };
-  return { minimumFractionDigits: 1, maximumFractionDigits: 1 };
+  if (Math.abs(xMax - 1) < 1e-9) return { minimumFractionDigits: 2, maximumFractionDigits: 2 };
+  if (xMax <= 12) return { minimumFractionDigits: 1, maximumFractionDigits: 2 };
+  return { minimumFractionDigits: 0, maximumFractionDigits: 1 };
 }
 
 function toPlotX(x, width, pad, xMax) {
@@ -288,24 +293,8 @@ function ensureLegend(canvasId) {
   if (legend) legend.remove();
 }
 
-function syncAggregatedGraphKey(canvas, visible) {
-  const container = canvas?.closest(".graph-container");
-  if (!container) return;
-  let key = container.querySelector(".graph-key");
-  if (!visible) {
-    key?.remove();
-    return;
-  }
-  if (!key) {
-    key = document.createElement("p");
-    key.className = "graph-key";
-    canvas.after(key);
-  }
-  const name = i18nText("common.graph.aggregatedKey", "Агрегована вихідна множина");
-  const mark = i18nText("common.graph.aggregatedMark", "темний контур (max зрізаних термів)");
-  key.innerHTML = `<span class="graph-key-item"><i class="graph-key-swatch-aggregated" aria-hidden="true"></i>${escapeHtml(
-    name
-  )} — ${escapeHtml(mark)}</span>`;
+function syncAggregatedGraphKey(canvas) {
+  canvas?.closest(".graph-container")?.querySelector(".graph-key")?.remove();
 }
 
 const PLOT_PAD = 46;
@@ -741,7 +730,7 @@ function drawAggregatedSetGraph(canvasId, points, resultValue, options = {}) {
 
   if (showDefuzz) drawResultMarker(ctx, w, h, p, resultValue, xMax);
   ensureLegend(canvasId, ["aggregated"]);
-  syncAggregatedGraphKey(canvas, Boolean(showAcc && Array.isArray(points) && points.length));
+  syncAggregatedGraphKey(canvas);
 }
 
 function drawSingletonGraph(canvasId, singletonValues, ruleOutputs, resultValue, options = {}) {
@@ -1104,11 +1093,26 @@ function markUncoveredTip(el, on) {
   if (on) {
     el.dataset.uncoveredTip = "1";
     el.setAttribute("tabindex", "0");
-    el.setAttribute("aria-describedby", "uncoveredHelpTooltip");
+    el.setAttribute("aria-describedby", "helpTooltip");
   } else {
     delete el.dataset.uncoveredTip;
     el.removeAttribute("tabindex");
-    el.removeAttribute("aria-describedby");
+    if (!el.dataset.termTip) el.removeAttribute("aria-describedby");
+  }
+}
+
+function markTermTip(el, on) {
+  if (!el) return;
+  if (on) {
+    el.dataset.termTip = "1";
+    el.setAttribute("tabindex", "0");
+    el.setAttribute("aria-describedby", "helpTooltip");
+  } else {
+    delete el.dataset.termTip;
+    if (!el.dataset.uncoveredTip) {
+      el.removeAttribute("tabindex");
+      el.removeAttribute("aria-describedby");
+    }
   }
 }
 
@@ -1123,19 +1127,31 @@ function uncoveredHosts(valueEl, termEl) {
   return [valueEl, termEl].filter(Boolean);
 }
 
-function getUncoveredTooltip() {
-  let tip = document.getElementById("uncoveredHelpTooltip");
-  if (tip) return tip;
+function helpTipAnchor(event) {
+  return event.target.closest?.("[data-uncovered-tip]") || event.target.closest?.("[data-term-tip]") || null;
+}
+
+function helpTipText(anchor) {
+  if (anchor?.dataset.uncoveredTip) return noRuleFiredHint();
+  return i18nText("common.tooltip.dominantTerm");
+}
+
+function getHelpTooltip() {
+  let tip = document.getElementById("helpTooltip") || document.getElementById("uncoveredHelpTooltip");
+  if (tip) {
+    tip.id = "helpTooltip";
+    return tip;
+  }
 
   tip = document.createElement("div");
-  tip.id = "uncoveredHelpTooltip";
+  tip.id = "helpTooltip";
   tip.className = "help-tooltip";
   tip.setAttribute("role", "tooltip");
   document.body.appendChild(tip);
   return tip;
 }
 
-function positionUncoveredTooltip(tip, event, anchor) {
+function positionHelpTooltip(tip, event, anchor) {
   const rect = anchor.getBoundingClientRect();
   const x = event?.clientX ?? rect.left + rect.width / 2;
   const showBelow = rect.top < 140;
@@ -1144,11 +1160,11 @@ function positionUncoveredTooltip(tip, event, anchor) {
   tip.style.top = `${showBelow ? rect.bottom : rect.top}px`;
 }
 
-function setupUncoveredTips() {
-  if (document.documentElement.dataset.uncoveredTips === "1") return;
-  document.documentElement.dataset.uncoveredTips = "1";
+function setupHelpTips() {
+  if (document.documentElement.dataset.helpTips === "1") return;
+  document.documentElement.dataset.helpTips = "1";
 
-  const tip = getUncoveredTooltip();
+  const tip = getHelpTooltip();
   let active = null;
 
   const hide = () => {
@@ -1157,37 +1173,37 @@ function setupUncoveredTips() {
   };
 
   const show = (event) => {
-    const anchor = event.target.closest?.("[data-uncovered-tip]");
+    const anchor = helpTipAnchor(event);
     if (!anchor) return;
     active = anchor;
-    tip.textContent = noRuleFiredHint();
-    positionUncoveredTooltip(tip, event, anchor);
+    tip.textContent = helpTipText(anchor);
+    positionHelpTooltip(tip, event, anchor);
     tip.classList.add("visible");
   };
 
   document.addEventListener("mouseover", (event) => {
-    if (event.target.closest?.("[data-uncovered-tip]")) show(event);
+    if (helpTipAnchor(event)) show(event);
   });
   document.addEventListener("mouseout", (event) => {
-    const from = event.target.closest?.("[data-uncovered-tip]");
-    const to = event.relatedTarget?.closest?.("[data-uncovered-tip]");
+    const from = helpTipAnchor(event);
+    const to = event.relatedTarget ? helpTipAnchor({ target: event.relatedTarget }) : null;
     if (from && from !== to) hide();
   });
   document.addEventListener("mousemove", (event) => {
     if (!active) return;
-    positionUncoveredTooltip(tip, event, active);
+    positionHelpTooltip(tip, event, active);
   });
   document.addEventListener("focusin", (event) => {
-    if (event.target.closest?.("[data-uncovered-tip]")) show(event);
+    if (helpTipAnchor(event)) show(event);
   });
   document.addEventListener("focusout", (event) => {
-    if (event.target.closest?.("[data-uncovered-tip]")) hide();
+    if (helpTipAnchor(event)) hide();
   });
 }
 
 function setOutputText(valueEl, termEl, data) {
   if (!valueEl || !termEl) return;
-  setupUncoveredTips();
+  setupHelpTips();
 
   const hosts = uncoveredHosts(valueEl, termEl);
   const uncovered = Boolean(data) && !hasFiredOutput(data);
@@ -1198,6 +1214,7 @@ function setOutputText(valueEl, termEl, data) {
     valueEl.textContent = "--";
     termEl.textContent = data ? noRuleFiredLabel() : "--";
     hosts.forEach((el) => markUncoveredTip(el, uncovered));
+    markTermTip(termEl, false);
     return;
   }
 
@@ -1209,7 +1226,8 @@ function setOutputText(valueEl, termEl, data) {
   });
   termEl.textContent = termLabel(data.dominantTerm);
   hosts.forEach((el) => markUncoveredTip(el, false));
-  const tip = document.getElementById("uncoveredHelpTooltip");
+  markTermTip(termEl, true);
+  const tip = document.getElementById("helpTooltip") || document.getElementById("uncoveredHelpTooltip");
   if (tip) tip.classList.remove("visible");
 }
 
@@ -1833,6 +1851,15 @@ async function createFuzzyPage(config) {
   };
 
   config.inputs.forEach((spec) => {
+    const { min, max, step } = inputSpecMeta(spec);
+    [spec.sliderId, spec.numberId].forEach((id) => {
+      const el = document.getElementById(id);
+      if (!el) return;
+      el.min = String(min);
+      el.max = String(max);
+      el.step = String(step);
+    });
+
     const numberEl = document.getElementById(spec.numberId);
     numberEl.addEventListener("input", () => {
       const val = clampInputValue(numberEl.value, spec);
