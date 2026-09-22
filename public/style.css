@@ -196,7 +196,9 @@ h3 {
 
 .result-item[data-uncovered-tip],
 .sticky-inputs-result[data-uncovered-tip],
-.is-uncovered[data-uncovered-tip] {
+.is-uncovered[data-uncovered-tip],
+.result-term[data-term-tip],
+.sticky-inputs-result-term[data-term-tip] {
   cursor: help;
 }
 
@@ -412,15 +414,6 @@ canvas {
 
 .rule-category strong {
   color: #2c3e50;
-}
-
-.result-explanation {
-  display: block;
-  font-size: 0.8em;
-  color: #7f8c8d;
-  font-style: italic;
-  margin-top: 5px;
-  line-height: 1.2;
 }
 
 .explanation-section {
@@ -1463,11 +1456,30 @@ body.docs-modal-open {
   align-items: baseline;
   flex-wrap: nowrap;
   gap: 8px;
-  margin: 0 0 12px;
+  margin: 0 0 6px;
   color: #5d6d7e;
   font-size: 0.9rem;
   font-weight: 600;
   white-space: nowrap;
+}
+
+.docs-unit {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0 0 6px;
+  color: #5d6d7e;
+  font-size: 0.88rem;
+  font-weight: 600;
+}
+
+.docs-note {
+  margin: 0 0 12px;
+  color: #7f8c8d;
+  font-size: 0.82rem;
+  font-weight: 400;
+  line-height: 1.4;
 }
 
 .docs-domain .docs-katex {

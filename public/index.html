@@ -59,23 +59,23 @@
           <h2 class="workspace-heading" data-i18n="common.pipeline.inputs"></h2>
           <div class="input-group">
             <label for="errorsSlider" data-i18n="index.inputs.errors"></label>
-            <input type="range" id="errorsSlider" min="0" max="100" step="0.1" value="50" />
-            <input type="number" id="errors" min="0" max="100" step="0.1" value="50" />
-            <span class="input-value" id="eValue">50.0</span>
+            <input type="range" id="errorsSlider" min="0" max="1" step="0.01" value="0.25" />
+            <input type="number" id="errors" min="0" max="1" step="0.01" value="0.25" />
+            <span class="input-value" id="eValue">0.25</span>
           </div>
 
           <div class="input-group">
             <label for="connectionsSlider" data-i18n="index.inputs.connections"></label>
-            <input type="range" id="connectionsSlider" min="0" max="100" step="0.1" value="50" />
-            <input type="number" id="connections" min="0" max="100" step="0.1" value="50" />
-            <span class="input-value" id="cValue">50.0</span>
+            <input type="range" id="connectionsSlider" min="0" max="200" step="1" value="50" />
+            <input type="number" id="connections" min="0" max="200" step="1" value="50" />
+            <span class="input-value" id="cValue">50</span>
           </div>
 
           <div class="input-group">
             <label for="bytesSlider" data-i18n="index.inputs.bytes"></label>
-            <input type="range" id="bytesSlider" min="0" max="100" step="0.1" value="50" />
-            <input type="number" id="bytes" min="0" max="100" step="0.1" value="50" />
-            <span class="input-value" id="bValue">50.0</span>
+            <input type="range" id="bytesSlider" min="0" max="12" step="0.05" value="7.5" />
+            <input type="number" id="bytes" min="0" max="12" step="0.05" value="7.5" />
+            <span class="input-value" id="bValue">7.5</span>
           </div>
         </div>
 
@@ -89,7 +89,6 @@
             <div class="result-item">
               <span class="result-label" data-i18n="index.results.level"></span>
               <span class="result-term" id="activeOutputTerm">--</span>
-              <small class="result-explanation" data-i18n="index.results.explanation"></small>
             </div>
           </div>
         </div>

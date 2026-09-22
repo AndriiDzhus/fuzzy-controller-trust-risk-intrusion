@@ -2,9 +2,36 @@ document.addEventListener("DOMContentLoaded", async () => {
   await createFuzzyPage({
     controller: "trust",
     inputs: [
-      { key: "errors", sliderId: "errorsSlider", numberId: "errors", valueId: "eValue" },
-      { key: "connections", sliderId: "connectionsSlider", numberId: "connections", valueId: "cValue" },
-      { key: "bytes", sliderId: "bytesSlider", numberId: "bytes", valueId: "bValue" },
+      {
+        key: "errors",
+        sliderId: "errorsSlider",
+        numberId: "errors",
+        valueId: "eValue",
+        min: 0,
+        max: 1,
+        step: 0.01,
+        digits: 2,
+      },
+      {
+        key: "connections",
+        sliderId: "connectionsSlider",
+        numberId: "connections",
+        valueId: "cValue",
+        min: 0,
+        max: 200,
+        step: 1,
+        digits: 0,
+      },
+      {
+        key: "bytes",
+        sliderId: "bytesSlider",
+        numberId: "bytes",
+        valueId: "bValue",
+        min: 0,
+        max: 12,
+        step: 0.05,
+        digits: 2,
+      },
     ],
     output: {
       valueId: "trustIndexOutput",
@@ -23,6 +50,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       inputs: {
         errors: {
           canvasId: "errorsCanvas",
+          xMax: 1,
           axisLabels: {
             xKey: "index.graphs.axes.errorsX",
             yKey: "index.graphs.axes.errorsY",
@@ -31,6 +59,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         },
         connections: {
           canvasId: "connectionsCanvas",
+          xMax: 200,
           axisLabels: {
             xKey: "index.graphs.axes.connectionsX",
             yKey: "index.graphs.axes.connectionsY",
@@ -39,6 +68,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         },
         bytes: {
           canvasId: "bytesCanvas",
+          xMax: 12,
           axisLabels: {
             xKey: "index.graphs.axes.bytesX",
             yKey: "index.graphs.axes.bytesY",
