@@ -38,29 +38,29 @@ mfTypes.triangle = triangularMF;
 const fuzzySystem = new FIS("Trust Index Controller");
 
 // Create input linguistic variables
-const errors = new LinguisticVariable("errors", [0, 100]);
-const connections = new LinguisticVariable("connections", [0, 100]);
-const bytes = new LinguisticVariable("bytes", [0, 100]);
+const errors = new LinguisticVariable("errors", [0, 1]);
+const connections = new LinguisticVariable("connections", [0, 200]);
+const bytes = new LinguisticVariable("bytes", [0, 12]);
 
 // Create output linguistic variable
 const trustIndex = new LinguisticVariable("trustIndex", [0, 100]);
 
-// Add terms for Errors (E) - error count
-errors.addTerm(new Term("Low", "trapeze", [0, 0, 30, 50]));
-errors.addTerm(new Term("Medium", "trapeze", [30, 50, 70, 90]));
-errors.addTerm(new Term("High", "trapeze", [70, 90, 100, 100]));
+// Error rate ER (serror_rate), domain [0, 1]
+errors.addTerm(new Term("Low", "trapeze", [0, 0, 0.05, 0.15]));
+errors.addTerm(new Term("Medium", "trapeze", [0.05, 0.15, 0.4, 0.6]));
+errors.addTerm(new Term("High", "trapeze", [0.4, 0.6, 1, 1]));
 
-// Add terms for Connections (C) - connection count
-connections.addTerm(new Term("Low", "trapeze", [0, 0, 10, 30]));
-connections.addTerm(new Term("Medium", "trapeze", [10, 30, 50, 70]));
-connections.addTerm(new Term("High", "trapeze", [50, 70, 100, 100]));
+// Connection count CC (count), domain [0, 200]
+connections.addTerm(new Term("Low", "trapeze", [0, 0, 15, 30]));
+connections.addTerm(new Term("Medium", "trapeze", [15, 30, 80, 120]));
+connections.addTerm(new Term("High", "trapeze", [80, 120, 200, 200]));
 
-// Add terms for Bytes (B) - byte count
-bytes.addTerm(new Term("Low", "trapeze", [0, 0, 20, 40]));
-bytes.addTerm(new Term("Medium", "trapeze", [20, 40, 60, 80]));
-bytes.addTerm(new Term("High", "trapeze", [60, 80, 100, 100]));
+// Source bytes BS as log10(src_bytes), domain [0, 12]
+bytes.addTerm(new Term("Low", "trapeze", [0, 0, 4, 6.5]));
+bytes.addTerm(new Term("Medium", "trapeze", [4, 6.5, 9, 11]));
+bytes.addTerm(new Term("High", "trapeze", [9, 11, 12, 12]));
 
-// Add terms for Trust Index (T)
+// Trust Index TI
 trustIndex.addTerm(new Term("VeryLow", "triangle", [0, 0, 25]));
 trustIndex.addTerm(new Term("Low", "triangle", [0, 25, 50]));
 trustIndex.addTerm(new Term("Medium", "triangle", [25, 50, 75]));
@@ -76,56 +76,56 @@ fuzzySystem.addOutput(trustIndex);
 // Create fuzzy inference rules based on the rule table
 // Order: [E, C, B] -> [T]
 fuzzySystem.rules = [
-  // E = Low
-  new Rule(["Low", "Low", "Low"], ["VeryHigh"], "and"),        // 1
-  new Rule(["Low", "Low", "Medium"], ["VeryHigh"], "and"),     // 2
-  new Rule(["Low", "Low", "High"], ["VeryHigh"], "and"),       // 3
-  new Rule(["Low", "Medium", "Low"], ["VeryHigh"], "and"),     // 4
-  new Rule(["Low", "Medium", "Medium"], ["VeryHigh"], "and"),  // 5
-  new Rule(["Low", "Medium", "High"], ["High"], "and"),        // 6
-  new Rule(["Low", "High", "Low"], ["High"], "and"),           // 7
-  new Rule(["Low", "High", "Medium"], ["High"], "and"),        // 8
-  new Rule(["Low", "High", "High"], ["High"], "and"),          // 9
+  // ER = Low
+  new Rule(["Low", "Low", "Low"], ["VeryHigh"], "and"),       // 1
+  new Rule(["Low", "Low", "Medium"], ["High"], "and"),        // 2
+  new Rule(["Low", "Low", "High"], ["Medium"], "and"),        // 3
+  new Rule(["Low", "Medium", "Low"], ["High"], "and"),        // 4
+  new Rule(["Low", "Medium", "Medium"], ["Medium"], "and"),   // 5
+  new Rule(["Low", "Medium", "High"], ["Low"], "and"),        // 6
+  new Rule(["Low", "High", "Low"], ["Low"], "and"),           // 7
+  new Rule(["Low", "High", "Medium"], ["Low"], "and"),        // 8
+  new Rule(["Low", "High", "High"], ["VeryLow"], "and"),      // 9
 
-  // E = Medium
-  new Rule(["Medium", "Low", "Low"], ["High"], "and"),         // 10
-  new Rule(["Medium", "Low", "Medium"], ["High"], "and"),      // 11
-  new Rule(["Medium", "Low", "High"], ["Medium"], "and"),      // 12
-  new Rule(["Medium", "Medium", "Low"], ["Medium"], "and"),    // 13
-  new Rule(["Medium", "Medium", "Medium"], ["Medium"], "and"), // 14
-  new Rule(["Medium", "Medium", "High"], ["Medium"], "and"),   // 15
-  new Rule(["Medium", "High", "Low"], ["Medium"], "and"),      // 16
-  new Rule(["Medium", "High", "Medium"], ["Low"], "and"),      // 17
-  new Rule(["Medium", "High", "High"], ["Low"], "and"),        // 18
+  // ER = Medium
+  new Rule(["Medium", "Low", "Low"], ["Medium"], "and"),      // 10
+  new Rule(["Medium", "Low", "Medium"], ["Medium"], "and"),   // 11
+  new Rule(["Medium", "Low", "High"], ["Low"], "and"),        // 12
+  new Rule(["Medium", "Medium", "Low"], ["Low"], "and"),      // 13
+  new Rule(["Medium", "Medium", "Medium"], ["Low"], "and"),   // 14
+  new Rule(["Medium", "Medium", "High"], ["VeryLow"], "and"), // 15
+  new Rule(["Medium", "High", "Low"], ["VeryLow"], "and"),    // 16
+  new Rule(["Medium", "High", "Medium"], ["VeryLow"], "and"), // 17
+  new Rule(["Medium", "High", "High"], ["VeryLow"], "and"),   // 18
 
-  // E = High
-  new Rule(["High", "Low", "Low"], ["Low"], "and"),            // 19
-  new Rule(["High", "Low", "Medium"], ["Low"], "and"),         // 20
-  new Rule(["High", "Low", "High"], ["Low"], "and"),           // 21
-  new Rule(["High", "Medium", "Low"], ["Low"], "and"),         // 22
-  new Rule(["High", "Medium", "Medium"], ["VeryLow"], "and"),  // 23
-  new Rule(["High", "Medium", "High"], ["VeryLow"], "and"),    // 24
-  new Rule(["High", "High", "Low"], ["VeryLow"], "and"),       // 25
-  new Rule(["High", "High", "Medium"], ["VeryLow"], "and"),    // 26
-  new Rule(["High", "High", "High"], ["VeryLow"], "and"),      // 27
+  // ER = High
+  new Rule(["High", "Low", "Low"], ["Low"], "and"),           // 19
+  new Rule(["High", "Low", "Medium"], ["VeryLow"], "and"),    // 20
+  new Rule(["High", "Low", "High"], ["VeryLow"], "and"),      // 21
+  new Rule(["High", "Medium", "Low"], ["VeryLow"], "and"),    // 22
+  new Rule(["High", "Medium", "Medium"], ["VeryLow"], "and"), // 23
+  new Rule(["High", "Medium", "High"], ["VeryLow"], "and"),   // 24
+  new Rule(["High", "High", "Low"], ["VeryLow"], "and"),      // 25
+  new Rule(["High", "High", "Medium"], ["VeryLow"], "and"),   // 26
+  new Rule(["High", "High", "High"], ["VeryLow"], "and"),     // 27
 ];
 
 // Membership function parameters for visualization
 const membershipParams = {
   errors: {
-    Low: { type: "trapeze", params: [0, 0, 30, 50] },
-    Medium: { type: "trapeze", params: [30, 50, 70, 90] },
-    High: { type: "trapeze", params: [70, 90, 100, 100] },
+    Low: { type: "trapeze", params: [0, 0, 0.05, 0.15] },
+    Medium: { type: "trapeze", params: [0.05, 0.15, 0.4, 0.6] },
+    High: { type: "trapeze", params: [0.4, 0.6, 1, 1] },
   },
   connections: {
-    Low: { type: "trapeze", params: [0, 0, 10, 30] },
-    Medium: { type: "trapeze", params: [10, 30, 50, 70] },
-    High: { type: "trapeze", params: [50, 70, 100, 100] },
+    Low: { type: "trapeze", params: [0, 0, 15, 30] },
+    Medium: { type: "trapeze", params: [15, 30, 80, 120] },
+    High: { type: "trapeze", params: [80, 120, 200, 200] },
   },
   bytes: {
-    Low: { type: "trapeze", params: [0, 0, 20, 40] },
-    Medium: { type: "trapeze", params: [20, 40, 60, 80] },
-    High: { type: "trapeze", params: [60, 80, 100, 100] },
+    Low: { type: "trapeze", params: [0, 0, 4, 6.5] },
+    Medium: { type: "trapeze", params: [4, 6.5, 9, 11] },
+    High: { type: "trapeze", params: [9, 11, 12, 12] },
   },
   trustIndex: {
     VeryLow: { type: "triangle", params: [0, 0, 25] },
@@ -184,9 +184,9 @@ function roundMu(value) {
 
 function getTrustRuleEvaluations(membershipData) {
   const inputs = [
-    { key: "errors", symbol: "E", terms: membershipData.errors || {} },
-    { key: "connections", symbol: "C", terms: membershipData.connections || {} },
-    { key: "bytes", symbol: "B", terms: membershipData.bytes || {} },
+    { key: "errors", symbol: "ER", terms: membershipData.errors || {} },
+    { key: "connections", symbol: "CC", terms: membershipData.connections || {} },
+    { key: "bytes", symbol: "BS", terms: membershipData.bytes || {} },
   ];
   return fuzzySystem.rules.map((rule, index) => {
     const conditions = inputs.map((input, i) => ({
@@ -227,27 +227,13 @@ function getAggregatedOutput(errorsVal, connectionsVal, bytesVal) {
 // Calculate membership degrees
 function calculateMembershipValues(variable, value) {
   const memberships = {};
-  
-  if (variable === "errors") {
-    memberships.Low = trapezoidalMF(value, 0, 0, 30, 50);
-    memberships.Medium = trapezoidalMF(value, 30, 50, 70, 90);
-    memberships.High = trapezoidalMF(value, 70, 90, 100, 100);
-  } else if (variable === "connections") {
-    memberships.Low = trapezoidalMF(value, 0, 0, 10, 30);
-    memberships.Medium = trapezoidalMF(value, 10, 30, 50, 70);
-    memberships.High = trapezoidalMF(value, 50, 70, 100, 100);
-  } else if (variable === "bytes") {
-    memberships.Low = trapezoidalMF(value, 0, 0, 20, 40);
-    memberships.Medium = trapezoidalMF(value, 20, 40, 60, 80);
-    memberships.High = trapezoidalMF(value, 60, 80, 100, 100);
-  } else if (variable === "trustIndex") {
-    memberships.VeryLow = triangularMF(value, 0, 0, 25);
-    memberships.Low = triangularMF(value, 0, 25, 50);
-    memberships.Medium = triangularMF(value, 25, 50, 75);
-    memberships.High = triangularMF(value, 50, 75, 100);
-    memberships.VeryHigh = triangularMF(value, 75, 100, 100);
-  }
-  
+  const params = membershipParams[variable] || {};
+  Object.entries(params).forEach(([term, cfg]) => {
+    memberships[term] =
+      cfg.type === "trapeze"
+        ? trapezoidalMF(value, ...cfg.params)
+        : triangularMF(value, ...cfg.params);
+  });
   return memberships;
 }
 

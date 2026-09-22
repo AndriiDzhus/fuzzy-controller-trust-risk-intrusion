@@ -12,12 +12,13 @@
         "xAxis": "x",
         "outputAxis": "Вихід",
         "memberships": "μ у цій точці",
-        "aggregatedMu": "μ агрегованої множини",
+        "aggregatedMu": "μ акумульованої множини",
         "clippedMu": "μ зрізаних термів; контур — їх max",
         "current": "Поточний вхід",
         "result": "Результат",
         "singletonAt": "Синглтон",
         "notSingleton": "Поза синглтонами, μ = 0",
+        "dominantTerm": "Домінуючий лінгвістичний терм для обчисленого значення",
         "muX": "Ступінь приналежності чіткого входу: 0 — терм не виконується, 1 — виконується повністю. На цих графіках це {vars} — окремо для кожної вхідної величини.",
         "muOut": "Ступінь приналежності виходу {var} після правил: 0 — терм не виконується, 1 — виконується повністю."
       },
@@ -59,7 +60,7 @@
       "graph": {
         "expand": "Збільшити графік",
         "collapse": "Згорнути графік",
-        "aggregatedKey": "Агрегована вихідна множина",
+        "aggregatedKey": "Акумульована вихідна множина",
         "aggregatedMark": "темний контур (max зрізаних термів)"
       },
       "pipeline": {
@@ -71,7 +72,7 @@
         "output": "Акумуляція та дефазифікація",
         "panelActivations": "Сили правил α",
         "panelAtResult": "μ у точці {var}*",
-        "graphTitleSet": "Агрегована вихідна множина ({var})",
+        "graphTitleSet": "Акумульована вихідна множина ({var})",
         "graphTitleCentroid": "Дефазифікація: {var}* на термах",
         "fuzzificationHint": "Перетворення чітких входів на ступені приналежності μ(x) лінгвістичних термів. Вертикальна лінія — поточне значення входу.",
         "rulesHintMamdani": "Для кожного правила α = {tip:min} μ умов. У групі терму виходу лишається {tip:max} — це висота зрізу на наступному кроці.",
@@ -111,6 +112,7 @@
         "otherwise": "інакше",
         "or": "або",
         "domain": "Область визначення",
+        "units": "Одиниці",
         "ifThenHint": "Кожне правило: якщо всі вхідні терми істинні одночасно, вихід набуває зазначеного терму.",
         "piecewiseHint": "Кусково-лінійні функції приналежності на області визначення кожної величини.",
         "gaussianHint": "Гаусівські функції: μ(x) = exp(−(x − c)² / (2σ²)), де c — центр, σ — розмах.",
@@ -146,7 +148,7 @@
         "medium": "Середній",
         "high": "Великий",
         "veryHigh": "Дуже великий",
-        "aggregated": "Агрегована множина"
+        "aggregated": "Акумульована множина"
       }
     },
     "navigation": {
@@ -158,10 +160,22 @@
       "pageTitle": "Індекс довіри | Платформа нечіткого виводу",
       "headline": "Платформа нечіткого виводу для оцінки індексу довіри системи",
       "title": "Індекс довіри системи",
-      "stickyTitle": "Оцінка індексу довіри (T)",
+      "stickyTitle": "Оцінка індексу довіри (TI)",
       "docs": {
         "formulasTitle": "Довіра: функції приналежності",
-        "rulesTitle": "Довіра: база правил"
+        "rulesTitle": "Довіра: база правил",
+        "units": {
+          "errors": "частка (0 = 0 %, 1 = 100 %)",
+          "connections": "шт. за останні 2 с",
+          "bytes": "log₁₀(байт джерела)",
+          "trust": "індекс 0–100"
+        },
+        "notes": {
+          "errors": "Частка з'єднань із SYN-помилками до того ж хоста (serror_rate).",
+          "connections": "Кількість з'єднань до того ж хоста за останні 2 с (count).",
+          "bytes": "Логарифмічне представлення src_bytes: BS = log₁₀(байт).",
+          "trust": "Низькі значення TI відповідають аномальній поведінці, високі — нормальному трафіку."
+        }
       },
       "sticky": {
         "inputs": {
@@ -170,45 +184,44 @@
           "bytes": "Байти"
         }
       },
-      "description": "Система нечіткого виводу для оцінки індексу довіри (T) на основі кількості помилок (E), кількості з'єднань (C) та кількості байтів (B).",
+      "description": "Система нечіткого виводу для оцінки індексу довіри (TI) на основі частки SYN-помилок (ER), кількості з'єднань за 2 с (CC) та логарифма байтів джерела (BS).",
       "inputs": {
-        "errors": "Кількість Помилок (E) (0-100):",
-        "connections": "Кількість З'єднань (C) (0-100):",
-        "bytes": "Кількість Байтів (B) (0-100):"
+        "errors": "Частка SYN-помилок (ER) (0–1):",
+        "connections": "Кількість з'єднань (CC) (0–200 шт. / 2 с):",
+        "bytes": "Байти джерела (BS) (0–12, log₁₀(байт)):"
       },
       "results": {
         "title": "Результат Обчислення",
-        "value": "Значення індексу довіри (T):",
-        "level": "Рівень довіри:",
-        "explanation": "Домінуючий лінгвістичний терм для обчисленого значення"
+        "value": "Значення індексу довіри (TI):",
+        "level": "Рівень довіри:"
       },
       "membership": {
         "title": "Значення Приналежності для Поточних Входів",
-        "errors": "Кількість Помилок (E)",
-        "connections": "Кількість З'єднань (C)",
-        "bytes": "Кількість Байтів (B)",
-        "trust": "Індекс Довіри (T)",
-        "aggregated": "Агрегована вихідна множина (T)"
+        "errors": "Частка SYN-помилок (ER)",
+        "connections": "Кількість з'єднань (CC)",
+        "bytes": "Байти джерела (BS)",
+        "trust": "Індекс довіри (TI)",
+        "aggregated": "Акумульована вихідна множина (TI)"
       },
       "graphs": {
         "title": "Функції Приналежності",
         "axes": {
-          "errorsY": "μ(E)",
-          "errorsX": "E",
-          "connectionsY": "μ(C)",
-          "connectionsX": "C",
-          "bytesY": "μ(B)",
-          "bytesX": "B",
-          "trustY": "μ(T)",
-          "trustX": "T"
+          "errorsY": "μ(ER)",
+          "errorsX": "ER, частка",
+          "connectionsY": "μ(CC)",
+          "connectionsX": "CC, шт.",
+          "bytesY": "μ(BS)",
+          "bytesX": "BS, log₁₀(байт)",
+          "trustY": "μ(TI)",
+          "trustX": "TI"
         }
       },
       "rules": {
-        "title": "База Правил та Інтерпретація Результатів",
-        "description": "Система використовує 27 правил нечіткого виводу для визначення індексу довіри на основі комбінацій вхідних параметрів: E (Errors), C (Connections), B (Bytes) → T (Trust Index).",
-        "category1": "Мала кількість помилок (E): високий рівень довіри в більшості випадків.",
-        "category2": "Середня кількість помилок (E): рівень довіри залежить від з'єднань та байтів.",
-        "category3": "Велика кількість помилок (E): низький рівень довіри незалежно від інших параметрів."
+        "title": "Інтерпретація",
+        "description": "Система використовує 27 правил нечіткого виводу Mamdani: ER (Error Rate), CC (Connection Count), BS (Source Bytes) → TI (Trust Index). Низькі значення TI вказують на аномальну поведінку.",
+        "category1": "Мала частка помилок (ER): висока довіра лише за малих CC і BS; велика кількість з'єднань або байтів швидко знижує TI.",
+        "category2": "Середня частка помилок (ER): TI здебільшого низький; середній рівень лишається лише за малих CC і BS.",
+        "category3": "Велика частка помилок (ER): TI низький або дуже низький; єдиний виняток — малі CC і BS дають низький, а не дуже низький рівень."
       }
     },
     "security": {
@@ -218,7 +231,19 @@
       "stickyTitle": "Оцінка ризику безпеки (SR)",
       "docs": {
         "formulasTitle": "Безпека: функції приналежності",
-        "rulesTitle": "Безпека: база правил"
+        "rulesTitle": "Безпека: база правил",
+        "units": {
+          "energy": "кВт·год/ГБ",
+          "strength": "дБм",
+          "response": "мс",
+          "risk": "індекс 0–100"
+        },
+        "notes": {
+          "energy": "Енергоспоживання на одиницю трафіку (Energy Consumption) у 6G IoT.",
+          "strength": "Потужність радіопередачі (Transmit Power).",
+          "response": "Затримка передачі пакета (Latency).",
+          "risk": "Sugeno 0-го порядку: кожен терм SR — синглтон {0, 20, 40, 60, 80, 100}."
+        }
       },
       "sticky": {
         "inputs": {
@@ -249,18 +274,18 @@
         "title": "Функції приналежності",
         "axes": {
           "energyY": "μ(EC)",
-          "energyX": "EC",
+          "energyX": "EC, кВт·год/ГБ",
           "strengthY": "μ(TP)",
-          "strengthX": "TP",
+          "strengthX": "TP, дБм",
           "responseY": "μ(Lat)",
-          "responseX": "Lat",
+          "responseX": "Lat, мс",
           "riskY": "μ(SR)",
           "riskX": "SR"
         }
       },
       "rules": {
-        "title": "База Правил та Інтерпретація Результатів",
-        "description": "Система використовує 6 правил нечіткого виводу для визначення індексу ризику безпеки: EC (Energy Consumption), TP (Transmit Power), Lat (Latency) → SR (Security Risk).",
+        "title": "Інтерпретація",
+        "description": "Система використовує 6 правил нечіткого виводу Sugeno 0-го порядку: EC (кВт·год/ГБ), TP (дБм), Lat (мс) → SR. База покриває лише 6 комбінацій термів; інші входи не активують правил.",
         "category1": "Мала споживана енергія (EC): мінімальний ризик за малої потужності передачі та малої затримки.",
         "category2": "Середня споживана енергія (EC): рівень ризику залежить від потужності передачі та затримки.",
         "category3": "Велика споживана енергія (EC): підвищений ризик, особливо за великої потужності передачі та великої затримки."
@@ -273,7 +298,13 @@
       "stickyTitle": "Оцінка вірогідності вторгнення (I)",
       "docs": {
         "formulasTitle": "Вторгнення: функції приналежності",
-        "rulesTitle": "Вторгнення: база правил"
+        "rulesTitle": "Вторгнення: база правил",
+        "units": {
+          "packets": "шт.",
+          "rate": "пакетів/с",
+          "delivery": "%",
+          "intrusion": "індекс 0–100"
+        }
       },
       "sticky": {
         "inputs": {
@@ -284,9 +315,9 @@
       },
       "description": "Оцінка вірогідності вторгнення (I) на основі числа пакетів (N), швидкості передавання (R) та коефіцієнта доставки (D).",
       "inputs": {
-        "packets": "Число пакетів (N) (0-100):",
-        "rate": "Швидкість передавання (R) (0-100):",
-        "delivery": "Коефіцієнт доставки (D) (0-100):"
+        "packets": "Число пакетів (N) (0–100 шт.):",
+        "rate": "Швидкість передавання (R) (0–100 пакетів/с):",
+        "delivery": "Коефіцієнт доставки (D) (0–100 %):"
       },
       "results": {
         "title": "Результат обчислення",
@@ -299,24 +330,24 @@
         "rate": "Швидкість передавання (R)",
         "delivery": "Коефіцієнт доставки (D)",
         "intrusion": "Вторгнення (I)",
-        "aggregated": "Агрегована вихідна множина (I)"
+        "aggregated": "Акумульована вихідна множина (I)"
       },
       "graphs": {
         "title": "Функції приналежності",
         "axes": {
           "packetsY": "μ(N)",
-          "packetsX": "N",
+          "packetsX": "N, шт.",
           "rateY": "μ(R)",
-          "rateX": "R",
+          "rateX": "R, пакетів/с",
           "deliveryY": "μ(D)",
-          "deliveryX": "D",
+          "deliveryX": "D, %",
           "intrusionY": "μ(I)",
           "intrusionX": "I"
         }
       },
       "rules": {
-        "title": "База Правил та Інтерпретація Результатів",
-        "description": "Система використовує 12 правил нечіткого виводу для визначення вірогідності вторгнення на основі комбінацій вхідних параметрів: N (Packets), R (Rate), D (Delivery) → I (Intrusion).",
+        "title": "Інтерпретація",
+        "description": "Система використовує 12 правил нечіткого виводу Mamdani: N (пакети, шт.), R (швидкість потоку), D (коефіцієнт доставки) → I (вторгнення). Усі величини на шкалі 0–100.",
         "category1": "Мала кількість пакетів (N): низька вірогідність вторгнення в більшості випадків.",
         "category2": "Середня кількість пакетів (N): рівень вторгнення залежить від швидкості передавання та коефіцієнта доставки.",
         "category3": "Велика кількість пакетів (N): висока вірогідність вторгнення, особливо при високій швидкості та низькій доставці."
@@ -336,12 +367,13 @@
         "xAxis": "x",
         "outputAxis": "Output",
         "memberships": "μ at this x",
-        "aggregatedMu": "Aggregated-set μ",
+        "aggregatedMu": "Accumulated-set μ",
         "clippedMu": "Clipped-term μ; the outline is their max",
         "current": "Current input",
         "result": "Result",
         "singletonAt": "Singleton",
         "notSingleton": "Off the singletons, μ = 0",
+        "dominantTerm": "Dominant linguistic term for the computed value",
         "muX": "Membership degree of the crisp input: 0 — the term does not hold, 1 — it holds fully. On these plots that is {vars} — one axis per input variable.",
         "muOut": "Membership degree of output {var} after the rules: 0 — the term does not hold, 1 — it holds fully."
       },
@@ -383,7 +415,7 @@
       "graph": {
         "expand": "Enlarge graph",
         "collapse": "Collapse graph",
-        "aggregatedKey": "Aggregated output set",
+        "aggregatedKey": "Accumulated output set",
         "aggregatedMark": "dark outline (max of clipped terms)"
       },
       "pipeline": {
@@ -395,7 +427,7 @@
         "output": "Accumulation and defuzzification",
         "panelActivations": "Rule strengths α",
         "panelAtResult": "μ at {var}*",
-        "graphTitleSet": "Aggregated output set ({var})",
+        "graphTitleSet": "Accumulated output set ({var})",
         "graphTitleCentroid": "Defuzzification: {var}* on the terms",
         "fuzzificationHint": "Conversion of crisp inputs into membership degrees μ(x) of linguistic terms. The vertical line is the current input value.",
         "rulesHintMamdani": "For each rule α = {tip:min} of the condition μ values. In an output-term group the {tip:max} remains — that is the clip height on the next step.",
@@ -435,6 +467,7 @@
         "otherwise": "otherwise",
         "or": "or",
         "domain": "Domain",
+        "units": "Units",
         "ifThenHint": "Each rule: if all input terms hold at once, the output takes the listed term.",
         "piecewiseHint": "Piecewise-linear membership functions on each variable's domain.",
         "gaussianHint": "Gaussian functions: μ(x) = exp(−(x − c)² / (2σ²)), where c is the center and σ is the spread.",
@@ -470,7 +503,7 @@
         "medium": "Medium",
         "high": "High",
         "veryHigh": "Very High",
-        "aggregated": "Aggregated set"
+        "aggregated": "Accumulated set"
       }
     },
     "navigation": {
@@ -482,10 +515,22 @@
       "pageTitle": "Trust Index | Fuzzy Security Platform",
       "headline": "Fuzzy inference platform for system trust assessment",
       "title": "System trust index",
-      "stickyTitle": "Trust index assessment (T)",
+      "stickyTitle": "Trust index assessment (TI)",
       "docs": {
         "formulasTitle": "Trust: membership functions",
-        "rulesTitle": "Trust: rule base"
+        "rulesTitle": "Trust: rule base",
+        "units": {
+          "errors": "fraction (0 = 0%, 1 = 100%)",
+          "connections": "count over the last 2 s",
+          "bytes": "log₁₀(source bytes)",
+          "trust": "index 0–100"
+        },
+        "notes": {
+          "errors": "Fraction of connections to the same host that have SYN errors (serror_rate).",
+          "connections": "Number of connections to the same host over the last 2 s (count).",
+          "bytes": "Log representation of src_bytes: BS = log₁₀(bytes).",
+          "trust": "Low TI values indicate anomalous behaviour; high values indicate normal traffic."
+        }
       },
       "sticky": {
         "inputs": {
@@ -494,45 +539,44 @@
           "bytes": "Bytes"
         }
       },
-      "description": "A fuzzy inference system for evaluating trust index (T) using error count (E), connection count (C), and bytes count (B).",
+      "description": "A fuzzy inference system for evaluating trust index (TI) from SYN error rate (ER), connection count over 2 s (CC), and log source bytes (BS).",
       "inputs": {
-        "errors": "Error Count (E) (0-100):",
-        "connections": "Connection Count (C) (0-100):",
-        "bytes": "Bytes Count (B) (0-100):"
+        "errors": "SYN error rate (ER) (0–1):",
+        "connections": "Connection count (CC) (0–200 over 2 s):",
+        "bytes": "Source bytes (BS) (0–12, log₁₀(bytes)):"
       },
       "results": {
         "title": "Calculation Result",
-        "value": "Trust Index value:",
-        "level": "Level of Trust:",
-        "explanation": "Dominant linguistic term for the computed value"
+        "value": "Trust Index value (TI):",
+        "level": "Level of Trust:"
       },
       "membership": {
         "title": "Membership Values for Current Inputs",
-        "errors": "Error Count (E)",
-        "connections": "Connection Count (C)",
-        "bytes": "Bytes Count (B)",
-        "trust": "Trust Index (T)",
-        "aggregated": "Aggregated output set (T)"
+        "errors": "SYN error rate (ER)",
+        "connections": "Connection count (CC)",
+        "bytes": "Source bytes (BS)",
+        "trust": "Trust Index (TI)",
+        "aggregated": "Accumulated output set (TI)"
       },
       "graphs": {
         "title": "Membership Functions",
         "axes": {
-          "errorsY": "μ(E)",
-          "errorsX": "E",
-          "connectionsY": "μ(C)",
-          "connectionsX": "C",
-          "bytesY": "μ(B)",
-          "bytesX": "B",
-          "trustY": "μ(T)",
-          "trustX": "T"
+          "errorsY": "μ(ER)",
+          "errorsX": "ER, fraction",
+          "connectionsY": "μ(CC)",
+          "connectionsX": "CC, count",
+          "bytesY": "μ(BS)",
+          "bytesX": "BS, log₁₀(bytes)",
+          "trustY": "μ(TI)",
+          "trustX": "TI"
         }
       },
       "rules": {
-        "title": "Rule Base and Result Interpretation",
-        "description": "The system uses 27 fuzzy inference rules to determine trust index based on input combinations: E (Errors), C (Connections), B (Bytes) → T (Trust Index).",
-        "category1": "Low error count (E): high trust level in most cases.",
-        "category2": "Medium error count (E): trust level depends on connections and bytes.",
-        "category3": "High error count (E): low trust level regardless of other parameters."
+        "title": "Interpretation",
+        "description": "The system uses 27 Mamdani rules: ER (Error Rate), CC (Connection Count), BS (Source Bytes) → TI (Trust Index). Low TI values indicate anomalous behaviour.",
+        "category1": "Low error rate (ER): high trust only when CC and BS are also low; high connection or byte counts quickly reduce TI.",
+        "category2": "Medium error rate (ER): TI is mostly low; a medium level remains only when CC and BS are low.",
+        "category3": "High error rate (ER): TI is low or very low; the only exception is low CC and BS, which yield low rather than very low trust."
       }
     },
     "security": {
@@ -542,7 +586,19 @@
       "stickyTitle": "Security risk assessment (SR)",
       "docs": {
         "formulasTitle": "Security: membership functions",
-        "rulesTitle": "Security: rule base"
+        "rulesTitle": "Security: rule base",
+        "units": {
+          "energy": "kWh/GB",
+          "strength": "dBm",
+          "response": "ms",
+          "risk": "index 0–100"
+        },
+        "notes": {
+          "energy": "Energy consumption per unit of traffic (Energy Consumption) in 6G IoT.",
+          "strength": "Radio transmit power (Transmit Power).",
+          "response": "Packet transmission delay (Latency).",
+          "risk": "0-order Sugeno: each SR term is a singleton {0, 20, 40, 60, 80, 100}."
+        }
       },
       "sticky": {
         "inputs": {
@@ -573,18 +629,18 @@
         "title": "Membership Functions",
         "axes": {
           "energyY": "μ(EC)",
-          "energyX": "EC",
+          "energyX": "EC, kWh/GB",
           "strengthY": "μ(TP)",
-          "strengthX": "TP",
+          "strengthX": "TP, dBm",
           "responseY": "μ(Lat)",
-          "responseX": "Lat",
+          "responseX": "Lat, ms",
           "riskY": "μ(SR)",
           "riskX": "SR"
         }
       },
       "rules": {
-        "title": "Rule Base and Result Interpretation",
-        "description": "The system uses 6 fuzzy inference rules to determine security risk: EC (Energy Consumption), TP (Transmit Power), Lat (Latency) → SR (Security Risk).",
+        "title": "Interpretation",
+        "description": "The system uses 6 zero-order Sugeno rules: EC (kWh/GB), TP (dBm), Lat (ms) → SR. The base covers only 6 term combinations; other inputs fire no rules.",
         "category1": "Low energy consumption (EC): minimal risk when transmit power and latency are low.",
         "category2": "Medium energy consumption (EC): risk level depends on transmit power and latency.",
         "category3": "High energy consumption (EC): elevated risk, especially with high transmit power and high latency."
@@ -597,7 +653,13 @@
       "stickyTitle": "Intrusion probability assessment (I)",
       "docs": {
         "formulasTitle": "Intrusion: membership functions",
-        "rulesTitle": "Intrusion: rule base"
+        "rulesTitle": "Intrusion: rule base",
+        "units": {
+          "packets": "packets",
+          "rate": "packets/s",
+          "delivery": "%",
+          "intrusion": "index 0–100"
+        }
       },
       "sticky": {
         "inputs": {
@@ -608,9 +670,9 @@
       },
       "description": "Evaluates intrusion probability (I) based on packet count (N), transmission rate (R), and delivery coefficient (D).",
       "inputs": {
-        "packets": "Packet Count (N) (0-100):",
-        "rate": "Transmission Rate (R) (0-100):",
-        "delivery": "Delivery Coefficient (D) (0-100):"
+        "packets": "Packet Count (N) (0–100 packets):",
+        "rate": "Transmission Rate (R) (0–100 packets/s):",
+        "delivery": "Delivery Coefficient (D) (0–100 %):"
       },
       "results": {
         "title": "Calculation Result",
@@ -623,24 +685,24 @@
         "rate": "Transmission Rate (R)",
         "delivery": "Delivery Coefficient (D)",
         "intrusion": "Intrusion (I)",
-        "aggregated": "Aggregated output set (I)"
+        "aggregated": "Accumulated output set (I)"
       },
       "graphs": {
         "title": "Membership Functions",
         "axes": {
           "packetsY": "μ(N)",
-          "packetsX": "N",
+          "packetsX": "N, packets",
           "rateY": "μ(R)",
-          "rateX": "R",
+          "rateX": "R, packets/s",
           "deliveryY": "μ(D)",
-          "deliveryX": "D",
+          "deliveryX": "D, %",
           "intrusionY": "μ(I)",
           "intrusionX": "I"
         }
       },
       "rules": {
-        "title": "Rule Base and Result Interpretation",
-        "description": "The system uses 12 fuzzy inference rules to determine intrusion probability based on input combinations: N (Packets), R (Rate), D (Delivery) → I (Intrusion).",
+        "title": "Interpretation",
+        "description": "The system uses 12 Mamdani rules: N (packets), R (flow rate), D (delivery coefficient) → I (intrusion). All quantities use the 0–100 scale.",
         "category1": "Low packet count (N): low intrusion probability in most cases.",
         "category2": "Medium packet count (N): intrusion level depends on transmission rate and delivery coefficient.",
         "category3": "High packet count (N): high intrusion probability, especially with high rate and low delivery."

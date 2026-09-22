@@ -5,7 +5,7 @@ describe("Unified controllers API", () => {
   test("trust calculate endpoint works", async () => {
     const response = await request(app)
       .post("/api/controllers/trust/calculate")
-      .send({ errors: 50, connections: 50, bytes: 50 });
+      .send({ errors: 0.25, connections: 50, bytes: 7.5 });
 
     expect(response.status).toBe(200);
     expect(response.body).toHaveProperty("value");
@@ -17,7 +17,7 @@ describe("Unified controllers API", () => {
     expect(response.body.aggregatedOutput[0]).toHaveProperty("y");
     expect(response.body.ruleOutputs).toHaveProperty("Medium");
     expect(response.body.ruleEvaluations).toHaveLength(27);
-    expect(response.body.ruleEvaluations[13].out).toBe("Medium");
+    expect(response.body.ruleEvaluations[13].out).toBe("Low");
     expect(response.body.ruleEvaluations[13].alpha).toBeCloseTo(1, 5);
   });
 
