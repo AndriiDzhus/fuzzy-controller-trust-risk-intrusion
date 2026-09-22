@@ -21,20 +21,19 @@ app.post("/api/calculate", (req, res) => {
       bytes: b,
     } = req.body;
 
-    // Validate input values
     if (
       isNaN(e) ||
       isNaN(c) ||
       isNaN(b) ||
       e < 0 ||
-      e > 100 ||
+      e > 1 ||
       c < 0 ||
-      c > 100 ||
+      c > 200 ||
       b < 0 ||
-      b > 100
+      b > 12
     ) {
       return res.status(400).json({
-        error: "Invalid input values. All values must be between 0 and 100.",
+        error: "Invalid input values. ER must be 0–1, CC 0–200, BS 0–12.",
       });
     }
 
@@ -123,12 +122,12 @@ app.get("/api/membership-functions", (req, res) => {
   try {
     const data = {
       inputs: {
-        errors: generateMembershipData("errors", 100),
-        connections: generateMembershipData("connections", 100),
-        bytes: generateMembershipData("bytes", 100),
+        errors: generateMembershipData("errors", 1, 0.01),
+        connections: generateMembershipData("connections", 200, 1),
+        bytes: generateMembershipData("bytes", 12, 0.05),
       },
       output: {
-        trustIndex: generateMembershipData("trustIndex", 100),
+        trustIndex: generateMembershipData("trustIndex", 100, 1),
       },
     };
     res.json(data);
@@ -155,16 +154,17 @@ app.get("/api/controllers/:controller/membership-functions", (req, res) => {
 });
 
 // Generate membership function chart data
-function generateMembershipData(variableName, maxRange = 100) {
+function generateMembershipData(variableName, maxRange = 100, step = 2) {
   const data = {};
   const params = fuzzyController.membershipParams[variableName];
-  const step = 2; // Sample every 2 units for a cleaner chart
 
   for (const termName in params) {
     data[termName] = [];
     const termParams = params[termName];
+    const n = Math.round(maxRange / step);
 
-    for (let x = 0; x <= maxRange; x += step) {
+    for (let i = 0; i <= n; i += 1) {
+      const x = i === n ? maxRange : Number((i * step).toFixed(10));
       let membershipValue = 0;
 
       if (termParams.type === "trapeze") {
@@ -233,17 +233,17 @@ app.get("/api/system-info", (req, res) => {
     inputVariables: [
       {
         name: "errors",
-        range: [0, 100],
+        range: [0, 1],
         terms: Object.keys(fuzzyController.membershipParams.errors),
       },
       {
         name: "connections",
-        range: [0, 100],
+        range: [0, 200],
         terms: Object.keys(fuzzyController.membershipParams.connections),
       },
       {
         name: "bytes",
-        range: [0, 100],
+        range: [0, 12],
         terms: Object.keys(fuzzyController.membershipParams.bytes),
       },
     ],

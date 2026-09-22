@@ -10,7 +10,8 @@ describe("E2E smoke: navigation and i18n", () => {
       expect(res.status).toBe(200);
       expect(res.text).toContain('href="index.html"');
       expect(res.text).toContain('href="security.html"');
-      expect(res.text).toContain('href="intrusion.html"');
+      expect(res.text).toContain('class="result-term"');
+      expect(res.text).not.toContain("result-explanation");
     }
   });
 
@@ -31,8 +32,17 @@ describe("E2E smoke: navigation and i18n", () => {
     expect(res.status).toBe(200);
     expect(res.body.uk.common.docs.formulasBtn).toBeTruthy();
     expect(res.body.uk.common.docs.rulesBtn).toBeTruthy();
+    expect(res.body.uk.common.docs.units).toBeTruthy();
     expect(res.body.en.common.docs.formulasBtn).toBeTruthy();
     expect(res.body.en.common.docs.rulesBtn).toBeTruthy();
+    expect(res.body.en.common.docs.units).toBeTruthy();
+    expect(res.body.uk.index.docs.units.errors).toContain("частка");
+    expect(res.body.uk.security.docs.units.energy).toContain("кВт");
+    expect(res.body.uk.intrusion.docs.units.packets).toBe("шт.");
+    expect(res.body.uk.intrusion.docs.units.rate).toBe("пакетів/с");
+    expect(res.body.uk.intrusion.docs.units.delivery).toBe("%");
+    expect(res.body.uk.index.rules.title).toBe("Інтерпретація");
+    expect(res.body.en.index.rules.title).toBe("Interpretation");
   });
 
   test("i18n dictionary has sticky input bar labels", async () => {
@@ -44,6 +54,8 @@ describe("E2E smoke: navigation and i18n", () => {
     expect(res.body.en.common.noRuleFiredHint).toBeTruthy();
     expect(res.body.uk.common.sticky.result).toBeTruthy();
     expect(res.body.uk.common.tooltip.current).toBeTruthy();
+    expect(res.body.uk.common.tooltip.dominantTerm).toContain("Домінуючий лінгвістичний терм");
+    expect(res.body.en.common.tooltip.dominantTerm).toContain("Dominant linguistic term");
     expect(res.body.uk.common.tooltip.aggregatedMu).toBeTruthy();
     expect(res.body.uk.common.tooltip.singletonAt).toBeTruthy();
     expect(res.body.uk.index.stickyTitle).toBeTruthy();
@@ -216,9 +228,10 @@ describe("E2E smoke: navigation and i18n", () => {
     expect(res.body.uk.common.glossary.wavg.hint).toContain("w");
     expect(res.body.uk.common.pipeline.defuzzificationHintSugeno).toContain("{tip:wavg}");
     expect(res.body.uk.common.graph.expand).toBeTruthy();
-    expect(res.body.uk.common.graph.aggregatedKey).toBe("Агрегована вихідна множина");
-    expect(res.body.uk.common.graph.aggregatedMark).toContain("темний контур");
-    expect(res.body.en.common.graph.aggregatedKey).toBe("Aggregated output set");
+    expect(res.body.uk.common.pipeline.graphTitleSet).toBe("Акумульована вихідна множина ({var})");
+    expect(res.body.en.common.pipeline.graphTitleSet).toBe("Accumulated output set ({var})");
+    expect(res.body.uk.common.graph.aggregatedKey).toBe("Акумульована вихідна множина");
+    expect(res.body.en.common.graph.aggregatedKey).toBe("Accumulated output set");
     expect(res.body.en.common.graph.collapse).toBeTruthy();
     expect(res.body.uk.common.pipeline.defuzzification).toBe("Дефазифікація");
     expect(res.body.en.common.pipeline.fuzzification).toBe("Fuzzification");
@@ -257,8 +270,11 @@ describe("E2E smoke: navigation and i18n", () => {
     expect(js.text).toContain("setupGraphExpand");
     expect(js.text).toContain('querySelector(".container")');
     expect(js.text).toContain("syncAggregatedGraphKey");
+    expect(js.text).toContain("setupHelpTips");
+    expect(js.text).toContain("data-term-tip");
     expect(css.text).toContain(".graph-expand-btn");
     expect(css.text).toContain(".graph-key-swatch-aggregated");
+    expect(css.text).toContain("[data-term-tip]");
   });
 
   test("favicon assets are served", async () => {

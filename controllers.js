@@ -78,6 +78,19 @@ function nearestSingletonTerm(singletons, value) {
   return bestTerm;
 }
 
+const trustRanges = {
+  errors: { min: 0, max: 1 },
+  connections: { min: 0, max: 200 },
+  bytes: { min: 0, max: 12 },
+};
+
+const trustSample = {
+  errors: { step: 0.01, max: 1 },
+  connections: { step: 1, max: 200 },
+  bytes: { step: 0.05, max: 12 },
+  trustIndex: { step: 1, max: 100 },
+};
+
 const securityRanges = {
   energy: { min: 0, max: 0.05 },
   strength: { min: 0, max: 40 },
@@ -218,12 +231,13 @@ function calculateTrust(inputs) {
 function trustMembershipFunctions() {
   const build = (name) => {
     const params = trustController.membershipParams[name];
+    const { step, max } = trustSample[name];
     const out = {};
     Object.entries(params).forEach(([term, cfg]) => {
       out[term] = sampleMF((x) => {
         if (cfg.type === "trapeze") return trapezoidalMF(x, ...cfg.params);
         return triangularMF(x, ...cfg.params);
-      }, 1, 100);
+      }, step, max);
     });
     return out;
   };
@@ -459,7 +473,7 @@ function intrusionMembershipFunctions() {
 
 const controllers = {
   trust: {
-    validate: (inputs) => validateRange(inputs),
+    validate: (inputs) => validateInputRanges(inputs, trustRanges),
     calculate: calculateTrust,
     membershipFunctions: trustMembershipFunctions,
   },
