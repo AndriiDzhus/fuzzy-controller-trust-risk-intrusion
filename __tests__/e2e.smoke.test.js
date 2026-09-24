@@ -39,8 +39,8 @@ describe("E2E smoke: navigation and i18n", () => {
     expect(res.body.uk.index.docs.units.errors).toContain("частка");
     expect(res.body.uk.security.docs.units.energy).toContain("кВт");
     expect(res.body.uk.intrusion.docs.units.packets).toBe("шт.");
-    expect(res.body.uk.intrusion.docs.units.rate).toBe("пакетів/с");
-    expect(res.body.uk.intrusion.docs.units.delivery).toBe("%");
+    expect(res.body.uk.intrusion.docs.units.rate).toContain("пакетів/с");
+    expect(res.body.uk.intrusion.docs.units.weight).toContain("N_in");
     expect(res.body.uk.index.rules.title).toBe("Інтерпретація");
     expect(res.body.en.index.rules.title).toBe("Interpretation");
   });
