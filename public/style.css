@@ -936,8 +936,8 @@ body.graph-expanded::after {
 
 .sticky-input-group input[type="number"] {
   grid-area: number;
-  width: 3.6rem;
-  min-width: 3.6rem;
+  width: 4.25rem;
+  min-width: 4.25rem;
   padding: 4px 6px;
   border: 2px solid #bdc3c7;
   border-radius: 7px;

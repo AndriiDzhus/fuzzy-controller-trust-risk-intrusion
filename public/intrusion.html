@@ -59,21 +59,21 @@
           <h2 class="workspace-heading" data-i18n="common.pipeline.inputs"></h2>
           <div class="input-group">
             <label for="packetsSlider" data-i18n="intrusion.inputs.packets"></label>
-            <input type="range" id="packetsSlider" min="0" max="100" step="0.1" value="50" />
-            <input type="number" id="packetsNumber" min="0" max="100" step="0.1" value="50" />
-            <span class="input-value" id="packetsValue">50.0</span>
+            <input type="range" id="packetsSlider" min="0" max="15" step="0.1" value="9.5" />
+            <input type="number" id="packetsNumber" min="0" max="15" step="0.1" value="9.5" />
+            <span class="input-value" id="packetsValue">9.5</span>
           </div>
           <div class="input-group">
             <label for="rateSlider" data-i18n="intrusion.inputs.rate"></label>
-            <input type="range" id="rateSlider" min="0" max="100" step="0.1" value="50" />
-            <input type="number" id="rateNumber" min="0" max="100" step="0.1" value="50" />
-            <span class="input-value" id="rateValue">50.0</span>
+            <input type="range" id="rateSlider" min="0" max="3000" step="1" value="15" />
+            <input type="number" id="rateNumber" min="0" max="3000" step="1" value="15" />
+            <span class="input-value" id="rateValue">15</span>
           </div>
           <div class="input-group">
-            <label for="deliverySlider" data-i18n="intrusion.inputs.delivery"></label>
-            <input type="range" id="deliverySlider" min="0" max="100" step="0.1" value="50" />
-            <input type="number" id="deliveryNumber" min="0" max="100" step="0.1" value="50" />
-            <span class="input-value" id="deliveryValue">50.0</span>
+            <label for="weightSlider" data-i18n="intrusion.inputs.weight"></label>
+            <input type="range" id="weightSlider" min="0" max="250" step="0.5" value="141.5" />
+            <input type="number" id="weightNumber" min="0" max="250" step="0.5" value="141.5" />
+            <span class="input-value" id="weightValue">141.5</span>
           </div>
         </div>
 
@@ -111,9 +111,9 @@
               <div id="rateMembership" class="membership-values"></div>
             </div>
             <div class="graph-container">
-              <h4 data-i18n="intrusion.membership.delivery"></h4>
-              <canvas id="deliveryCanvas" width="400" height="220"></canvas>
-              <div id="deliveryMembership" class="membership-values"></div>
+              <h4 data-i18n="intrusion.membership.weight"></h4>
+              <canvas id="weightCanvas" width="400" height="220"></canvas>
+              <div id="weightMembership" class="membership-values"></div>
             </div>
           </div>
         </div>

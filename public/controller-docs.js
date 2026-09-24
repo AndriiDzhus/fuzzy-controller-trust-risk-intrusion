@@ -329,75 +329,83 @@ const controllerDocs = {
     hintKey: "common.docs.gaussianHint",
     inputs: [
       {
-        symbol: "N",
+        symbol: "NP",
+        latex: "\\mathrm{NP}",
         titleKey: "intrusion.membership.packets",
         gender: "f",
-        domain: [0, 100],
+        domain: [0, 15],
         unitKey: "intrusion.docs.units.packets",
+        noteKey: "intrusion.docs.notes.packets",
         terms: [
-          { term: L, mu: "L", gaussian: { center: 0, sigma: 18 } },
-          { term: M, mu: "M", gaussian: { center: 60, sigma: 20 } },
-          { term: H, mu: "H", gaussian: { center: 100, sigma: 12 } },
+          { term: L, mu: "L", gaussian: { center: 3, denom: 12.5, centerLabel: "3.0" } },
+          { term: M, mu: "M", gaussian: { center: 9.5, denom: 4.5 } },
+          { term: H, mu: "H", gaussian: { center: 15, denom: 8 } },
         ],
       },
       {
-        symbol: "R",
+        symbol: "Rate",
+        latex: "\\mathrm{Rate}",
         titleKey: "intrusion.membership.rate",
         gender: "f",
-        domain: [0, 100],
+        domain: [0, 3000],
         unitKey: "intrusion.docs.units.rate",
+        noteKey: "intrusion.docs.notes.rate",
         terms: [
-          { term: L, mu: "L", gaussian: { center: 0, sigma: 8 } },
-          { term: M, mu: "M", gaussian: { center: 45, sigma: 24 } },
-          { term: H, mu: "H", gaussian: { center: 100, sigma: 12 } },
+          { term: L, mu: "L", gaussian: { center: 15, denom: 800 } },
+          { term: M, mu: "M", gaussian: { center: 150, denom: 5000 } },
+          { term: H, mu: "H", gaussian: { center: 1500, denom: 500000 } },
         ],
       },
       {
-        symbol: "D",
-        titleKey: "intrusion.membership.delivery",
-        gender: "f",
-        domain: [0, 100],
-        unitKey: "intrusion.docs.units.delivery",
+        symbol: "We",
+        latex: "\\mathrm{We}",
+        titleKey: "intrusion.membership.weight",
+        gender: "n",
+        domain: [0, 250],
+        unitKey: "intrusion.docs.units.weight",
+        noteKey: "intrusion.docs.notes.weight",
         terms: [
-          { term: L, mu: "L", gaussian: { center: 0, sigma: 20 } },
-          { term: M, mu: "M", gaussian: { center: 65, sigma: 16 } },
-          { term: H, mu: "H", gaussian: { center: 100, sigma: 6 } },
+          { term: L, mu: "L", gaussian: { center: 1, denom: 3200 } },
+          { term: M, mu: "M", gaussian: { center: 141.5, denom: 200 } },
+          { term: H, mu: "H", gaussian: { center: 245, denom: 2450, centerLabel: "245.0" } },
         ],
       },
     ],
     output: {
-      symbol: "I",
+      symbol: "IP",
+      latex: "\\mathrm{IP}",
       titleKey: "intrusion.membership.intrusion",
       gender: "f",
       domain: [0, 100],
       unitKey: "intrusion.docs.units.intrusion",
+      noteKey: "intrusion.docs.notes.intrusion",
       terms: [
-        { term: NONE, mu: "none", gaussian: { center: 0, sigma: 12 } },
-        { term: L, mu: "L", gaussian: { center: 35, sigma: 12 } },
-        { term: M, mu: "M", gaussian: { center: 65, sigma: 12 } },
-        { term: H, mu: "H", gaussian: { center: 100, sigma: 12 } },
+        { term: NONE, mu: "N", gaussian: { center: 0, denom: 288 } },
+        { term: L, mu: "L", gaussian: { center: 30, denom: 200 } },
+        { term: M, mu: "M", gaussian: { center: 60, denom: 288 } },
+        { term: H, mu: "H", gaussian: { center: 100, denom: 450 } },
       ],
     },
     rules: {
       columns: [
-        { key: "N", gender: "f", titleKey: "intrusion.membership.packets" },
-        { key: "R", gender: "f", titleKey: "intrusion.membership.rate" },
-        { key: "D", gender: "f", titleKey: "intrusion.membership.delivery" },
-        { key: "I", gender: "f", titleKey: "intrusion.membership.intrusion", output: true },
+        { key: "NP", gender: "f", titleKey: "intrusion.membership.packets" },
+        { key: "Rate", gender: "f", titleKey: "intrusion.membership.rate" },
+        { key: "We", gender: "n", titleKey: "intrusion.membership.weight" },
+        { key: "IP", gender: "f", titleKey: "intrusion.membership.intrusion", output: true },
       ],
       rows: [
-        [L, L, M, L],
-        [L, M, L, NONE],
-        [L, M, H, NONE],
-        [L, H, M, NONE],
+        [M, L, M, NONE],
+        [L, L, M, NONE],
+        [M, M, M, L],
         [M, L, L, M],
-        [M, M, L, M],
-        [M, M, H, L],
-        [M, H, H, L],
-        [H, L, M, H],
-        [H, M, L, H],
+        [L, M, L, M],
+        [H, L, H, M],
+        [L, H, M, M],
+        [H, H, L, H],
+        [H, H, H, H],
         [H, M, H, H],
-        [H, H, M, M],
+        [M, H, H, H],
+        [L, H, L, H],
       ],
     },
   },
@@ -425,11 +433,19 @@ function docsEscape(value) {
 }
 
 function lingLabel(term, gender = "m") {
-  if (term === NONE) return docsText("common.docs.ling.none", "—");
+  if (term === NONE) {
+    if (gender === "f") return docsText("common.docs.ling.noneF", docsText("common.docs.ling.none", "—"));
+    return docsText("common.docs.ling.none", "—");
+  }
   if (term === VL) return docsText("common.docs.ling.veryLow");
   if (term === VH) return docsText("common.docs.ling.veryHigh");
   const suffix = { f: "F", n: "N", m: "M" }[gender] || "M";
   return docsText(`common.docs.ling.${term}${suffix}`, term);
+}
+
+function latexVar(variable) {
+  if (variable && variable.latex) return variable.latex;
+  return variable?.symbol || variable;
 }
 
 function latexMu(mu) {
@@ -473,11 +489,14 @@ function wrapKatex(tex, displayMode = true) {
   return `<div class="docs-katex">${renderKatex(tex, displayMode)}</div>`;
 }
 
-function renderGaussian(symbol, term, punct = "") {
-  const { center, sigma } = term.gaussian;
-  const deviation = center === 0 ? symbol : `${symbol} - ${center}`;
+function renderGaussian(variable, term, punct = "") {
+  const symbol = latexVar(variable);
+  const { center, denom, sigma, centerLabel } = term.gaussian;
+  const spread = denom ?? 2 * sigma * sigma;
+  const cDisp = centerLabel ?? center;
+  const numer = Number(center) === 0 ? `${symbol}^{2}` : `(${symbol} - ${cDisp})^{2}`;
   return wrapKatex(
-    `\\mu_{${latexMu(term.mu)}}(${symbol}) = \\exp\\!\\left(-\\dfrac{(${deviation})^{2}}{2 \\cdot ${sigma}^{2}}\\right)${punct}`
+    `\\mu_{${latexMu(term.mu)}}(${symbol}) = e^{-\\dfrac{${numer}}{${spread}}}${punct}`
   );
 }
 
@@ -502,7 +521,7 @@ function renderSingleton(symbol, term) {
 function renderTermBlock(variable, term, punct = "") {
   const color = docsTermColor[term.term] || "#3498db";
   let body = "";
-  if (term.gaussian) body = renderGaussian(variable.symbol, term, punct);
+  if (term.gaussian) body = renderGaussian(variable, term, punct);
   else if (term.singleton !== undefined) body = renderSingleton(variable.symbol, term);
   else body = renderPiecewise(variable.symbol, term);
 
@@ -519,9 +538,10 @@ function renderTermBlock(variable, term, punct = "") {
 
 function renderDomain(variable) {
   const sep = (window.i18nHelper?.currentLang || "uk") === "en" ? "," : ";";
+  const symbol = latexVar(variable);
   const tex = Array.isArray(variable.domainValues)
-    ? `${variable.symbol} \\in \\{ ${variable.domainValues.join(",\\ ") } \\}`
-    : `${variable.symbol} \\in [${variable.domain?.[0] ?? 0}${sep} ${variable.domain?.[1] ?? 100}]`;
+    ? `${symbol} \\in \\{ ${variable.domainValues.join(",\\ ") } \\}`
+    : `${symbol} \\in [${variable.domain?.[0] ?? 0}${sep} ${variable.domain?.[1] ?? 100}]`;
 
   const unit = variable.unitKey ? docsText(variable.unitKey) : "";
   const note = variable.noteKey ? docsText(variable.noteKey) : "";

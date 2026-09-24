@@ -31,9 +31,12 @@ function resolveXMax(options = {}) {
 function xTickValues(xMax) {
   if (Math.abs(xMax - 100) < 1e-9) return [0, 20, 40, 60, 80, 100];
   if (Math.abs(xMax - 200) < 1e-9) return [0, 40, 80, 120, 160, 200];
+  if (Math.abs(xMax - 250) < 1e-9) return [0, 50, 100, 150, 200, 250];
   if (Math.abs(xMax - 40) < 1e-9) return [0, 10, 20, 30, 40];
+  if (Math.abs(xMax - 15) < 1e-9) return [0, 3, 6, 9, 12, 15];
   if (Math.abs(xMax - 12) < 1e-9) return [0, 2, 4, 6, 8, 10, 12];
   if (Math.abs(xMax - 10) < 1e-9) return [0, 2, 4, 6, 8, 10];
+  if (Math.abs(xMax - 3000) < 1e-9) return [0, 500, 1000, 1500, 2000, 2500, 3000];
   if (Math.abs(xMax - 1) < 1e-9) return [0, 0.2, 0.4, 0.6, 0.8, 1];
   const steps = xMax <= 0.1 ? 5 : 4;
   return Array.from({ length: steps + 1 }, (_, i) => Number(((xMax * i) / steps).toFixed(10)));
@@ -426,7 +429,7 @@ function formatCursorX(model, x) {
 
 function snapCursorX(x, model) {
   const xMax = resolveXMax(model);
-  const snapStep = xMax <= 0.1 ? 0.001 : xMax <= 10 ? 0.01 : 0.1;
+  const snapStep = xMax <= 0.1 ? 0.001 : xMax <= 10 ? 0.01 : xMax >= 500 ? 1 : 0.1;
   const candidates = [];
   if (Number.isFinite(Number(model.currentValue))) candidates.push(Number(model.currentValue));
   if (Number.isFinite(Number(model.resultValue))) candidates.push(Number(model.resultValue));
