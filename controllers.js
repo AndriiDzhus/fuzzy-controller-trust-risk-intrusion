@@ -133,42 +133,55 @@ const securityDef = {
   },
 };
 
+const intrusionRanges = {
+  packets: { min: 0, max: 15 },
+  rate: { min: 0, max: 3000 },
+  weight: { min: 0, max: 250 },
+};
+
+const intrusionSample = {
+  packets: { step: 0.05, max: 15 },
+  rate: { step: 5, max: 3000 },
+  weight: { step: 0.5, max: 250 },
+  intrusion: { step: 0.5, max: 100 },
+};
+
 const intrusionDef = {
   rules: [
-    { N: "low", R: "low", D: "medium", out: "low" },
-    { N: "low", R: "medium", D: "low", out: "none" },
-    { N: "low", R: "medium", D: "high", out: "none" },
-    { N: "low", R: "high", D: "medium", out: "none" },
-    { N: "medium", R: "low", D: "low", out: "medium" },
-    { N: "medium", R: "medium", D: "low", out: "medium" },
-    { N: "medium", R: "medium", D: "high", out: "low" },
-    { N: "medium", R: "high", D: "high", out: "low" },
-    { N: "high", R: "low", D: "medium", out: "high" },
-    { N: "high", R: "medium", D: "low", out: "high" },
-    { N: "high", R: "medium", D: "high", out: "high" },
-    { N: "high", R: "high", D: "medium", out: "medium" },
+    { NP: "medium", Rate: "low", We: "medium", out: "none" },
+    { NP: "low", Rate: "low", We: "medium", out: "none" },
+    { NP: "medium", Rate: "medium", We: "medium", out: "low" },
+    { NP: "medium", Rate: "low", We: "low", out: "medium" },
+    { NP: "low", Rate: "medium", We: "low", out: "medium" },
+    { NP: "high", Rate: "low", We: "high", out: "medium" },
+    { NP: "low", Rate: "high", We: "medium", out: "medium" },
+    { NP: "high", Rate: "high", We: "low", out: "high" },
+    { NP: "high", Rate: "high", We: "high", out: "high" },
+    { NP: "high", Rate: "medium", We: "high", out: "high" },
+    { NP: "medium", Rate: "high", We: "high", out: "high" },
+    { NP: "low", Rate: "high", We: "low", out: "high" },
   ],
   mfs: {
-    N: {
-      low: (x) => gaussianMF(x, 0, 18),
-      medium: (x) => gaussianMF(x, 60, 20),
-      high: (x) => gaussianMF(x, 100, 12),
+    NP: {
+      low: (x) => gaussianMF(x, 3, 2.5),
+      medium: (x) => gaussianMF(x, 9.5, 1.5),
+      high: (x) => gaussianMF(x, 15, 2),
     },
-    R: {
-      low: (x) => gaussianMF(x, 0, 8),
-      medium: (x) => gaussianMF(x, 45, 24),
-      high: (x) => gaussianMF(x, 100, 12),
+    Rate: {
+      low: (x) => gaussianMF(x, 15, 20),
+      medium: (x) => gaussianMF(x, 150, 50),
+      high: (x) => gaussianMF(x, 1500, 500),
     },
-    D: {
-      low: (x) => gaussianMF(x, 0, 20),
-      medium: (x) => gaussianMF(x, 65, 16),
-      high: (x) => gaussianMF(x, 100, 6),
+    We: {
+      low: (x) => gaussianMF(x, 1, 40),
+      medium: (x) => gaussianMF(x, 141.5, 10),
+      high: (x) => gaussianMF(x, 245, 35),
     },
-    I: {
+    IP: {
       none: (x) => gaussianMF(x, 0, 12),
-      low: (x) => gaussianMF(x, 35, 12),
-      medium: (x) => gaussianMF(x, 65, 12),
-      high: (x) => gaussianMF(x, 100, 12),
+      low: (x) => gaussianMF(x, 30, 10),
+      medium: (x) => gaussianMF(x, 60, 12),
+      high: (x) => gaussianMF(x, 100, 15),
     },
   },
 };
@@ -192,10 +205,6 @@ function evaluateAndRules(rules, maps) {
       alpha: roundMu(Math.min(...conditions.map((item) => item.mu))),
     };
   });
-}
-
-function validateRange(values) {
-  return Object.values(values).every((v) => Number.isFinite(v) && v >= 0 && v <= 100);
 }
 
 function validateInputRanges(inputs, ranges) {
@@ -365,19 +374,19 @@ function securityMembershipFunctions() {
 function calculateIntrusion(inputs) {
   const fuzzy = {
     packets: {
-      low: intrusionDef.mfs.N.low(inputs.packets),
-      medium: intrusionDef.mfs.N.medium(inputs.packets),
-      high: intrusionDef.mfs.N.high(inputs.packets),
+      low: intrusionDef.mfs.NP.low(inputs.packets),
+      medium: intrusionDef.mfs.NP.medium(inputs.packets),
+      high: intrusionDef.mfs.NP.high(inputs.packets),
     },
     rate: {
-      low: intrusionDef.mfs.R.low(inputs.rate),
-      medium: intrusionDef.mfs.R.medium(inputs.rate),
-      high: intrusionDef.mfs.R.high(inputs.rate),
+      low: intrusionDef.mfs.Rate.low(inputs.rate),
+      medium: intrusionDef.mfs.Rate.medium(inputs.rate),
+      high: intrusionDef.mfs.Rate.high(inputs.rate),
     },
-    delivery: {
-      low: intrusionDef.mfs.D.low(inputs.delivery),
-      medium: intrusionDef.mfs.D.medium(inputs.delivery),
-      high: intrusionDef.mfs.D.high(inputs.delivery),
+    weight: {
+      low: intrusionDef.mfs.We.low(inputs.weight),
+      medium: intrusionDef.mfs.We.medium(inputs.weight),
+      high: intrusionDef.mfs.We.high(inputs.weight),
     },
   };
 
@@ -385,17 +394,17 @@ function calculateIntrusion(inputs) {
 
   intrusionDef.rules.forEach((rule) => {
     const alpha = Math.min(
-      fuzzy.packets[rule.N],
-      fuzzy.rate[rule.R],
-      fuzzy.delivery[rule.D]
+      fuzzy.packets[rule.NP],
+      fuzzy.rate[rule.Rate],
+      fuzzy.weight[rule.We]
     );
     ruleOutputs[rule.out] = Math.max(ruleOutputs[rule.out], alpha);
   });
 
   const ruleEvaluations = evaluateAndRules(intrusionDef.rules, [
-    { key: "packets", symbol: "N", field: "N", terms: fuzzy.packets },
-    { key: "rate", symbol: "R", field: "R", terms: fuzzy.rate },
-    { key: "delivery", symbol: "D", field: "D", terms: fuzzy.delivery },
+    { key: "packets", symbol: "NP", field: "NP", terms: fuzzy.packets },
+    { key: "rate", symbol: "Rate", field: "Rate", terms: fuzzy.rate },
+    { key: "weight", symbol: "We", field: "We", terms: fuzzy.weight },
   ]);
 
   let numerator = 0;
@@ -404,7 +413,7 @@ function calculateIntrusion(inputs) {
   for (let x = 0; x <= 100; x += 0.2) {
     let mu = 0;
     Object.entries(ruleOutputs).forEach(([term, alpha]) => {
-      mu = Math.max(mu, Math.min(alpha, intrusionDef.mfs.I[term](x)));
+      mu = Math.max(mu, Math.min(alpha, intrusionDef.mfs.IP[term](x)));
     });
     aggregatedOutput.push({ x, y: mu });
     numerator += x * mu;
@@ -414,16 +423,16 @@ function calculateIntrusion(inputs) {
   const value = denominator === 0 ? 0 : numerator / denominator;
 
   const outputMemberships = {
-    none: intrusionDef.mfs.I.none(value),
-    low: intrusionDef.mfs.I.low(value),
-    medium: intrusionDef.mfs.I.medium(value),
-    high: intrusionDef.mfs.I.high(value),
+    none: intrusionDef.mfs.IP.none(value),
+    low: intrusionDef.mfs.IP.low(value),
+    medium: intrusionDef.mfs.IP.medium(value),
+    high: intrusionDef.mfs.IP.high(value),
   };
 
   const membershipData = {
     packets: fuzzy.packets,
     rate: fuzzy.rate,
-    delivery: fuzzy.delivery,
+    weight: fuzzy.weight,
     intrusion: outputMemberships,
   };
 
@@ -438,34 +447,40 @@ function calculateIntrusion(inputs) {
 }
 
 function intrusionMembershipFunctions() {
+  const sample = (name, fn) => sampleMF(fn, intrusionSample[name].step, intrusionSample[name].max);
   return {
     inputs: {
       packets: {
-        low: sampleMF(intrusionDef.mfs.N.low, 0.5),
-        medium: sampleMF(intrusionDef.mfs.N.medium, 0.5),
-        high: sampleMF(intrusionDef.mfs.N.high, 0.5),
+        low: sample("packets", intrusionDef.mfs.NP.low),
+        medium: sample("packets", intrusionDef.mfs.NP.medium),
+        high: sample("packets", intrusionDef.mfs.NP.high),
       },
       rate: {
-        low: sampleMF(intrusionDef.mfs.R.low, 0.5),
-        medium: sampleMF(intrusionDef.mfs.R.medium, 0.5),
-        high: sampleMF(intrusionDef.mfs.R.high, 0.5),
+        low: sample("rate", intrusionDef.mfs.Rate.low),
+        medium: sample("rate", intrusionDef.mfs.Rate.medium),
+        high: sample("rate", intrusionDef.mfs.Rate.high),
       },
-      delivery: {
-        low: sampleMF(intrusionDef.mfs.D.low, 0.5),
-        medium: sampleMF(intrusionDef.mfs.D.medium, 0.5),
-        high: sampleMF(intrusionDef.mfs.D.high, 0.5),
+      weight: {
+        low: sample("weight", intrusionDef.mfs.We.low),
+        medium: sample("weight", intrusionDef.mfs.We.medium),
+        high: sample("weight", intrusionDef.mfs.We.high),
       },
     },
     output: {
       intrusion: {
-        none: sampleMF(intrusionDef.mfs.I.none, 0.5),
-        low: sampleMF(intrusionDef.mfs.I.low, 0.5),
-        medium: sampleMF(intrusionDef.mfs.I.medium, 0.5),
-        high: sampleMF(intrusionDef.mfs.I.high, 0.5),
+        none: sample("intrusion", intrusionDef.mfs.IP.none),
+        low: sample("intrusion", intrusionDef.mfs.IP.low),
+        medium: sample("intrusion", intrusionDef.mfs.IP.medium),
+        high: sample("intrusion", intrusionDef.mfs.IP.high),
       },
     },
     meta: {
-      inputKeys: ["packets", "rate", "delivery"],
+      inputKeys: ["packets", "rate", "weight"],
+      inputDomains: {
+        packets: { min: 0, max: 15 },
+        rate: { min: 0, max: 3000 },
+        weight: { min: 0, max: 250 },
+      },
       outputKey: "intrusion",
     },
   };
@@ -483,7 +498,7 @@ const controllers = {
     membershipFunctions: securityMembershipFunctions,
   },
   intrusion: {
-    validate: (inputs) => validateRange(inputs),
+    validate: (inputs) => validateInputRanges(inputs, intrusionRanges),
     calculate: calculateIntrusion,
     membershipFunctions: intrusionMembershipFunctions,
   },

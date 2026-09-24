@@ -50,7 +50,7 @@ describe("Unified controllers API", () => {
   test("intrusion calculate endpoint works", async () => {
     const response = await request(app)
       .post("/api/controllers/intrusion/calculate")
-      .send({ packets: 80, rate: 35, delivery: 60 });
+      .send({ packets: 9.5, rate: 15, weight: 141.5 });
 
     expect(response.status).toBe(200);
     expect(response.body.value).toBeGreaterThanOrEqual(0);

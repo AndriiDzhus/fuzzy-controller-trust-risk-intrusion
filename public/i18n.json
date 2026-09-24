@@ -60,6 +60,9 @@
       "graph": {
         "expand": "Збільшити графік",
         "collapse": "Згорнути графік",
+        "resetZoom": "Скинути масштаб",
+        "zoomMin": "Ліва межа осі X",
+        "zoomMax": "Права межа осі X",
         "aggregatedKey": "Акумульована вихідна множина",
         "aggregatedMark": "темний контур (max зрізаних термів)"
       },
@@ -115,7 +118,7 @@
         "units": "Одиниці",
         "ifThenHint": "Кожне правило: якщо всі вхідні терми істинні одночасно, вихід набуває зазначеного терму.",
         "piecewiseHint": "Кусково-лінійні функції приналежності на області визначення кожної величини.",
-        "gaussianHint": "Гаусівські функції: μ(x) = exp(−(x − c)² / (2σ²)), де c — центр, σ — розмах.",
+        "gaussianHint": "Гаусівські функції: μ(x) = exp(−(x − c)² / v), де c — центр терма, v — параметр розмаху.",
         "singletonHint": "Вихід задано синглтонами (Sugeno): кожен терм відповідає одному чіткому значенню SR.",
         "ling": {
           "lowF": "Мала",
@@ -129,7 +132,8 @@
           "highM": "Великий",
           "veryLow": "Дуже малий",
           "veryHigh": "Дуже великий",
-          "none": "Немає"
+          "none": "Немає",
+          "noneF": "Відсутня"
         }
       },
       "languages": {
@@ -295,62 +299,68 @@
       "pageTitle": "Вторгнення | Платформа нечіткого виводу",
       "headline": "Платформа нечіткого виводу для оцінки вірогідності вторгнення",
       "title": "Вірогідність вторгнення",
-      "stickyTitle": "Оцінка вірогідності вторгнення (I)",
+      "stickyTitle": "Оцінка вірогідності вторгнення (IP)",
       "docs": {
         "formulasTitle": "Вторгнення: функції приналежності",
         "rulesTitle": "Вторгнення: база правил",
         "units": {
           "packets": "шт.",
-          "rate": "пакетів/с",
-          "delivery": "%",
+          "rate": "пакетів/с (pps)",
+          "weight": "N_in × N_out",
           "intrusion": "індекс 0–100"
+        },
+        "notes": {
+          "packets": "Агрегована кількість пакетів у мережевому потоці CICIoT2023. Під час атак значення зазвичай зростає або поводиться нетипово.",
+          "rate": "Швидкість передавання пакетів у потоці. Під час DoS/DDoS різко зростає порівняно з нормальним IoT-трафіком.",
+          "weight": "Добуток кількості вхідних і вихідних пакетів у потоці; відображає інтенсивність і симетрію обміну. Аномально високі значення характерні для DDoS, DoS та сканування мережі (Reconnaissance).",
+          "intrusion": "Вірогідність вторгнення для IoT-пристрою: наскільки імовірно, що пристрій є об’єктом атаки або вже зазнав вторгнення."
         }
       },
       "sticky": {
         "inputs": {
           "packets": "Пакети",
           "rate": "Швидкість",
-          "delivery": "Доставка"
+          "weight": "Вага"
         }
       },
-      "description": "Оцінка вірогідності вторгнення (I) на основі числа пакетів (N), швидкості передавання (R) та коефіцієнта доставки (D).",
+      "description": "Оцінка вірогідності вторгнення (IP) на основі кількості пакетів (NP), швидкості передавання (Rate) та ваги потоку (We) з датасету CICIoT2023.",
       "inputs": {
-        "packets": "Число пакетів (N) (0–100 шт.):",
-        "rate": "Швидкість передавання (R) (0–100 пакетів/с):",
-        "delivery": "Коефіцієнт доставки (D) (0–100 %):"
+        "packets": "Кількість пакетів (NP) (0–15 шт.):",
+        "rate": "Швидкість передавання (Rate) (0–3000 pps):",
+        "weight": "Вага / навантаження (We) (0–250):"
       },
       "results": {
         "title": "Результат обчислення",
-        "value": "Значення вторгнення (I):",
+        "value": "Значення вторгнення (IP):",
         "level": "Рівень вторгнення:"
       },
       "membership": {
         "title": "Значення приналежності",
-        "packets": "Число пакетів (N)",
-        "rate": "Швидкість передавання (R)",
-        "delivery": "Коефіцієнт доставки (D)",
-        "intrusion": "Вторгнення (I)",
-        "aggregated": "Акумульована вихідна множина (I)"
+        "packets": "Кількість пакетів (NP)",
+        "rate": "Швидкість передавання (Rate)",
+        "weight": "Вага / навантаження (We)",
+        "intrusion": "Вірогідність вторгнення (IP)",
+        "aggregated": "Акумульована вихідна множина (IP)"
       },
       "graphs": {
         "title": "Функції приналежності",
         "axes": {
-          "packetsY": "μ(N)",
-          "packetsX": "N, шт.",
-          "rateY": "μ(R)",
-          "rateX": "R, пакетів/с",
-          "deliveryY": "μ(D)",
-          "deliveryX": "D, %",
-          "intrusionY": "μ(I)",
-          "intrusionX": "I"
+          "packetsY": "μ(NP)",
+          "packetsX": "NP, шт.",
+          "rateY": "μ(Rate)",
+          "rateX": "Rate, pps",
+          "weightY": "μ(We)",
+          "weightX": "We",
+          "intrusionY": "μ(IP)",
+          "intrusionX": "IP"
         }
       },
       "rules": {
         "title": "Інтерпретація",
-        "description": "Система використовує 12 правил нечіткого виводу Mamdani: N (пакети, шт.), R (швидкість потоку), D (коефіцієнт доставки) → I (вторгнення). Усі величини на шкалі 0–100.",
-        "category1": "Мала кількість пакетів (N): низька вірогідність вторгнення в більшості випадків.",
-        "category2": "Середня кількість пакетів (N): рівень вторгнення залежить від швидкості передавання та коефіцієнта доставки.",
-        "category3": "Велика кількість пакетів (N): висока вірогідність вторгнення, особливо при високій швидкості та низькій доставці."
+        "description": "Система використовує 12 правил нечіткого виводу Mamdani: NP (кількість пакетів, шт.), Rate (pps), We (вага потоку) → IP (вірогідність вторгнення).",
+        "category1": "Мала кількість пакетів (NP): за малої швидкості вторгнення відсутнє; за великої Rate — середнє або велике.",
+        "category2": "Середня кількість пакетів (NP): рівень залежить від Rate і We; велика швидкість з великою вагою дає велике IP.",
+        "category3": "Велика кількість пакетів (NP): переважно велика вірогідність вторгнення; за малої Rate — середня."
       }
     }
   },
@@ -415,6 +425,9 @@
       "graph": {
         "expand": "Enlarge graph",
         "collapse": "Collapse graph",
+        "resetZoom": "Reset scale",
+        "zoomMin": "Left X-axis bound",
+        "zoomMax": "Right X-axis bound",
         "aggregatedKey": "Accumulated output set",
         "aggregatedMark": "dark outline (max of clipped terms)"
       },
@@ -470,7 +483,7 @@
         "units": "Units",
         "ifThenHint": "Each rule: if all input terms hold at once, the output takes the listed term.",
         "piecewiseHint": "Piecewise-linear membership functions on each variable's domain.",
-        "gaussianHint": "Gaussian functions: μ(x) = exp(−(x − c)² / (2σ²)), where c is the center and σ is the spread.",
+        "gaussianHint": "Gaussian functions: μ(x) = exp(−(x − c)² / v), where c is the term center and v is the spread parameter.",
         "singletonHint": "The output uses Sugeno singletons: each term maps to one crisp SR value.",
         "ling": {
           "lowF": "Small",
@@ -484,7 +497,8 @@
           "highM": "Large",
           "veryLow": "Very small",
           "veryHigh": "Very large",
-          "none": "None"
+          "none": "None",
+          "noneF": "Absent"
         }
       },
       "languages": {
@@ -650,62 +664,68 @@
       "pageTitle": "Intrusion | Fuzzy Security Platform",
       "headline": "Fuzzy inference platform for intrusion probability assessment",
       "title": "Intrusion probability",
-      "stickyTitle": "Intrusion probability assessment (I)",
+      "stickyTitle": "Intrusion probability assessment (IP)",
       "docs": {
         "formulasTitle": "Intrusion: membership functions",
         "rulesTitle": "Intrusion: rule base",
         "units": {
           "packets": "packets",
-          "rate": "packets/s",
-          "delivery": "%",
+          "rate": "packets/s (pps)",
+          "weight": "N_in × N_out",
           "intrusion": "index 0–100"
+        },
+        "notes": {
+          "packets": "Aggregated packet count in a CICIoT2023 network flow. During attacks the value typically rises or behaves unusually.",
+          "rate": "Packet transmission rate in the flow. Under DoS/DDoS it rises sharply compared with normal IoT traffic.",
+          "weight": "Product of inbound and outbound packets in a flow; measures exchange intensity and symmetry. Abnormally high values are typical of DDoS, DoS, and network reconnaissance.",
+          "intrusion": "Intrusion probability for an IoT device: how likely it is that the device is under attack or has already been compromised."
         }
       },
       "sticky": {
         "inputs": {
           "packets": "Packets",
           "rate": "Rate",
-          "delivery": "Delivery"
+          "weight": "Weight"
         }
       },
-      "description": "Evaluates intrusion probability (I) based on packet count (N), transmission rate (R), and delivery coefficient (D).",
+      "description": "Evaluates intrusion probability (IP) from packet count (NP), transmission rate (Rate), and flow weight (We) in the CICIoT2023 dataset.",
       "inputs": {
-        "packets": "Packet Count (N) (0–100 packets):",
-        "rate": "Transmission Rate (R) (0–100 packets/s):",
-        "delivery": "Delivery Coefficient (D) (0–100 %):"
+        "packets": "Packet count (NP) (0–15 packets):",
+        "rate": "Transmission rate (Rate) (0–3000 pps):",
+        "weight": "Weight / load (We) (0–250):"
       },
       "results": {
         "title": "Calculation Result",
-        "value": "Intrusion value (I):",
+        "value": "Intrusion value (IP):",
         "level": "Intrusion level:"
       },
       "membership": {
         "title": "Membership Values",
-        "packets": "Packet Count (N)",
-        "rate": "Transmission Rate (R)",
-        "delivery": "Delivery Coefficient (D)",
-        "intrusion": "Intrusion (I)",
-        "aggregated": "Accumulated output set (I)"
+        "packets": "Packet count (NP)",
+        "rate": "Transmission rate (Rate)",
+        "weight": "Weight / load (We)",
+        "intrusion": "Intrusion probability (IP)",
+        "aggregated": "Accumulated output set (IP)"
       },
       "graphs": {
         "title": "Membership Functions",
         "axes": {
-          "packetsY": "μ(N)",
-          "packetsX": "N, packets",
-          "rateY": "μ(R)",
-          "rateX": "R, packets/s",
-          "deliveryY": "μ(D)",
-          "deliveryX": "D, %",
-          "intrusionY": "μ(I)",
-          "intrusionX": "I"
+          "packetsY": "μ(NP)",
+          "packetsX": "NP, packets",
+          "rateY": "μ(Rate)",
+          "rateX": "Rate, pps",
+          "weightY": "μ(We)",
+          "weightX": "We",
+          "intrusionY": "μ(IP)",
+          "intrusionX": "IP"
         }
       },
       "rules": {
         "title": "Interpretation",
-        "description": "The system uses 12 Mamdani rules: N (packets), R (flow rate), D (delivery coefficient) → I (intrusion). All quantities use the 0–100 scale.",
-        "category1": "Low packet count (N): low intrusion probability in most cases.",
-        "category2": "Medium packet count (N): intrusion level depends on transmission rate and delivery coefficient.",
-        "category3": "High packet count (N): high intrusion probability, especially with high rate and low delivery."
+        "description": "The system uses 12 Mamdani rules: NP (packet count), Rate (pps), We (flow weight) → IP (intrusion probability).",
+        "category1": "Low packet count (NP): intrusion is absent at low rate; medium or high when Rate is high.",
+        "category2": "Medium packet count (NP): the level depends on Rate and We; high rate with high weight yields high IP.",
+        "category3": "High packet count (NP): intrusion probability is mostly high; medium when Rate is low."
       }
     }
   }

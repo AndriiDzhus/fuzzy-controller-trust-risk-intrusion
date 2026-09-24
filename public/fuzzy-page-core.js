@@ -1,5 +1,3 @@
-const graphPalette = ["#e74c3c", "#3498db", "#27ae60", "#8e44ad", "#1abc9c", "#f39c12"];
-
 const INPUTS_STORAGE_KEY = "fuzzyControllerInputs";
 
 function inputSpecMeta(spec = {}) {
@@ -23,38 +21,154 @@ function formatInputValue(value, spec = {}) {
   return formatNumber(value, { minimumFractionDigits: digits, maximumFractionDigits: digits });
 }
 
+const canvasXView = new WeakMap();
+
 function resolveXMax(options = {}) {
   const xMax = Number(options.xMax);
   return Number.isFinite(xMax) && xMax > 0 ? xMax : 100;
 }
 
-function xTickValues(xMax) {
-  if (Math.abs(xMax - 100) < 1e-9) return [0, 20, 40, 60, 80, 100];
-  if (Math.abs(xMax - 200) < 1e-9) return [0, 40, 80, 120, 160, 200];
-  if (Math.abs(xMax - 40) < 1e-9) return [0, 10, 20, 30, 40];
-  if (Math.abs(xMax - 12) < 1e-9) return [0, 2, 4, 6, 8, 10, 12];
-  if (Math.abs(xMax - 10) < 1e-9) return [0, 2, 4, 6, 8, 10];
-  if (Math.abs(xMax - 1) < 1e-9) return [0, 0.2, 0.4, 0.6, 0.8, 1];
-  const steps = xMax <= 0.1 ? 5 : 4;
-  return Array.from({ length: steps + 1 }, (_, i) => Number(((xMax * i) / steps).toFixed(10)));
+function xZoomStep(domainMax) {
+  if (domainMax <= 0.05) return 0.001;
+  if (domainMax <= 1) return 0.05;
+  if (domainMax <= 15) return 0.5;
+  if (domainMax <= 40) return 1;
+  if (domainMax <= 100) return 5;
+  if (domainMax <= 250) return 10;
+  return 50;
 }
 
-function formatAxisTick(tick, xMax) {
-  if (xMax <= 0.1) return formatNumber(tick, { minimumFractionDigits: 2, maximumFractionDigits: 3 });
-  if (Math.abs(xMax - 1) < 1e-9) return formatNumber(tick, { minimumFractionDigits: 1, maximumFractionDigits: 1 });
-  if (xMax < 20) return formatNumber(tick, { maximumFractionDigits: 1 });
+function minXViewSpan(domainMax) {
+  const step = xZoomStep(domainMax);
+  return Math.min(domainMax, Math.max(step * 2, Number((domainMax * 0.04).toFixed(10))));
+}
+
+function snapXViewValue(value, domainMax) {
+  const step = xZoomStep(domainMax);
+  return Number((Math.round(value / step) * step).toFixed(10));
+}
+
+function readCanvasXView(canvas, domainMax) {
+  const stored = canvas ? canvasXView.get(canvas) : null;
+  if (!stored) return { viewMin: 0, viewMax: domainMax };
+  return { viewMin: stored.viewMin, viewMax: stored.viewMax };
+}
+
+function isXViewZoomed(view, domainMax) {
+  return view.viewMin > 1e-12 || domainMax - view.viewMax > 1e-12;
+}
+
+function clearCanvasXView(canvas) {
+  if (canvas) canvasXView.delete(canvas);
+}
+
+function writeCanvasXView(canvas, viewMin, viewMax, domainMax) {
+  const next = { viewMin, viewMax };
+  if (!isXViewZoomed(next, domainMax)) canvasXView.delete(canvas);
+  else canvasXView.set(canvas, next);
+}
+
+function resolveXView(options = {}, canvas = null) {
+  const domainMax = resolveXMax(options);
+  const stored = readCanvasXView(canvas, domainMax);
+  if (canvas) canvas.dataset.xDomainMax = String(domainMax);
+  return {
+    xMin: stored.viewMin,
+    xMax: stored.viewMax,
+    domainMax,
+    domainMin: 0,
+  };
+}
+
+function plotXRange(view) {
+  if (view && typeof view === "object") {
+    const xMin = Number.isFinite(Number(view.xMin)) ? Number(view.xMin) : 0;
+    const xMax = Number.isFinite(Number(view.xMax)) ? Number(view.xMax) : 100;
+    return { xMin, xMax };
+  }
+  const xMax = Number.isFinite(Number(view)) && Number(view) > 0 ? Number(view) : 100;
+  return { xMin: 0, xMax };
+}
+
+function inXView(x, view) {
+  const { xMin, xMax } = plotXRange(view);
+  return Number(x) >= xMin - 1e-9 && Number(x) <= xMax + 1e-9;
+}
+
+function knownDomainTicks(xMax) {
+  if (Math.abs(xMax - 100) < 1e-9) return [0, 20, 40, 60, 80, 100];
+  if (Math.abs(xMax - 200) < 1e-9) return [0, 40, 80, 120, 160, 200];
+  if (Math.abs(xMax - 250) < 1e-9) return [0, 50, 100, 150, 200, 250];
+  if (Math.abs(xMax - 40) < 1e-9) return [0, 10, 20, 30, 40];
+  if (Math.abs(xMax - 15) < 1e-9) return [0, 3, 6, 9, 12, 15];
+  if (Math.abs(xMax - 12) < 1e-9) return [0, 2, 4, 6, 8, 10, 12];
+  if (Math.abs(xMax - 10) < 1e-9) return [0, 2, 4, 6, 8, 10];
+  if (Math.abs(xMax - 3000) < 1e-9) return [0, 500, 1000, 1500, 2000, 2500, 3000];
+  if (Math.abs(xMax - 1) < 1e-9) return [0, 0.2, 0.4, 0.6, 0.8, 1];
+  return null;
+}
+
+function niceXTicks(xMin, xMax) {
+  const span = xMax - xMin;
+  if (span <= 0) return [xMin, xMax];
+  const raw = span / 5;
+  const mag = Math.pow(10, Math.floor(Math.log10(raw || 1e-12)));
+  const n = raw / mag;
+  const step = n >= 5 ? 5 * mag : n >= 2 ? 2 * mag : mag;
+  const start = Math.ceil((xMin - 1e-12) / step) * step;
+  const ticks = [];
+  for (let t = start; t <= xMax + step * 1e-9; t += step) {
+    ticks.push(Number(t.toFixed(10)));
+  }
+  if (!ticks.length || Math.abs(ticks[0] - xMin) > 1e-9) ticks.unshift(xMin);
+  if (Math.abs(ticks[ticks.length - 1] - xMax) > 1e-9) ticks.push(xMax);
+  return ticks;
+}
+
+function xTickValues(view) {
+  const { xMin, xMax } = plotXRange(view);
+  const domainMax = (view && typeof view === "object" && Number(view.domainMax)) || xMax;
+  const unzoomed = Math.abs(xMin) < 1e-12 && Math.abs(xMax - domainMax) < 1e-9;
+  if (unzoomed) {
+    const known = knownDomainTicks(xMax);
+    if (known) return known;
+    const steps = xMax <= 0.1 ? 5 : 4;
+    return Array.from({ length: steps + 1 }, (_, i) => Number(((xMax * i) / steps).toFixed(10)));
+  }
+  return niceXTicks(xMin, xMax);
+}
+
+function viewSpan(view) {
+  const { xMin, xMax } = plotXRange(view);
+  return xMax - xMin;
+}
+
+function formatAxisTick(tick, view) {
+  const span = viewSpan(view);
+  if (span <= 0.1) return formatNumber(tick, { minimumFractionDigits: 2, maximumFractionDigits: 3 });
+  if (span <= 1) return formatNumber(tick, { minimumFractionDigits: 1, maximumFractionDigits: 2 });
+  if (span < 20) return formatNumber(tick, { maximumFractionDigits: 1 });
   return formatNumber(tick, { maximumFractionDigits: 0 });
 }
 
-function xFormatOptions(xMax) {
-  if (xMax <= 0.1) return { minimumFractionDigits: 3, maximumFractionDigits: 3 };
-  if (Math.abs(xMax - 1) < 1e-9) return { minimumFractionDigits: 2, maximumFractionDigits: 2 };
-  if (xMax <= 12) return { minimumFractionDigits: 1, maximumFractionDigits: 2 };
+function xFormatOptions(view) {
+  const span = viewSpan(view);
+  if (span <= 0.1) return { minimumFractionDigits: 3, maximumFractionDigits: 3 };
+  if (span <= 1) return { minimumFractionDigits: 2, maximumFractionDigits: 2 };
+  if (span <= 12) return { minimumFractionDigits: 1, maximumFractionDigits: 2 };
   return { minimumFractionDigits: 0, maximumFractionDigits: 1 };
 }
 
-function toPlotX(x, width, pad, xMax) {
-  return pad + (x / xMax) * (width - 2 * pad);
+function toPlotX(x, width, pad, view) {
+  const { xMin, xMax } = plotXRange(view);
+  const span = xMax - xMin || 1;
+  return pad + ((x - xMin) / span) * (width - 2 * pad);
+}
+
+function clipToPlot(ctx, width, height, pad) {
+  ctx.beginPath();
+  ctx.rect(pad, pad, width - 2 * pad, height - 2 * pad);
+  ctx.clip();
 }
 
 function readPersistedInputs() {
@@ -97,8 +211,9 @@ function buildMapFromSpecs(specs) {
   return data;
 }
 
-function drawPlotGrid(ctx, width, height, pad, xMax = 100) {
-  const xTicks = xTickValues(xMax).filter((tick) => tick > 0 && tick < xMax);
+function drawPlotGrid(ctx, width, height, pad, view = 100) {
+  const { xMin, xMax } = plotXRange(view);
+  const xTicks = xTickValues(view).filter((tick) => tick > xMin + 1e-12 && tick < xMax - 1e-12);
   const yTicks = [0.25, 0.5, 0.75, 1];
 
   ctx.save();
@@ -107,7 +222,7 @@ function drawPlotGrid(ctx, width, height, pad, xMax = 100) {
   ctx.setLineDash([2, 4]);
 
   xTicks.forEach((tick) => {
-    const x = toPlotX(tick, width, pad, xMax);
+    const x = toPlotX(tick, width, pad, view);
     ctx.beginPath();
     ctx.moveTo(x, pad);
     ctx.lineTo(x, height - pad);
@@ -125,8 +240,8 @@ function drawPlotGrid(ctx, width, height, pad, xMax = 100) {
   ctx.restore();
 }
 
-function drawAxes(ctx, width, height, pad, axisLabels = null, xMax = 100) {
-  drawPlotGrid(ctx, width, height, pad, xMax);
+function drawAxes(ctx, width, height, pad, axisLabels = null, view = 100) {
+  drawPlotGrid(ctx, width, height, pad, view);
 
   ctx.strokeStyle = "#bdc3c7";
   ctx.lineWidth = 1;
@@ -137,19 +252,19 @@ function drawAxes(ctx, width, height, pad, axisLabels = null, xMax = 100) {
   ctx.lineTo(pad, pad);
   ctx.stroke();
 
-  const xTicks = xTickValues(xMax);
+  const xTicks = xTickValues(view);
   const yTicks = [0, 0.5, 1];
 
   ctx.fillStyle = "#6b7280";
   ctx.font = "12px Arial";
   ctx.textAlign = "center";
   xTicks.forEach((tick) => {
-    const x = toPlotX(tick, width, pad, xMax);
+    const x = toPlotX(tick, width, pad, view);
     ctx.beginPath();
     ctx.moveTo(x, height - pad);
     ctx.lineTo(x, height - pad + 4);
     ctx.stroke();
-    ctx.fillText(formatAxisTick(tick, xMax), x, height - pad + 16);
+    ctx.fillText(formatAxisTick(tick, view), x, height - pad + 16);
   });
 
   ctx.textAlign = "right";
@@ -202,22 +317,11 @@ function formatNumber(value, options = {}) {
   return new Intl.NumberFormat(getCurrentLocale(), options).format(numericValue);
 }
 
-function termColor(term, index) {
-  const known = {
-    low: "#e74c3c",
-    medium: "#3498db",
-    high: "#27ae60",
-    veryLow: "#1abc9c",
-    veryHigh: "#8e44ad",
-    none: "#95a5a6",
-    aggregated: "#2c3e50",
-    Low: "#e74c3c",
-    Medium: "#3498db",
-    High: "#27ae60",
-    VeryLow: "#1abc9c",
-    VeryHigh: "#8e44ad",
-  };
-  return known[term] || graphPalette[index % graphPalette.length];
+function termColor(term, siblingTerms = []) {
+  if (typeof window.resolveTermColor === "function") {
+    return window.resolveTermColor(term, siblingTerms);
+  }
+  return "#3498db";
 }
 
 function hexToRgba(hex, alpha) {
@@ -247,9 +351,9 @@ function dominantTermFromMemberships(memberships) {
   return bestValue > 0 ? bestTerm : null;
 }
 
-function fillTermArea(ctx, points, color, w, h, p, alpha = 0.28, xMax = 100) {
+function fillTermArea(ctx, points, color, w, h, p, alpha = 0.28, view = 100) {
   if (!Array.isArray(points) || points.length < 2) return;
-  const toX = (x) => toPlotX(x, w, p, xMax);
+  const toX = (x) => toPlotX(x, w, p, view);
   const toY = (y) => h - p - y * (h - 2 * p);
 
   ctx.beginPath();
@@ -263,9 +367,9 @@ function fillTermArea(ctx, points, color, w, h, p, alpha = 0.28, xMax = 100) {
   ctx.fill();
 }
 
-function strokePlotCurve(ctx, points, w, h, p, xMax = 100) {
+function strokePlotCurve(ctx, points, w, h, p, view = 100) {
   if (!Array.isArray(points) || !points.length) return;
-  const toX = (x) => toPlotX(x, w, p, xMax);
+  const toX = (x) => toPlotX(x, w, p, view);
   const toY = (y) => h - p - y * (h - 2 * p);
   ctx.beginPath();
   points.forEach((point, i) => {
@@ -358,7 +462,7 @@ function getPlotGeometry(canvas) {
   };
 }
 
-function readCursorX(canvas, event, xMax = 100) {
+function readCursorX(canvas, event, view = 100) {
   const geo = getPlotGeometry(canvas);
   const cssX = event.clientX - geo.rect.left;
   const cssY = event.clientY - geo.rect.top;
@@ -368,9 +472,10 @@ function readCursorX(canvas, event, xMax = 100) {
     cssY >= geo.plotTop &&
     cssY <= geo.plotBottom;
   if (!inPlot) return { inPlot: false, x: null, geo, cssX };
+  const { xMin, xMax } = plotXRange(view);
   const span = geo.plotRight - geo.plotLeft;
-  const x = span <= 0 ? 0 : ((cssX - geo.plotLeft) / span) * xMax;
-  return { inPlot: true, x: Math.min(xMax, Math.max(0, x)), geo, cssX };
+  const x = span <= 0 ? xMin : xMin + ((cssX - geo.plotLeft) / span) * (xMax - xMin);
+  return { inPlot: true, x: Math.min(xMax, Math.max(xMin, x)), geo, cssX };
 }
 
 function graphTitle(canvas) {
@@ -421,12 +526,13 @@ function muRowHtml(term, value, color, { dominant = false, zero = false } = {}) 
 
 function formatCursorX(model, x) {
   const symbol = model.xLabel || "x";
-  return `${escapeHtml(symbol)} = ${formatNumber(x, xFormatOptions(resolveXMax(model)))}`;
+  return `${escapeHtml(symbol)} = ${formatNumber(x, xFormatOptions(resolveXView(model)))}`;
 }
 
 function snapCursorX(x, model) {
-  const xMax = resolveXMax(model);
-  const snapStep = xMax <= 0.1 ? 0.001 : xMax <= 10 ? 0.01 : 0.1;
+  const view = resolveXView(model);
+  const span = view.xMax - view.xMin;
+  const snapStep = span <= 0.1 ? 0.001 : span <= 10 ? 0.01 : span >= 500 ? 1 : 0.1;
   const candidates = [];
   if (Number.isFinite(Number(model.currentValue))) candidates.push(Number(model.currentValue));
   if (Number.isFinite(Number(model.resultValue))) candidates.push(Number(model.resultValue));
@@ -435,7 +541,7 @@ function snapCursorX(x, model) {
   });
 
   let best = x;
-  let bestDist = 0.004 * xMax;
+  let bestDist = 0.004 * span;
   candidates.forEach((value) => {
     const dist = Math.abs(value - x);
     if (dist < bestDist) {
@@ -443,14 +549,15 @@ function snapCursorX(x, model) {
       bestDist = dist;
     }
   });
-  return Number((Math.round(best / snapStep) * snapStep).toFixed(10));
+  let snapped = Number((Math.round(best / snapStep) * snapStep).toFixed(10));
+  return Math.min(view.xMax, Math.max(view.xMin, snapped));
 }
 
 function tooltipFooter(model) {
   if (model.kind === "input" && Number.isFinite(Number(model.currentValue))) {
     return `<div class="tt-foot">${i18nText("common.tooltip.current")}: ${formatNumber(
       Number(model.currentValue),
-      xFormatOptions(resolveXMax(model))
+      xFormatOptions(resolveXView(model))
     )}</div>`;
   }
 
@@ -466,10 +573,11 @@ function tooltipFooter(model) {
 }
 
 function buildCurveTooltip(model, x) {
-  const rows = Object.entries(model.series || {}).map(([term, points], idx) => ({
+  const terms = Object.keys(model.series || {});
+  const rows = terms.map((term) => ({
     term,
-    value: interpolateSeriesY(points, x),
-    color: termColor(term, idx),
+    value: interpolateSeriesY(model.series[term], x),
+    color: termColor(term, terms),
   }));
   const max = rows.reduce((best, row) => Math.max(best, row.value), 0);
   const caption =
@@ -495,18 +603,19 @@ function buildCurveTooltip(model, x) {
 
 function buildSingletonTooltip(model, x) {
   const entries = Object.entries(model.singletonValues || {});
+  const terms = entries.map(([term]) => term);
   let nearest = null;
-  entries.forEach(([term, sx], idx) => {
+  entries.forEach(([term, sx]) => {
     const dist = Math.abs(Number(sx) - x);
     if (!nearest || dist < nearest.dist) {
-      nearest = { term, dist, color: termColor(term, idx) };
+      nearest = { term, dist, color: termColor(term, terms) };
     }
   });
   const onSpike = Boolean(nearest && nearest.dist <= SINGLETON_SNAP);
-  const rows = entries.map(([term, sx], idx) => ({
+  const rows = entries.map(([term, sx]) => ({
     term,
     value: Number(model.activations?.[term]) || 0,
-    color: termColor(term, idx),
+    color: termColor(term, terms),
     x: Number(sx),
   }));
   const max = rows.reduce((best, row) => Math.max(best, row.value), 0);
@@ -565,60 +674,65 @@ function drawCurveGraph(canvasId, termSeries, currentValue, options = {}) {
   const w = canvas.width;
   const h = canvas.height;
   const p = PLOT_PAD;
-  const xMax = resolveXMax(options);
+  const view = resolveXView(options, canvas);
 
   ctx.clearRect(0, 0, w, h);
-  drawAxes(ctx, w, h, p, options.axisLabels || null, xMax);
+  drawAxes(ctx, w, h, p, options.axisLabels || null, view);
 
   const terms = Object.keys(termSeries);
   const highlightTerm = options.highlightTerm || null;
+  ctx.save();
+  clipToPlot(ctx, w, h, p);
   if (highlightTerm && termSeries[highlightTerm]) {
     fillTermArea(
       ctx,
       termSeries[highlightTerm],
-      termColor(highlightTerm, terms.indexOf(highlightTerm)),
+      termColor(highlightTerm, terms),
       w,
       h,
       p,
       0.28,
-      xMax
+      view
     );
   }
 
-  terms.forEach((term, idx) => {
+  terms.forEach((term) => {
     const points = termSeries[term];
-    const color = termColor(term, idx);
+    const color = termColor(term, terms);
 
     ctx.strokeStyle = color;
     ctx.lineWidth = term === highlightTerm ? 3 : 2;
     ctx.beginPath();
 
     points.forEach((point, i) => {
-      const x = toPlotX(point.x, w, p, xMax);
+      const x = toPlotX(point.x, w, p, view);
       const y = h - p - point.y * (h - 2 * p);
       if (i === 0) ctx.moveTo(x, y);
       else ctx.lineTo(x, y);
     });
     ctx.stroke();
+  });
+  ctx.restore();
 
-    if (options.showPeakLabels) {
-      const peak = findPeakPoint(points);
-      if (peak) {
-        const labelX = toPlotX(peak.x, w, p, xMax);
-        const labelY = h - p - peak.y * (h - 2 * p);
-        ctx.fillStyle = color;
-        ctx.font = "11px Arial";
-        ctx.textAlign = "center";
-        ctx.fillText(termLabel(term), labelX, Math.max(14, labelY - 18));
-      }
-    }
+  terms.forEach((term) => {
+    if (!options.showPeakLabels) return;
+    const points = termSeries[term];
+    const peak = findPeakPoint(points);
+    if (!peak || !inXView(peak.x, view)) return;
+    const color = termColor(term, terms);
+    const labelX = toPlotX(peak.x, w, p, view);
+    const labelY = h - p - peak.y * (h - 2 * p);
+    ctx.fillStyle = color;
+    ctx.font = "11px Arial";
+    ctx.textAlign = "center";
+    ctx.fillText(termLabel(term), labelX, Math.max(14, labelY - 18));
   });
 
-  if (currentValue !== null && currentValue !== undefined) {
+  if (currentValue !== null && currentValue !== undefined && inXView(currentValue, view)) {
     if (options.showResultLabel) {
-      drawResultMarker(ctx, w, h, p, currentValue, xMax);
+      drawResultMarker(ctx, w, h, p, currentValue, view);
     } else {
-      const vx = toPlotX(currentValue, w, p, xMax);
+      const vx = toPlotX(currentValue, w, p, view);
       ctx.strokeStyle = "#111";
       ctx.setLineDash([5, 5]);
       ctx.lineWidth = 2;
@@ -633,9 +747,10 @@ function drawCurveGraph(canvasId, termSeries, currentValue, options = {}) {
   ensureLegend(canvasId, terms, highlightTerm);
 }
 
-function drawResultMarker(ctx, w, h, p, resultValue, xMax = 100) {
+function drawResultMarker(ctx, w, h, p, resultValue, view = 100) {
   if (resultValue === null || resultValue === undefined || !Number.isFinite(Number(resultValue))) return;
-  const vx = toPlotX(Number(resultValue), w, p, xMax);
+  if (!inXView(resultValue, view)) return;
+  const vx = toPlotX(Number(resultValue), w, p, view);
   ctx.strokeStyle = "#111";
   ctx.setLineDash([5, 5]);
   ctx.lineWidth = 2;
@@ -655,10 +770,10 @@ function drawResultMarker(ctx, w, h, p, resultValue, xMax = 100) {
   );
 }
 
-function drawTermPeakLabel(ctx, w, h, p, term, points, color, xMax = 100) {
+function drawTermPeakLabel(ctx, w, h, p, term, points, color, view = 100) {
   const peak = findPeakPoint(points);
-  if (!peak || peak.y <= 0.04) return;
-  const labelX = toPlotX(peak.x, w, p, xMax);
+  if (!peak || peak.y <= 0.04 || !inXView(peak.x, view)) return;
+  const labelX = toPlotX(peak.x, w, p, view);
   const labelY = h - p - peak.y * (h - 2 * p);
   ctx.fillStyle = color;
   ctx.font = "11px Arial";
@@ -674,7 +789,7 @@ function drawAggregatedSetGraph(canvasId, points, resultValue, options = {}) {
   const w = canvas.width;
   const h = canvas.height;
   const p = PLOT_PAD;
-  const xMax = resolveXMax(options);
+  const view = resolveXView(options, canvas);
   const termSeries = options.termSeries || null;
   const showAcc = options.showAccumulation !== false;
   const showDefuzz = options.showDefuzzification !== false;
@@ -683,52 +798,63 @@ function drawAggregatedSetGraph(canvasId, points, resultValue, options = {}) {
   const clippedTerms = Object.keys(clipped);
 
   ctx.clearRect(0, 0, w, h);
-  drawAxes(ctx, w, h, p, options.axisLabels || null, xMax);
+  drawAxes(ctx, w, h, p, options.axisLabels || null, view);
 
+  const allTerms = Object.keys(termSeries || {});
+  ctx.save();
+  clipToPlot(ctx, w, h, p);
   if (showDefuzz && termSeries) {
     if (highlightTerm && termSeries[highlightTerm]) {
       fillTermArea(
         ctx,
         termSeries[highlightTerm],
-        termColor(highlightTerm, Object.keys(termSeries).indexOf(highlightTerm)),
+        termColor(highlightTerm, allTerms),
         w,
         h,
         p,
         0.16,
-        xMax
+        view
       );
     }
-    Object.entries(termSeries).forEach(([term, series], idx) => {
-      ctx.strokeStyle = termColor(term, idx);
+    Object.entries(termSeries).forEach(([term, series]) => {
+      ctx.strokeStyle = termColor(term, allTerms);
       ctx.lineWidth = term === highlightTerm ? 3 : 2;
       ctx.globalAlpha = showAcc ? 0.5 : 1;
-      strokePlotCurve(ctx, series, w, h, p, xMax);
+      strokePlotCurve(ctx, series, w, h, p, view);
       ctx.globalAlpha = 1;
-      if (options.showPeakLabels) drawTermPeakLabel(ctx, w, h, p, term, series, termColor(term, idx), xMax);
     });
   }
 
   if (showAcc) {
     clippedTerms.forEach((term) => {
-      const color = termColor(term, Math.max(0, Object.keys(termSeries || {}).indexOf(term)));
-      fillTermArea(ctx, clipped[term], color, w, h, p, 0.22, xMax);
+      const color = termColor(term, allTerms);
+      fillTermArea(ctx, clipped[term], color, w, h, p, 0.22, view);
       ctx.strokeStyle = hexToRgba(color, 0.9);
       ctx.lineWidth = 1.6;
-      strokePlotCurve(ctx, clipped[term], w, h, p, xMax);
-      if (options.showPeakLabels && !showDefuzz) {
-        drawTermPeakLabel(ctx, w, h, p, term, clipped[term], color, xMax);
-      }
+      strokePlotCurve(ctx, clipped[term], w, h, p, view);
     });
 
     if (Array.isArray(points) && points.length) {
-      fillTermArea(ctx, points, "#2c3e50", w, h, p, 0.1, xMax);
+      fillTermArea(ctx, points, "#2c3e50", w, h, p, 0.1, view);
       ctx.strokeStyle = "#1a252f";
       ctx.lineWidth = 2.4;
-      strokePlotCurve(ctx, points, w, h, p, xMax);
+      strokePlotCurve(ctx, points, w, h, p, view);
     }
   }
+  ctx.restore();
 
-  if (showDefuzz) drawResultMarker(ctx, w, h, p, resultValue, xMax);
+  if (showDefuzz && termSeries && options.showPeakLabels) {
+    Object.entries(termSeries).forEach(([term, series]) => {
+      drawTermPeakLabel(ctx, w, h, p, term, series, termColor(term, allTerms), view);
+    });
+  }
+  if (showAcc && options.showPeakLabels && !showDefuzz) {
+    clippedTerms.forEach((term) => {
+      drawTermPeakLabel(ctx, w, h, p, term, clipped[term], termColor(term, allTerms), view);
+    });
+  }
+
+  if (showDefuzz) drawResultMarker(ctx, w, h, p, resultValue, view);
   ensureLegend(canvasId, ["aggregated"]);
   syncAggregatedGraphKey(canvas);
 }
@@ -739,21 +865,22 @@ function drawSingletonGraph(canvasId, singletonValues, ruleOutputs, resultValue,
   const w = canvas.width;
   const h = canvas.height;
   const p = PLOT_PAD;
-  const xMax = resolveXMax(options);
+  const view = resolveXView(options, canvas);
 
   ctx.clearRect(0, 0, w, h);
-  drawAxes(ctx, w, h, p, options.axisLabels || null, xMax);
+  drawAxes(ctx, w, h, p, options.axisLabels || null, view);
 
   const terms = Object.keys(singletonValues);
   const highlightTerm = options.highlightTerm || null;
   const showAcc = options.showAccumulation !== false;
   const showDefuzz = options.showDefuzzification !== false;
   const plotH = h - 2 * p;
-  terms.forEach((term, idx) => {
+  terms.forEach((term) => {
     const x = singletonValues[term];
+    if (!inXView(x, view)) return;
     const activation = ruleOutputs?.[term] || 0;
-    const px = toPlotX(x, w, p, xMax);
-    const color = termColor(term, idx);
+    const px = toPlotX(x, w, p, view);
+    const color = termColor(term, terms);
     const fired = activation > 0;
     const top = h - p - plotH;
 
@@ -776,7 +903,7 @@ function drawSingletonGraph(canvasId, singletonValues, ruleOutputs, resultValue,
     ctx.globalAlpha = 1;
   });
 
-  if (showDefuzz) drawResultMarker(ctx, w, h, p, resultValue, xMax);
+  if (showDefuzz) drawResultMarker(ctx, w, h, p, resultValue, view);
 
   ensureLegend(canvasId, terms, highlightTerm);
 }
@@ -792,9 +919,11 @@ function appendMembershipItems(container, data) {
   const entries = Object.entries(data || {});
   const maxValue = entries.reduce((best, [, value]) => Math.max(best, Number(value) || 0), 0);
 
-  entries.forEach(([term, value], index) => {
+  const terms = entries.map(([term]) => term);
+
+  entries.forEach(([term, value]) => {
     const numeric = Number(value) || 0;
-    const color = termColor(term, index);
+    const color = termColor(term, terms);
     const item = document.createElement("div");
     item.className = "membership-item";
     if (maxValue > 0 && numeric === maxValue) item.classList.add("active");
@@ -909,7 +1038,7 @@ function renderRuleEvaluations(config, result, mfData) {
     const maxAlpha = items.reduce((best, rule) => Math.max(best, Number(rule.alpha) || 0), 0);
     const visible = items.filter((rule) => showIdle || rule.alpha >= RULE_FIRE_EPS);
     if (!visible.length) return;
-    const color = termColor(out, 0);
+    const color = termColor(out, outputTermOrder(config, mfData));
     cards.push(`<article class="rule-group" style="border-top-color:${color}">
       <header class="rule-group-head">
         <span class="rule-group-term">${escapeHtml(termLabel(out))}</span>
@@ -996,7 +1125,7 @@ function bindCanvasTooltip(canvasId, getTooltipModel) {
       return;
     }
 
-    const cursor = readCursorX(canvas, lastPoint, resolveXMax(model));
+    const cursor = readCursorX(canvas, lastPoint, resolveXView(model, canvas));
     if (!cursor.inPlot) {
       hide();
       return;
@@ -1201,6 +1330,12 @@ function setupHelpTips() {
   });
 }
 
+function outputTermNames(data) {
+  const memberships = data?.membershipData || {};
+  const block = memberships.trustIndex || memberships.risk || memberships.intrusion;
+  return block ? Object.keys(block) : [];
+}
+
 function setOutputText(valueEl, termEl, data) {
   if (!valueEl || !termEl) return;
   setupHelpTips();
@@ -1213,6 +1348,7 @@ function setOutputText(valueEl, termEl, data) {
     termEl.classList.add("is-uncovered");
     valueEl.textContent = "--";
     termEl.textContent = data ? noRuleFiredLabel() : "--";
+    termEl.style.color = "";
     hosts.forEach((el) => markUncoveredTip(el, uncovered));
     markTermTip(termEl, false);
     return;
@@ -1225,6 +1361,7 @@ function setOutputText(valueEl, termEl, data) {
     maximumFractionDigits: 2,
   });
   termEl.textContent = termLabel(data.dominantTerm);
+  termEl.style.color = termColor(data.dominantTerm, outputTermNames(data));
   hosts.forEach((el) => markUncoveredTip(el, false));
   markTermTip(termEl, true);
   const tip = document.getElementById("helpTooltip") || document.getElementById("uncoveredHelpTooltip");
@@ -1369,6 +1506,126 @@ function decoratePipelineMuHints(config) {
   });
 }
 
+function zoomResetLabel() {
+  return i18nText("common.graph.resetZoom", "Reset scale");
+}
+
+function zoomHandleLabel(side) {
+  return i18nText(
+    side === "min" ? "common.graph.zoomMin" : "common.graph.zoomMax",
+    side === "min" ? "Left X-axis bound" : "Right X-axis bound"
+  );
+}
+
+function syncZoomResetButton(canvas) {
+  const container = canvas?.closest(".graph-container");
+  const reset = container?.querySelector(".graph-zoom-reset");
+  if (!reset) return;
+  const domainMax = Number(canvas.dataset.xDomainMax) || 100;
+  const zoomed =
+    container.classList.contains("is-expanded") && isXViewZoomed(readCanvasXView(canvas, domainMax), domainMax);
+  reset.hidden = !zoomed;
+  reset.setAttribute("aria-label", zoomResetLabel());
+  reset.textContent = zoomResetLabel();
+}
+
+function bindZoomHandle(handle, side, canvas, redraw) {
+  handle.addEventListener("pointerdown", (event) => {
+    if (!canvas.closest(".graph-container")?.classList.contains("is-expanded")) return;
+    event.preventDefault();
+    event.stopPropagation();
+    const tooltip = document.getElementById("globalGraphTooltip");
+    if (tooltip) tooltip.classList.remove("visible");
+    hideGraphProbe(canvas);
+
+    const domainMax = Number(canvas.dataset.xDomainMax) || 100;
+    const startView = readCanvasXView(canvas, domainMax);
+    const startX = event.clientX;
+    const geo = getPlotGeometry(canvas);
+    const plotW = Math.max(1, geo.plotRight - geo.plotLeft);
+    const minSpan = minXViewSpan(domainMax);
+
+    const onMove = (ev) => {
+      const delta = ((ev.clientX - startX) / plotW) * domainMax;
+      if (side === "min") {
+        const maxMin = startView.viewMax - minSpan;
+        const next = Math.min(maxMin, Math.max(0, snapXViewValue(startView.viewMin + delta, domainMax)));
+        writeCanvasXView(canvas, next, startView.viewMax, domainMax);
+      } else {
+        const minMax = startView.viewMin + minSpan;
+        const next = Math.max(minMax, Math.min(domainMax, snapXViewValue(startView.viewMax + delta, domainMax)));
+        writeCanvasXView(canvas, startView.viewMin, next, domainMax);
+      }
+      syncZoomResetButton(canvas);
+      if (typeof redraw === "function") redraw();
+    };
+
+    const onUp = () => {
+      handle.releasePointerCapture(event.pointerId);
+      handle.removeEventListener("pointermove", onMove);
+      handle.removeEventListener("pointerup", onUp);
+      handle.removeEventListener("pointercancel", onUp);
+    };
+
+    handle.addEventListener("pointermove", onMove);
+    handle.addEventListener("pointerup", onUp);
+    handle.addEventListener("pointercancel", onUp);
+    handle.setPointerCapture(event.pointerId);
+  });
+}
+
+function ensureGraphZoomUi(container, redraw) {
+  const canvas = container.querySelector("canvas");
+  if (!canvas) return;
+
+  let stage = canvas.parentElement;
+  if (!stage.classList.contains("graph-plot-stage")) {
+    stage = document.createElement("div");
+    stage.className = "graph-plot-stage";
+    canvas.after(stage);
+    stage.appendChild(canvas);
+  }
+
+  if (!stage.querySelector(".graph-zoom-handle")) {
+    const zoomIcon =
+      '<svg viewBox="0 0 24 16" aria-hidden="true"><polyline points="7 3 2 8 7 13"/><polyline points="17 3 22 8 17 13"/><line x1="10" y1="4" x2="10" y2="12"/><line x1="14" y1="4" x2="14" y2="12"/></svg>';
+    const minHandle = document.createElement("button");
+    minHandle.type = "button";
+    minHandle.className = "graph-zoom-handle graph-zoom-min";
+    minHandle.innerHTML = zoomIcon;
+    const maxHandle = document.createElement("button");
+    maxHandle.type = "button";
+    maxHandle.className = "graph-zoom-handle graph-zoom-max";
+    maxHandle.innerHTML = zoomIcon;
+    stage.appendChild(minHandle);
+    stage.appendChild(maxHandle);
+    bindZoomHandle(minHandle, "min", canvas, redraw);
+    bindZoomHandle(maxHandle, "max", canvas, redraw);
+  }
+
+  stage.querySelectorAll(".graph-zoom-handle").forEach((handle) => {
+    const side = handle.classList.contains("graph-zoom-min") ? "min" : "max";
+    handle.setAttribute("aria-label", zoomHandleLabel(side));
+    handle.setAttribute("title", zoomHandleLabel(side));
+  });
+
+  let reset = container.querySelector(".graph-zoom-reset");
+  if (!reset) {
+    reset = document.createElement("button");
+    reset.type = "button";
+    reset.className = "graph-zoom-reset";
+    reset.hidden = true;
+    container.appendChild(reset);
+    reset.addEventListener("click", (event) => {
+      event.stopPropagation();
+      clearCanvasXView(canvas);
+      syncZoomResetButton(canvas);
+      if (typeof redraw === "function") redraw();
+    });
+  }
+  syncZoomResetButton(canvas);
+}
+
 function setupGraphExpand(redraw) {
   const expandIcon =
     '<svg viewBox="0 0 24 24" aria-hidden="true"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg>';
@@ -1470,6 +1727,10 @@ function setupGraphExpand(redraw) {
     document.body.classList.remove("graph-expanded");
     if (placeholder?.classList.contains("graph-expand-placeholder")) placeholder.remove();
     if (canvas) restoreCanvasSize(canvas);
+    if (canvas) {
+      clearCanvasXView(canvas);
+      syncZoomResetButton(canvas);
+    }
     syncExpandButtons();
     if (typeof redraw === "function") redraw();
   };
@@ -1494,10 +1755,12 @@ function setupGraphExpand(redraw) {
       const live = container.querySelector("canvas");
       if (live) fitExpandedCanvas(live);
       if (typeof redraw === "function") redraw();
+      if (live) syncZoomResetButton(live);
     });
   };
 
   document.querySelectorAll(".graph-container").forEach((container) => {
+    ensureGraphZoomUi(container, redraw);
     if (container.querySelector(".graph-expand-btn")) return;
     const btn = document.createElement("button");
     btn.type = "button";
@@ -1531,7 +1794,10 @@ function setupGraphExpand(redraw) {
     });
   }
 
-  window.addEventListener("languageChanged", syncExpandButtons);
+  window.addEventListener("languageChanged", () => {
+    syncExpandButtons();
+    document.querySelectorAll(".graph-container").forEach((container) => ensureGraphZoomUi(container, redraw));
+  });
 }
 
 function setupPipelineAccordions(config) {
