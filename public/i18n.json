@@ -60,6 +60,9 @@
       "graph": {
         "expand": "Збільшити графік",
         "collapse": "Згорнути графік",
+        "resetZoom": "Скинути масштаб",
+        "zoomMin": "Ліва межа осі X",
+        "zoomMax": "Права межа осі X",
         "aggregatedKey": "Акумульована вихідна множина",
         "aggregatedMark": "темний контур (max зрізаних термів)"
       },
@@ -422,6 +425,9 @@
       "graph": {
         "expand": "Enlarge graph",
         "collapse": "Collapse graph",
+        "resetZoom": "Reset scale",
+        "zoomMin": "Left X-axis bound",
+        "zoomMax": "Right X-axis bound",
         "aggregatedKey": "Accumulated output set",
         "aggregatedMark": "dark outline (max of clipped terms)"
       },

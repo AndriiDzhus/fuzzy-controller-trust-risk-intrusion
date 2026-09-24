@@ -636,6 +636,95 @@ canvas {
   stroke-linejoin: round;
 }
 
+.graph-plot-stage {
+  position: relative;
+}
+
+.graph-zoom-handle {
+  display: none;
+  position: absolute;
+  /* Align with μ ≈ 0.15: y = 0.85·H − 0.7·pad, pad = 46. */
+  top: calc(85% - 32px);
+  transform: translateY(-50%);
+  width: 36px;
+  height: 38px;
+  padding: 0;
+  border: 1.5px solid #7aa7d4;
+  border-radius: 10px;
+  background: #fff;
+  color: #1d4f91;
+  cursor: ew-resize;
+  z-index: 4;
+  touch-action: none;
+  box-shadow: 0 2px 8px rgba(29, 79, 145, 0.18);
+}
+
+.graph-zoom-handle svg {
+  width: 22px;
+  height: 16px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  pointer-events: none;
+}
+
+.graph-zoom-handle:hover,
+.graph-zoom-handle:focus-visible {
+  background: #eaf3fb;
+  border-color: #3498db;
+  color: #1a5276;
+  outline: none;
+  box-shadow: 0 3px 10px rgba(52, 152, 219, 0.28);
+}
+
+.graph-zoom-min {
+  left: 6px;
+}
+
+.graph-zoom-max {
+  right: 8px;
+}
+
+.graph-container.is-expanded .graph-zoom-handle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.graph-zoom-reset {
+  position: absolute;
+  top: 8px;
+  right: 46px;
+  z-index: 5;
+  display: none;
+  height: 32px;
+  padding: 0 12px;
+  border: 1px solid #1d6fbf;
+  border-radius: 8px;
+  background: #3498db;
+  color: #fff;
+  font-size: 0.75rem;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(52, 152, 219, 0.35);
+}
+
+.graph-zoom-reset:hover,
+.graph-zoom-reset:focus-visible {
+  background: #217dbb;
+  border-color: #1a6aa0;
+  color: #fff;
+  outline: none;
+  box-shadow: 0 3px 10px rgba(33, 125, 187, 0.4);
+}
+
+.graph-container.is-expanded .graph-zoom-reset:not([hidden]) {
+  display: inline-flex;
+  align-items: center;
+}
+
 .graph-expand-placeholder {
   min-width: 0;
 }
@@ -672,7 +761,7 @@ body.graph-expanded::after {
 
 .graph-container.is-expanded h4 {
   font-size: 1.05rem;
-  padding-right: 2.4rem;
+  padding-right: 10.5rem;
 }
 
 .graph-container.is-expanded canvas {

@@ -411,14 +411,12 @@ const controllerDocs = {
   },
 };
 
-const docsTermColor = {
-  none: "#95a5a6",
-  veryLow: "#1abc9c",
-  low: "#e74c3c",
-  medium: "#3498db",
-  high: "#27ae60",
-  veryHigh: "#8e44ad",
-};
+function docsTermColor(term, siblingTerms) {
+  if (typeof window.resolveTermColor === "function") {
+    return window.resolveTermColor(term, siblingTerms);
+  }
+  return "#3498db";
+}
 
 function docsText(key, fallback = "") {
   if (window.i18nHelper) return window.i18nHelper.t(key, fallback);
@@ -519,7 +517,8 @@ function renderSingleton(symbol, term) {
 }
 
 function renderTermBlock(variable, term, punct = "") {
-  const color = docsTermColor[term.term] || "#3498db";
+  const siblings = (variable.terms || []).map((item) => item.term);
+  const color = docsTermColor(term.term, siblings);
   let body = "";
   if (term.gaussian) body = renderGaussian(variable, term, punct);
   else if (term.singleton !== undefined) body = renderSingleton(variable.symbol, term);
@@ -618,6 +617,12 @@ function renderRulesInterpretation(pageKey) {
   `;
 }
 
+function siblingTermsForColumn(spec, colIndex) {
+  const col = spec.rules.columns[colIndex];
+  if (col?.output) return (spec.output.terms || []).map((item) => item.term);
+  return (spec.inputs[colIndex]?.terms || []).map((item) => item.term);
+}
+
 function renderRules(spec, pageKey) {
   const { columns, rows } = spec.rules;
   const head = [
@@ -632,7 +637,7 @@ function renderRules(spec, pageKey) {
       const tds = cells
         .map((term, i) => {
           const col = columns[i];
-          const color = docsTermColor[term] || "#7f8c8d";
+          const color = docsTermColor(term, siblingTermsForColumn(spec, i));
           return `<td${col.output ? ' class="docs-out"' : ""}>
             <span class="docs-chip"><i style="background:${color}"></i>${docsEscape(
               lingLabel(term, col.gender)
