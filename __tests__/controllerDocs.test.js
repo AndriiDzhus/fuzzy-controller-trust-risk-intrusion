@@ -4,10 +4,25 @@ const vm = require("vm");
 const katex = require("katex");
 
 function loadControllerDocs() {
-  const code = fs.readFileSync(path.join(__dirname, "../public/controller-docs.js"), "utf8");
-  const context = { window: {}, document: { getElementById: () => null, createElement: () => ({}) } };
+  const context = {
+    window: {},
+    document: {
+      readyState: "complete",
+      documentElement: { style: { setProperty() {} } },
+      getElementById: () => null,
+      createElement: () => ({}),
+      addEventListener: () => {},
+    },
+  };
   vm.createContext(context);
-  vm.runInContext(code, context);
+  vm.runInContext(
+    fs.readFileSync(path.join(__dirname, "../public/term-colors.js"), "utf8"),
+    context
+  );
+  vm.runInContext(
+    fs.readFileSync(path.join(__dirname, "../public/controller-docs.js"), "utf8"),
+    context
+  );
   return context.window.controllerDocs;
 }
 
@@ -68,6 +83,33 @@ describe("controller docs content", () => {
     expect(cc.terms[2].pieces.at(-1)).toEqual(["1", "CC > 120"]);
     expect(bs.terms[2].pieces.at(-1)).toEqual(["1", "BS > 11"]);
     expect(docs.trust.output.terms[4].pieces.at(-1)).toEqual(["1", "TI > 100"]);
-    expect(docs.intrusion.inputs.every((item) => !item.noteKey)).toBe(true);
+  });
+
+  test("intrusion docs use CICIoT NP/Rate/We → IP gaussians and the new 12-rule table", () => {
+    expect(docs.intrusion.inputs.map((item) => item.symbol)).toEqual(["NP", "Rate", "We"]);
+    expect(docs.intrusion.output.symbol).toBe("IP");
+    expect(docs.intrusion.inputs.map((item) => item.domain)).toEqual([
+      [0, 15],
+      [0, 3000],
+      [0, 250],
+    ]);
+    expect(docs.intrusion.inputs[2].unitKey).toBe("intrusion.docs.units.weight");
+    expect(docs.intrusion.inputs[2].noteKey).toBe("intrusion.docs.notes.weight");
+    expect(docs.intrusion.rules.columns.map((col) => col.key)).toEqual(["NP", "Rate", "We", "IP"]);
+    expect(docs.intrusion.rules.rows[0]).toEqual(["medium", "low", "medium", "none"]);
+    expect(docs.intrusion.rules.rows[11]).toEqual(["low", "high", "low", "high"]);
+    expect(docs.intrusion.inputs[0].terms[0].gaussian).toMatchObject({ center: 3, denom: 12.5 });
+    expect(docs.intrusion.inputs[1].terms[2].gaussian).toMatchObject({ center: 1500, denom: 500000 });
+    expect(docs.intrusion.inputs[2].terms[1].gaussian).toMatchObject({ center: 141.5, denom: 200 });
+    expect(docs.intrusion.output.terms[0].gaussian).toMatchObject({ center: 0, denom: 288 });
+  });
+
+  test("KaTeX renders CICIoT gaussian membership in assignment form", () => {
+    const html = katex.renderToString(
+      "\\mu_{\\mathrm{L}}(\\mathrm{NP}) = e^{-\\dfrac{(\\mathrm{NP} - 3.0)^{2}}{12.5}}",
+      { displayMode: true, throwOnError: true }
+    );
+    expect(html).toContain("katex");
+    expect(html).toContain("NP");
   });
 });
