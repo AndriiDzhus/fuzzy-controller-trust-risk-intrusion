@@ -4,10 +4,25 @@ const vm = require("vm");
 const katex = require("katex");
 
 function loadControllerDocs() {
-  const code = fs.readFileSync(path.join(__dirname, "../public/controller-docs.js"), "utf8");
-  const context = { window: {}, document: { getElementById: () => null, createElement: () => ({}) } };
+  const context = {
+    window: {},
+    document: {
+      readyState: "complete",
+      documentElement: { style: { setProperty() {} } },
+      getElementById: () => null,
+      createElement: () => ({}),
+      addEventListener: () => {},
+    },
+  };
   vm.createContext(context);
-  vm.runInContext(code, context);
+  vm.runInContext(
+    fs.readFileSync(path.join(__dirname, "../public/term-colors.js"), "utf8"),
+    context
+  );
+  vm.runInContext(
+    fs.readFileSync(path.join(__dirname, "../public/controller-docs.js"), "utf8"),
+    context
+  );
   return context.window.controllerDocs;
 }
 

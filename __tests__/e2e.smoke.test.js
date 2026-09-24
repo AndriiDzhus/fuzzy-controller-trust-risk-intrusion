@@ -249,6 +249,7 @@ describe("E2E smoke: navigation and i18n", () => {
       expect(res.status).toBe(200);
       expect(res.text).toContain('data-docs="formulas"');
       expect(res.text).toContain('data-docs="rules"');
+      expect(res.text).toContain('src="term-colors.js"');
       expect(res.text).toContain('src="controller-docs.js"');
       expect(res.text).toContain("vendor/katex/katex.min.js");
       expect(res.text).toContain("vendor/katex/katex.min.css");
@@ -268,6 +269,11 @@ describe("E2E smoke: navigation and i18n", () => {
     const css = await request(app).get("/style.css");
     expect(js.status).toBe(200);
     expect(js.text).toContain("setupGraphExpand");
+    expect(js.text).toContain("ensureGraphZoomUi");
+    expect(js.text).toContain("graph-zoom-handle");
+    expect(css.text).toContain(".graph-expand-btn");
+    expect(css.text).toContain(".graph-zoom-handle");
+    expect(css.text).toContain(".graph-zoom-reset");
     expect(js.text).toContain('querySelector(".container")');
     expect(js.text).toContain("syncAggregatedGraphKey");
     expect(js.text).toContain("setupHelpTips");
