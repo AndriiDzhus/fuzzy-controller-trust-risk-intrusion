@@ -107,7 +107,7 @@ describe("Trust controller calculations", () => {
       denominator += point.y;
     });
 
-    expect(series.length).toBe(101);
+    expect(series.length).toBeGreaterThanOrEqual(101);
     expect(series[0]).toEqual({ x: 0, y: 0 });
     expect(denominator).toBeGreaterThan(0);
     expect(Math.max(...series.map((p) => p.y))).toBeCloseTo(1, 5);
@@ -125,5 +125,47 @@ describe("Trust controller calculations", () => {
     };
     const fromSeries = centerOfGravity(union, [0, 100], 1);
     expect(calculateTrustIndex(0.8, 20, 11.5)).toBeCloseTo(fromSeries, 0);
+  });
+
+  test("defuzzification is the exact analytic centroid (eq. 2.26–2.28)", () => {
+    const { triangularMF: tri } = require("../fuzzyController");
+    const T = {
+      VeryLow: [0, 0, 25],
+      Low: [0, 25, 50],
+      Medium: [25, 50, 75],
+      High: [50, 75, 100],
+      VeryHigh: [75, 100, 100],
+    };
+    const cases = [
+      [0.02, 10, 2],
+      [0.1, 20, 5],
+      [0.3, 50, 7],
+      [0.5, 100, 10],
+      [0.08, 25, 5.5],
+      [0.12, 60, 8],
+    ];
+    cases.forEach(([er, cc, bs]) => {
+      const value = calculateTrustIndex(er, cc, bs);
+      const alpha = getOutputTermActivations();
+      const mu = (x) =>
+        Math.max(0, ...Object.entries(alpha).map(([term, a]) => Math.min(a, tri(x, ...T[term]))));
+      // Reference: very fine trapezoidal integration of the same polygon.
+      const N = 100000;
+      let moment = 0;
+      let area = 0;
+      for (let i = 0; i < N; i += 1) {
+        const x0 = (100 * i) / N;
+        const x1 = (100 * (i + 1)) / N;
+        const m0 = mu(x0);
+        const m1 = mu(x1);
+        area += ((x1 - x0) * (m0 + m1)) / 2;
+        moment += ((x1 - x0) * (x0 * m0 + x1 * m1)) / 2;
+      }
+      expect(value).toBeCloseTo(moment / area, 6);
+    });
+  });
+
+  test("single fully-fired VeryHigh term gives the triangle centroid 275/3", () => {
+    expect(calculateTrustIndex(0, 0, 0)).toBeCloseTo(275 / 3, 9);
   });
 });

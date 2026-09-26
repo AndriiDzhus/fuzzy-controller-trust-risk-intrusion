@@ -109,6 +109,8 @@ app.post("/api/controllers/:controller/calculate", (req, res) => {
       ruleOutputs: result.ruleOutputs,
       ruleEvaluations: result.ruleEvaluations || [],
       aggregatedOutput: result.aggregatedOutput || null,
+      normalizedOutputs: result.normalizedOutputs || null,
+      weightedConsequents: result.weightedConsequents || null,
       inputs,
     });
   } catch (error) {

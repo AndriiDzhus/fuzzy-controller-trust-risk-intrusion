@@ -190,19 +190,30 @@ function roundMu(value) {
   return Math.round((Number(value) || 0) * 1e6) / 1e6;
 }
 
-function evaluateAndRules(rules, maps) {
+// Fuzzy AND (t-norm). Mamdani controllers (Trust, Intrusion) use min per
+// formulas (2.16) and (4.8); the Sugeno security controller uses the
+// algebraic product per formula (3.5) of the theory chapter.
+const T_NORMS = {
+  min: (values) => Math.min(...values),
+  product: (values) => values.reduce((acc, value) => acc * value, 1),
+};
+
+function evaluateAndRules(rules, maps, tnorm = "min") {
+  const combine = T_NORMS[tnorm] || T_NORMS.min;
   return rules.map((rule, index) => {
-    const conditions = maps.map((item) => ({
+    const rawMu = maps.map((item) => Number(item.terms[rule[item.field]]) || 0);
+    const conditions = maps.map((item, i) => ({
       key: item.key,
       symbol: item.symbol,
       term: rule[item.field],
-      mu: roundMu(item.terms[rule[item.field]]),
+      mu: roundMu(rawMu[i]),
     }));
     return {
       index: index + 1,
       conditions,
       out: rule.out,
-      alpha: roundMu(Math.min(...conditions.map((item) => item.mu))),
+      alpha: roundMu(combine(rawMu)),
+      tnorm,
     };
   });
 }
@@ -286,52 +297,67 @@ function calculateSecurity(inputs) {
     },
   };
 
-  const ruleOutputs = {
-    none: 0,
-    veryLow: 0,
-    low: 0,
-    medium: 0,
-    high: 0,
-    veryHigh: 0,
-  };
+  const ruleEvaluations = evaluateAndRules(
+    securityDef.rules,
+    [
+      { key: "energy", symbol: "EC", field: "EC", terms: fuzzy.energy },
+      { key: "strength", symbol: "TP", field: "TP", terms: fuzzy.strength },
+      { key: "response", symbol: "Lat", field: "Lat", terms: fuzzy.response },
+    ],
+    "product"
+  );
 
-  securityDef.rules.forEach((rule) => {
-    const alpha = Math.min(
-      fuzzy.energy[rule.EC],
-      fuzzy.strength[rule.TP],
-      fuzzy.response[rule.Lat]
-    );
-    ruleOutputs[rule.out] = Math.max(ruleOutputs[rule.out], alpha);
+  // Layer 2: rule weights w_k = mu(EC) * mu(TP) * mu(Lat)  (3.5).
+  const weights = securityDef.rules.map((rule) =>
+    fuzzy.energy[rule.EC] * fuzzy.strength[rule.TP] * fuzzy.response[rule.Lat]
+  );
+  const weightSum = weights.reduce((acc, w) => acc + w, 0);
+  const noRuleFired = weightSum === 0;
+
+  // Layer 3: normalised weights  w̄_k = w_k / Σ w  (3.6–3.7).
+  // Layer 4: weighted consequents Y_k = w̄_k · C_k  (Hadamard product, 3.8–3.9).
+  // Layer 5: SR = Σ Y_k — full contraction of Y, i.e. the weighted sum
+  //          Σ w̄_k · C_k = Σ w_k C_k / Σ w_k.
+  const weightedConsequents = securityDef.rules.map((rule, index) => {
+    const consequent = securityDef.singletons[rule.out];
+    const normalized = noRuleFired ? 0 : weights[index] / weightSum;
+    return {
+      index: index + 1,
+      out: rule.out,
+      weight: roundMu(weights[index]),
+      normalizedWeight: roundMu(normalized),
+      consequent,
+      weighted: normalized * consequent,
+    };
   });
+  const value = noRuleFired
+    ? null
+    : weightedConsequents.reduce((acc, item) => acc + item.weighted, 0);
 
-  const ruleEvaluations = evaluateAndRules(securityDef.rules, [
-    { key: "energy", symbol: "EC", field: "EC", terms: fuzzy.energy },
-    { key: "strength", symbol: "TP", field: "TP", terms: fuzzy.strength },
-    { key: "response", symbol: "Lat", field: "Lat", terms: fuzzy.response },
-  ]);
-
-  let numerator = 0;
-  let denominator = 0;
-  Object.entries(ruleOutputs).forEach(([term, mu]) => {
-    numerator += securityDef.singletons[term] * mu;
-    denominator += mu;
+  // Per-singleton view for the charts. Every singleton has exactly one rule
+  // in the assignment base, so this is the rule weight itself.
+  const ruleOutputs = { none: 0, veryLow: 0, low: 0, medium: 0, high: 0, veryHigh: 0 };
+  const normalizedOutputs = { ...ruleOutputs };
+  weightedConsequents.forEach((item, index) => {
+    ruleOutputs[item.out] = Math.max(ruleOutputs[item.out], weights[index]);
+    normalizedOutputs[item.out] += noRuleFired ? 0 : weights[index] / weightSum;
   });
-
-  const noRuleFired = denominator === 0;
 
   const membershipData = {
     energy: fuzzy.energy,
     strength: fuzzy.strength,
     response: fuzzy.response,
-    risk: ruleOutputs,
+    risk: normalizedOutputs,
   };
 
   return {
-    value: noRuleFired ? null : numerator / denominator,
+    value,
     dominantTerm: noRuleFired ? null : maxTerm(ruleOutputs),
     noRuleFired,
     membershipData,
     ruleOutputs,
+    normalizedOutputs,
+    weightedConsequents,
     ruleEvaluations,
   };
 }
@@ -367,6 +393,7 @@ function securityMembershipFunctions() {
       },
       outputKey: "risk",
       singletonValues: securityDef.singletons,
+      tnorm: "product",
     },
   };
 }
@@ -410,7 +437,12 @@ function calculateIntrusion(inputs) {
   let numerator = 0;
   let denominator = 0;
   const aggregatedOutput = [];
-  for (let x = 0; x <= 100; x += 0.2) {
+  // Integer counter: accumulating x += 0.2 drifts past 100 and drops the last
+  // grid point (the centre of the "high" term), so COG (4.10) loses x = 100.
+  const COG_STEP = 0.2;
+  const COG_POINTS = Math.round(100 / COG_STEP);
+  for (let i = 0; i <= COG_POINTS; i += 1) {
+    const x = Number((i * COG_STEP).toFixed(10));
     let mu = 0;
     Object.entries(ruleOutputs).forEach(([term, alpha]) => {
       mu = Math.max(mu, Math.min(alpha, intrusionDef.mfs.IP[term](x)));

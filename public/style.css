@@ -990,9 +990,11 @@ body.graph-expanded::after {
 }
 
 .sticky-input-letter {
-  flex: 0 0 1.4rem;
-  width: 1.4rem;
+  flex: 0 0 auto;
+  min-width: 1.4rem;
   height: 1.4rem;
+  padding: 0 5px;
+  box-sizing: border-box;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -1729,4 +1731,26 @@ body.docs-modal-open {
   padding: 10px;
   border-radius: 5px;
   margin: 10px 0;
+}
+
+/* Sugeno layer 5: SR = Σ w̄ᵢ·cᵢ written out under the defuzzification graph */
+.sugeno-sum {
+  margin: 10px 0 0;
+  padding: 8px 12px;
+  border-left: 3px solid #3498db;
+  background: #f4f8fb;
+  border-radius: 4px;
+  font-size: 0.9rem;
+  color: #2c3e50;
+  overflow-wrap: anywhere;
+}
+
+.sugeno-sum:empty {
+  display: none;
+}
+
+.sugeno-sum-label {
+  font-weight: 600;
+  color: #5d6d7e;
+  margin-right: 4px;
 }
