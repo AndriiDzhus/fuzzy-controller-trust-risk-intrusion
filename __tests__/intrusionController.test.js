@@ -73,3 +73,12 @@ describe("Intrusion controller logic", () => {
     expect(a).toBeCloseTo(b, 10);
   });
 });
+
+describe("Intrusion COG grid", () => {
+  test("aggregated output covers the whole universe [0, 100] with step 0.2", () => {
+    const { calculateIntrusion } = require("../controllers");
+    const result = calculateIntrusion({ packets: 14, rate: 1500, weight: 240 });
+    expect(result.aggregatedOutput).toHaveLength(501);
+    expect(result.aggregatedOutput.at(-1).x).toBe(100);
+  });
+});

@@ -33,23 +33,23 @@
         },
         "cog": {
           "label": "центр тяжіння (центроїд)",
-          "hint": "Баланс фігури під кривою: y* = Σ y·μ(y) / Σ μ(y)."
+          "hint": "Баланс фігури під кривою: y* = ∫ y·μ(y) dy / ∫ μ(y) dy. Trust рахує інтеграл точно по многокутнику (2.26–2.28), Intrusion — сумою з кроком 0,2: Σ y·μ(y) / Σ μ(y)."
         },
         "wavg": {
-          "label": "зважене середнє синглтонів",
-          "hint": "y* = Σ wᵢzᵢ / Σ wᵢ, де zᵢ — точка синглтона, wᵢ — його вага."
-        },
-        "maxAct": {
-          "label": "максимальна активація",
-          "hint": "Кілька правил на один синглтон — лишається найбільше спрацювання (max), не сума."
+          "label": "зважена сума нормалізованих наслідків",
+          "hint": "SR = Σ w̄ᵢ·cᵢ = Σ wᵢcᵢ / Σ wᵢ, де cᵢ — синглтон-наслідок правила, w̄ᵢ — його нормалізована вага. У тензорній формі це повна згортка тензора Y = W̄ ⊙ C."
         },
         "min": {
           "label": "min",
           "hint": "Сила правила α — найменше μ серед умов, з’єднаних через ТА."
         },
-        "accAct": {
-          "label": "акумульована активація",
-          "hint": "Вага wᵢ дорівнює max спрацювань цього синглтона після акумуляції."
+        "prod": {
+          "label": "добуток",
+          "hint": "Вага правила w — алгебраїчний добуток μ умов: w = μ(EC)·μ(TP)·μ(Lat) (формула 3.5)."
+        },
+        "norm": {
+          "label": "Нормалізація",
+          "hint": "w̄ᵢ = wᵢ / Σ wⱼ — частка кожного правила; сума нормалізованих ваг дорівнює 1."
         }
       },
       "noRuleFired": "Жодне правило не спрацювало",
@@ -79,17 +79,20 @@
         "graphTitleCentroid": "Дефазифікація: {var}* на термах",
         "fuzzificationHint": "Перетворення чітких входів на ступені приналежності μ(x) лінгвістичних термів. Вертикальна лінія — поточне значення входу.",
         "rulesHintMamdani": "Для кожного правила α = {tip:min} μ умов. У групі терму виходу лишається {tip:max} — це висота зрізу на наступному кроці.",
-        "rulesHintSugeno": "Для кожного правила α = {tip:min} μ умов. У групі синглтона лишається {tip:maxAct} — це його вага.",
+        "rulesHintSugeno": "Для кожного правила вага w = {tip:prod} μ умов. Кожне правило має власний синглтон-наслідок, тож його вага переходить на наступний крок без змін.",
         "rulesClip": "висота зрізу",
         "rulesSingleton": "висота синглтона",
         "rulesShowIdle": "Показати неактивні ({n})",
         "rulesHideIdle": "Сховати неактивні",
         "rulesEmpty": "Жодне правило не спрацювало для цих входів.",
         "accumulationHintMamdani": "{tip:clipped} терми збираються через {tip:max} у темний контур. Панель — сили правил α, тобто висота зрізу.",
-        "accumulationHintSugeno": "Для кожного синглтона лишається {tip:maxAct} правил, що на нього вказують.",
         "defuzzificationHintCog": "Вертикаль — {tip:cog} {var}*. Панель — μ термів у цій точці, не висота зрізу α; підсвічений терм має найбільше μ.",
         "defuzzificationHintCentroid": "Вертикаль — {tip:cog} {var}*. Панель — μ термів у цій точці, не висота зрізу α; підсвічений терм має найбільше μ.",
-        "defuzzificationHintSugeno": "Чітке значення — {tip:wavg}; вага терму — його {tip:accAct}. Вертикальна лінія — отримане значення."
+        "defuzzificationHintSugeno": "Чітке значення — {tip:wavg}. Вертикальні лінії — синглтони cᵢ, вертикаль результату — отримане значення.",
+        "rulesWeight": "вага правила",
+        "normalization": "Нормалізація ваг",
+        "normalizationHintSugeno": "{tip:norm}: кожну вагу ділимо на суму всіх ваг. Панель — w̄ᵢ для кожного синглтона, їх сума дорівнює 1.",
+        "sugenoSumLabel": "Розрахунок:"
       },
       "meta": {
         "model": "Модель:",
@@ -98,7 +101,7 @@
         "sugeno": "Sugeno",
         "centroid": "центр тяжіння (центроїд)",
         "centerOfGravity": "центр тяжіння (центроїд)",
-        "weightedAverage": "згортка зважених наслідків"
+        "weightedAverage": "зважена сума нормалізованих наслідків (Σ w̄ᵢ·cᵢ)"
       },
       "docs": {
         "formulasBtn": "Формули приналежності",
@@ -181,13 +184,6 @@
           "trust": "Низькі значення TI відповідають аномальній поведінці, високі — нормальному трафіку."
         }
       },
-      "sticky": {
-        "inputs": {
-          "errors": "Помилки",
-          "connections": "З'єднання",
-          "bytes": "Байти"
-        }
-      },
       "description": "Система нечіткого виводу для оцінки індексу довіри (TI) на основі частки SYN-помилок (ER), кількості з'єднань за 2 с (CC) та логарифма байтів джерела (BS).",
       "inputs": {
         "errors": "Частка SYN-помилок (ER) (0–1):",
@@ -249,13 +245,6 @@
           "risk": "Sugeno 0-го порядку: кожен терм SR — синглтон {0, 20, 40, 60, 80, 100}."
         }
       },
-      "sticky": {
-        "inputs": {
-          "energy": "Енергія",
-          "strength": "Передача",
-          "response": "Затримка"
-        }
-      },
       "description": "Оцінка індексу ризику безпеки (SR) на основі споживаної енергії (EC), потужності передачі (TP) та затримки (Lat).",
       "inputs": {
         "energy": "Споживана енергія (EC) (0–0,05 кВт·год/ГБ):",
@@ -314,13 +303,6 @@
           "rate": "Швидкість передавання пакетів у потоці. Під час DoS/DDoS різко зростає порівняно з нормальним IoT-трафіком.",
           "weight": "Добуток кількості вхідних і вихідних пакетів у потоці; відображає інтенсивність і симетрію обміну. Аномально високі значення характерні для DDoS, DoS та сканування мережі (Reconnaissance).",
           "intrusion": "Вірогідність вторгнення для IoT-пристрою: наскільки імовірно, що пристрій є об’єктом атаки або вже зазнав вторгнення."
-        }
-      },
-      "sticky": {
-        "inputs": {
-          "packets": "Пакети",
-          "rate": "Швидкість",
-          "weight": "Вага"
         }
       },
       "description": "Оцінка вірогідності вторгнення (IP) на основі кількості пакетів (NP), швидкості передавання (Rate) та ваги потоку (We) з датасету CICIoT2023.",
@@ -398,23 +380,23 @@
         },
         "cog": {
           "label": "center of gravity (centroid)",
-          "hint": "Balance point of the area under the curve: y* = Σ y·μ(y) / Σ μ(y)."
+          "hint": "Balance point of the area under the curve: y* = ∫ y·μ(y) dy / ∫ μ(y) dy. Trust integrates the polygon exactly (2.26–2.28); Intrusion uses a sum with step 0.2: Σ y·μ(y) / Σ μ(y)."
         },
         "wavg": {
-          "label": "weighted average of the singletons",
-          "hint": "y* = Σ wᵢzᵢ / Σ wᵢ, where zᵢ is the singleton point and wᵢ its weight."
-        },
-        "maxAct": {
-          "label": "maximum activation",
-          "hint": "Several rules, one singleton — keep the highest firing (max), not the sum."
+          "label": "weighted sum of normalised consequents",
+          "hint": "SR = Σ w̄ᵢ·cᵢ = Σ wᵢcᵢ / Σ wᵢ, where cᵢ is the rule's singleton consequent and w̄ᵢ its normalised weight. In tensor form this is the full contraction of Y = W̄ ⊙ C."
         },
         "min": {
           "label": "min",
           "hint": "Rule strength α is the smallest μ among the AND conditions."
         },
-        "accAct": {
-          "label": "accumulated activation",
-          "hint": "Weight wᵢ is that singleton's max firing after accumulation."
+        "prod": {
+          "label": "product",
+          "hint": "Rule weight w is the algebraic product of the condition μ values: w = μ(EC)·μ(TP)·μ(Lat) (eq. 3.5)."
+        },
+        "norm": {
+          "label": "Normalisation",
+          "hint": "w̄ᵢ = wᵢ / Σ wⱼ — each rule's share; normalised weights sum to 1."
         }
       },
       "noRuleFired": "No rule fired",
@@ -444,17 +426,20 @@
         "graphTitleCentroid": "Defuzzification: {var}* on the terms",
         "fuzzificationHint": "Conversion of crisp inputs into membership degrees μ(x) of linguistic terms. The vertical line is the current input value.",
         "rulesHintMamdani": "For each rule α = {tip:min} of the condition μ values. In an output-term group the {tip:max} remains — that is the clip height on the next step.",
-        "rulesHintSugeno": "For each rule α = {tip:min} of the condition μ values. In a singleton group the {tip:maxAct} remains — that is its weight.",
+        "rulesHintSugeno": "For each rule the weight w is the {tip:prod} of the condition μ values. Every rule has its own singleton consequent, so its weight passes to the next step unchanged.",
         "rulesClip": "clip height",
         "rulesSingleton": "singleton height",
         "rulesShowIdle": "Show inactive ({n})",
         "rulesHideIdle": "Hide inactive",
         "rulesEmpty": "No rule fired for these inputs.",
         "accumulationHintMamdani": "{tip:clipped} terms are merged by {tip:max} into the dark outline. The panel shows rule strengths α — the clip height.",
-        "accumulationHintSugeno": "Each output singleton keeps the {tip:maxAct} of the rules that point to it.",
         "defuzzificationHintCog": "The vertical line is the {tip:cog} {var}*. The panel shows μ of the terms at that point, not the clip height α; the highlighted term has the largest μ.",
         "defuzzificationHintCentroid": "The vertical line is the {tip:cog} {var}*. The panel shows μ of the terms at that point, not the clip height α; the highlighted term has the largest μ.",
-        "defuzzificationHintSugeno": "The crisp value is the {tip:wavg}; a term's weight is its {tip:accAct}. The vertical line is the obtained value."
+        "defuzzificationHintSugeno": "The crisp value is the {tip:wavg}. Vertical lines are the singletons cᵢ; the result line is the obtained value.",
+        "rulesWeight": "rule weight",
+        "normalization": "Weight normalisation",
+        "normalizationHintSugeno": "{tip:norm}: every weight is divided by the sum of all weights. The panel shows w̄ᵢ for each singleton; they sum to 1.",
+        "sugenoSumLabel": "Calculation:"
       },
       "meta": {
         "model": "Model:",
@@ -463,7 +448,7 @@
         "sugeno": "Sugeno",
         "centroid": "center of gravity (centroid)",
         "centerOfGravity": "center of gravity (centroid)",
-        "weightedAverage": "fold of weighted consequents"
+        "weightedAverage": "weighted sum of normalised consequents (Σ w̄ᵢ·cᵢ)"
       },
       "docs": {
         "formulasBtn": "Membership formulas",
@@ -546,13 +531,6 @@
           "trust": "Low TI values indicate anomalous behaviour; high values indicate normal traffic."
         }
       },
-      "sticky": {
-        "inputs": {
-          "errors": "Errors",
-          "connections": "Connections",
-          "bytes": "Bytes"
-        }
-      },
       "description": "A fuzzy inference system for evaluating trust index (TI) from SYN error rate (ER), connection count over 2 s (CC), and log source bytes (BS).",
       "inputs": {
         "errors": "SYN error rate (ER) (0–1):",
@@ -614,13 +592,6 @@
           "risk": "0-order Sugeno: each SR term is a singleton {0, 20, 40, 60, 80, 100}."
         }
       },
-      "sticky": {
-        "inputs": {
-          "energy": "Energy",
-          "strength": "Power",
-          "response": "Latency"
-        }
-      },
       "description": "Evaluates security risk (SR) based on energy consumption (EC), transmit power (TP), and latency (Lat).",
       "inputs": {
         "energy": "Energy Consumption (EC) (0–0.05 kWh/GB):",
@@ -679,13 +650,6 @@
           "rate": "Packet transmission rate in the flow. Under DoS/DDoS it rises sharply compared with normal IoT traffic.",
           "weight": "Product of inbound and outbound packets in a flow; measures exchange intensity and symmetry. Abnormally high values are typical of DDoS, DoS, and network reconnaissance.",
           "intrusion": "Intrusion probability for an IoT device: how likely it is that the device is under attack or has already been compromised."
-        }
-      },
-      "sticky": {
-        "inputs": {
-          "packets": "Packets",
-          "rate": "Rate",
-          "weight": "Weight"
         }
       },
       "description": "Evaluates intrusion probability (IP) from packet count (NP), transmission rate (Rate), and flow weight (We) in the CICIoT2023 dataset.",

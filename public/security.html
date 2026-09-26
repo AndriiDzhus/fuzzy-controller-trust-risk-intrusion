@@ -133,10 +133,10 @@
       <details class="process-step" data-step="accumulation" open>
         <summary>
           <span class="process-step-num">3</span>
-          <span class="process-step-title" data-i18n="common.pipeline.accumulation"></span>
+          <span class="process-step-title" data-i18n="common.pipeline.normalization"></span>
         </summary>
         <div class="process-step-body">
-          <p class="process-step-hint" data-i18n="common.pipeline.accumulationHintSugeno"></p>
+          <p class="process-step-hint" data-i18n="common.pipeline.normalizationHintSugeno"></p>
           <div class="graph-grid graph-grid-split">
             <div class="membership-section membership-section-wide">
               <h4 data-i18n="security.membership.risk"></h4>
@@ -157,6 +157,7 @@
             <div class="graph-container">
               <h4 data-i18n="security.membership.risk"></h4>
               <canvas id="riskCanvas" width="800" height="220"></canvas>
+              <p id="riskFormula" class="sugeno-sum" aria-live="polite"></p>
             </div>
           </div>
         </div>
