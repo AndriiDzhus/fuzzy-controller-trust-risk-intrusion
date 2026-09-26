@@ -974,14 +974,24 @@ function outputTermOrder(config, mfData) {
   return Object.keys(mfData?.output?.[key] || {});
 }
 
+function isProductRule(rule) {
+  return rule?.tnorm === "product";
+}
+
+function ruleStrengthSymbol(rule) {
+  // Mamdani: firing level α = min μ. Sugeno (thesis, section 3): weight w = Π μ.
+  return isProductRule(rule) ? "w" : "α";
+}
+
 function renderRuleRow(rule, maxAlpha) {
   const isMax = maxAlpha >= RULE_FIRE_EPS && rule.alpha >= maxAlpha - 1e-9;
   const idle = rule.alpha < RULE_FIRE_EPS;
+  const product = isProductRule(rule);
   const conditions = (rule.conditions || [])
     .map((cond, index) => {
-      const isMin = Math.abs(Number(cond.mu) - Number(rule.alpha)) <= 1e-9;
+      const isMin = !product && Math.abs(Number(cond.mu) - Number(rule.alpha)) <= 1e-9;
       const join = index
-        ? `<span class="rule-op" aria-hidden="true">∧</span>`
+        ? `<span class="rule-op" aria-hidden="true">${product ? "·" : "∧"}</span>`
         : "";
       return `${join}<span class="rule-cond${isMin ? " is-min" : ""}">
         <span class="rule-cond-sym">${escapeHtml(cond.symbol)}</span>
@@ -994,7 +1004,7 @@ function renderRuleRow(rule, maxAlpha) {
   return `<li class="rule-row${isMax ? " is-max" : ""}${idle ? " is-idle" : ""}">
     <span class="rule-index">#${rule.index}</span>
     <div class="rule-conds">${conditions}</div>
-    <span class="rule-alpha"><span class="sym-greek">α</span> = ${formatMembership(rule.alpha)}</span>
+    <span class="rule-alpha"><span class="sym-greek">${ruleStrengthSymbol(rule)}</span> = ${formatMembership(rule.alpha)}</span>
   </li>`;
 }
 
@@ -1004,9 +1014,12 @@ function renderRuleEvaluations(config, result, mfData) {
 
   const rules = result?.ruleEvaluations || [];
   const showIdle = root.dataset.showIdle === "1";
-  const clipLabel = mfData?.meta?.singletonValues
-    ? i18nText("common.pipeline.rulesSingleton", "висота синглтона")
-    : i18nText("common.pipeline.rulesClip", "висота зрізу");
+  const productRules = isProductRule(rules[0]);
+  const clipLabel = productRules
+    ? i18nText("common.pipeline.rulesWeight", "вага правила")
+    : mfData?.meta?.singletonValues
+      ? i18nText("common.pipeline.rulesSingleton", "висота синглтона")
+      : i18nText("common.pipeline.rulesClip", "висота зрізу");
 
   if (!rules.length) {
     root.innerHTML = `<p class="rule-eval-empty">${escapeHtml(
@@ -1042,7 +1055,11 @@ function renderRuleEvaluations(config, result, mfData) {
     cards.push(`<article class="rule-group" style="border-top-color:${color}">
       <header class="rule-group-head">
         <span class="rule-group-term">${escapeHtml(termLabel(out))}</span>
-        <span class="rule-group-max">max <span class="sym-greek">α</span> = ${formatMembership(maxAlpha)} (${escapeHtml(clipLabel)})</span>
+        <span class="rule-group-max">${
+          productRules && items.length === 1
+            ? `<span class="sym-greek">w</span>`
+            : `max <span class="sym-greek">${ruleStrengthSymbol(items[0])}</span>`
+        } = ${formatMembership(maxAlpha)} (${escapeHtml(clipLabel)})</span>
       </header>
       <ul class="rule-group-list">${visible.map((rule) => renderRuleRow(rule, maxAlpha)).join("")}</ul>
     </article>`);
@@ -1068,6 +1085,29 @@ function renderRuleEvaluations(config, result, mfData) {
   }
 
   root.innerHTML = `${cards.length ? `<div class="rule-eval-grid">${cards.join("")}</div>` : ""}${footer}`;
+}
+
+// Sugeno layer 5: SR = Σ w̄ᵢ·cᵢ written out with the active rules only.
+function renderSugenoSum(config, result) {
+  const el = document.getElementById(config.output?.formulaId);
+  if (!el) return;
+  const items = (result?.weightedConsequents || []).filter(
+    (item) => Number(item.normalizedWeight) >= RULE_FIRE_EPS
+  );
+  if (!hasFiredOutput(result) || !items.length) {
+    el.innerHTML = "";
+    return;
+  }
+  const symbol = escapeHtml(config.output.symbol || "y*");
+  const w = `<span class="sym-greek">w̄</span>`;
+  const terms = items
+    .map((item) => `${formatMembership(item.normalizedWeight)}·${formatNumber(item.consequent)}`)
+    .join(" + ");
+  const label = escapeHtml(i18nText("common.pipeline.sugenoSumLabel", "Розрахунок:"));
+  el.innerHTML = `<span class="sugeno-sum-label">${label}</span> ${symbol} = Σ ${w}<sub>i</sub>·c<sub>i</sub> = ${terms} = <strong>${formatNumber(
+    result.value,
+    { minimumFractionDigits: 2, maximumFractionDigits: 2 }
+  )}</strong>`;
 }
 
 function bindRuleEvalToggle(config, state) {
@@ -1156,11 +1196,21 @@ function stickyLabelKey(spec) {
   return key.replace(".inputs.", ".membership.");
 }
 
+// Symbol exactly as written in the main input label: "ER", "TP", "Lat", "Rate".
 function stickyShortLabel(spec, fullLabel) {
   if (spec.shortLabel) return spec.shortLabel;
   const match = String(fullLabel || "").match(/\(([A-Za-z]{1,4})\)/);
-  if (match) return match[1].toUpperCase();
+  if (match) return match[1];
   return String(spec.key || "?").slice(0, 1).toUpperCase();
+}
+
+// Variable name as in the main input label, without symbol, range and colon:
+// "Потужність передачі (TP) (0–40 дБм):" -> "Потужність передачі".
+function stickyInputName(fullLabel) {
+  return String(fullLabel || "")
+    .replace(/\s*\(.*$/, "")
+    .replace(/:\s*$/, "")
+    .trim();
 }
 
 function pageI18nKey(config) {
@@ -1176,11 +1226,6 @@ function stickyTitleKey(config) {
   return `${pageI18nKey(config)}.stickyTitle`;
 }
 
-function stickyNameKey(spec, config) {
-  if (spec.stickyNameKey) return spec.stickyNameKey;
-  return `${pageI18nKey(config)}.sticky.inputs.${spec.key}`;
-}
-
 function refreshStickyCopy(config) {
   const titleEl = document.getElementById("stickyPageTitle");
   if (titleEl) {
@@ -1192,7 +1237,9 @@ function refreshStickyCopy(config) {
     if (!label) return;
     const full = i18nText(stickyLabelKey(spec), spec.key);
     const letter = stickyShortLabel(spec, full);
-    const name = i18nText(stickyNameKey(spec, config), full);
+    const name = spec.stickyNameKey
+      ? i18nText(spec.stickyNameKey, stickyInputName(full))
+      : stickyInputName(full) || full;
     const letterEl = label.querySelector(".sticky-input-letter");
     const nameEl = label.querySelector(".sticky-input-name");
     if (letterEl) letterEl.textContent = letter;
@@ -1970,6 +2017,8 @@ function normalizeCalculateResult(result, payload) {
     ruleOutputs: result.ruleOutputs ?? null,
     ruleEvaluations: result.ruleEvaluations || [],
     aggregatedOutput: result.aggregatedOutput || null,
+    normalizedOutputs: result.normalizedOutputs || null,
+    weightedConsequents: result.weightedConsequents || null,
     inputs: payload,
   };
 }
@@ -2048,6 +2097,7 @@ async function createFuzzyPage(config) {
     updateStickyResult(data);
     renderControllerMemberships(config, data, state.mfData);
     renderRuleEvaluations(config, data, state.mfData);
+    renderSugenoSum(config, data);
     drawAll();
   };
 
@@ -2166,6 +2216,7 @@ async function createFuzzyPage(config) {
     updateStickyResult(state.result);
     renderControllerMemberships(config, state.result, state.mfData);
     renderRuleEvaluations(config, state.result, state.mfData);
+    renderSugenoSum(config, state.result);
     drawAll();
   });
 

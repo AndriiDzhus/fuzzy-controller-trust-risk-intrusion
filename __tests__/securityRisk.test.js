@@ -77,16 +77,15 @@ function assignmentInfer(energy, strength, response) {
     veryHigh: 0,
   };
 
-  RULES.forEach((rule) => {
-    const alpha = Math.min(fuzzy.energy[rule.EC], fuzzy.strength[rule.TP], fuzzy.response[rule.Lat]);
-    ruleOutputs[rule.out] = Math.max(ruleOutputs[rule.out], alpha);
-  });
-
+  // Theory, section 3 (layers 2–5): w_k = product of condition memberships,
+  // w̄_k = w_k / Σw, SR = Σ w̄_k · C_k.
   let numerator = 0;
   let denominator = 0;
-  Object.entries(ruleOutputs).forEach(([term, mu]) => {
-    numerator += SINGletons[term] * mu;
-    denominator += mu;
+  RULES.forEach((rule) => {
+    const w = fuzzy.energy[rule.EC] * fuzzy.strength[rule.TP] * fuzzy.response[rule.Lat];
+    ruleOutputs[rule.out] = Math.max(ruleOutputs[rule.out], w);
+    numerator += SINGletons[rule.out] * w;
+    denominator += w;
   });
 
   return {
@@ -115,13 +114,14 @@ describe("Security controller logic", () => {
     expect(a).toBeCloseTo(b, 10);
   });
 
-  test("rule evaluations use min of condition memberships", () => {
-    const result = calculateSecurity({ energy: 0, strength: 0, response: 0 });
+  test("rule weights use the algebraic product of condition memberships (3.5)", () => {
+    const result = calculateSecurity({ energy: 0.03, strength: 25, response: 6 });
     expect(result.ruleEvaluations).toHaveLength(6);
     expect(result.ruleEvaluations[0].conditions.map((item) => item.symbol)).toEqual(["EC", "TP", "Lat"]);
     result.ruleEvaluations.forEach((rule) => {
-      const expected = Math.min(...rule.conditions.map((item) => item.mu));
-      expect(rule.alpha).toBeCloseTo(expected, 6);
+      expect(rule.tnorm).toBe("product");
+      const expected = rule.conditions.reduce((acc, item) => acc * item.mu, 1);
+      expect(rule.alpha).toBeCloseTo(expected, 5);
     });
     const byOut = {};
     result.ruleEvaluations.forEach((rule) => {
@@ -240,5 +240,30 @@ describe("Security assignment compliance", () => {
       ["high", "medium", "high", "high"],
       ["high", "high", "high", "veryHigh"],
     ]);
+  });
+});
+
+describe("Security Sugeno layers 3–5 (theory section 3)", () => {
+  test("normalised weights sum to 1 and SR is the weighted sum Σ w̄·C", () => {
+    const result = calculateSecurity({ energy: 0.03, strength: 25, response: 6 });
+    const total = result.weightedConsequents.reduce((acc, item) => acc + item.normalizedWeight, 0);
+    expect(total).toBeCloseTo(1, 5);
+    const sum = result.weightedConsequents.reduce(
+      (acc, item) => acc + item.normalizedWeight * item.consequent,
+      0
+    );
+    expect(result.value).toBeCloseTo(sum, 4);
+    expect(result.value).toBeCloseTo(assignmentInfer(0.03, 25, 6).value, 10);
+    expect(Object.values(result.membershipData.risk).reduce((a, b) => a + b, 0)).toBeCloseTo(1, 10);
+  });
+
+  test("product t-norm differs from min where several memberships are partial", () => {
+    // min would give 47.14; the product-based Sugeno of the thesis gives 33.24.
+    const result = calculateSecurity({ energy: 0.03, strength: 25, response: 6 });
+    expect(result.value).toBeCloseTo(33.24, 2);
+  });
+
+  test("membership-functions meta advertises the product t-norm", () => {
+    expect(controllers.security.membershipFunctions().meta.tnorm).toBe("product");
   });
 });

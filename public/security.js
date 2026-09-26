@@ -36,6 +36,8 @@ document.addEventListener("DOMContentLoaded", async () => {
     output: {
       valueId: "riskValue",
       termId: "riskTerm",
+      formulaId: "riskFormula",
+      symbol: "SR",
     },
     rules: {
       containerId: "securityRuleEval",
