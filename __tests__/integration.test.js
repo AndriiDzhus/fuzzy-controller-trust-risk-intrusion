@@ -34,6 +34,10 @@ describe("Unified controllers API", () => {
     expect(response.body.ruleEvaluations).toHaveLength(6);
     expect(response.body.ruleEvaluations[0].out).toBe("none");
     expect(response.body.ruleEvaluations[0].alpha).toBeCloseTo(1, 5);
+    expect(response.body.ruleEvaluations[0].tnorm).toBe("product");
+    expect(response.body.weightedConsequents).toHaveLength(6);
+    expect(response.body.weightedConsequents[0].normalizedWeight).toBeCloseTo(1, 6);
+    expect(response.body.normalizedOutputs.none).toBeCloseTo(1, 6);
   });
 
   test("security calculate endpoint reports uncovered inputs", async () => {

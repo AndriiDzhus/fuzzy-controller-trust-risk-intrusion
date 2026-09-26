@@ -163,9 +163,87 @@ function centerOfGravity(union, range = [0, 100], step = 0.2) {
   return Math.min(end, Math.max(start, numerator / denominator));
 }
 
+// Straight segments [x0, y0, x1, y1] of a triangular output term.
+function triangleSegments([a, b, c]) {
+  const segments = [];
+  if (b > a) segments.push([a, 0, b, 1]);
+  if (c > b) segments.push([b, 1, c, 0]);
+  return segments;
+}
+
+/**
+ * Break points of the aggregated output polygon mu_agg(TI) (section 2.5,
+ * eq. 2.22–2.25): term vertices, points where term slopes cross the clip
+ * levels Omega_m, and points where two slopes cross each other. Between two
+ * neighbouring break points mu_agg is strictly linear.
+ */
+function aggregatedBreakPoints(clipLevels, range) {
+  const [start, end] = range;
+  const outputTerms = membershipParams.trustIndex;
+  const segments = Object.values(outputTerms).flatMap((cfg) => triangleSegments(cfg.params));
+  const levels = Object.values(clipLevels).filter((level) => level > 0 && level < 1);
+  const points = new Set([start, end]);
+  const add = (x) => {
+    if (Number.isFinite(x) && x >= start - 1e-12 && x <= end + 1e-12) {
+      points.add(Math.min(end, Math.max(start, x)));
+    }
+  };
+
+  segments.forEach(([x0, y0, x1, y1]) => {
+    add(x0);
+    add(x1);
+    const slope = (y1 - y0) / (x1 - x0);
+    levels.forEach((level) => {
+      if (level > Math.min(y0, y1) && level < Math.max(y0, y1)) add(x0 + (level - y0) / slope);
+    });
+  });
+
+  for (let i = 0; i < segments.length; i += 1) {
+    for (let j = i + 1; j < segments.length; j += 1) {
+      const [ax0, ay0, ax1, ay1] = segments[i];
+      const [bx0, by0, bx1, by1] = segments[j];
+      const ka = (ay1 - ay0) / (ax1 - ax0);
+      const kb = (by1 - by0) / (bx1 - bx0);
+      if (Math.abs(ka - kb) < 1e-12) continue;
+      const x = (by0 - kb * bx0 - (ay0 - ka * ax0)) / (ka - kb);
+      if (x >= Math.max(ax0, bx0) && x <= Math.min(ax1, bx1)) add(x);
+    }
+  }
+
+  return [...points].sort((a, b) => a - b);
+}
+
+/**
+ * Exact centre of gravity of the clipped max-min polygon, eq. (2.26)–(2.28):
+ * on every sub-interval [TI_{s-1}, TI_s] mu_agg = A_s·TI + B_s, so
+ *   moment = Σ [A_s/3 (TI_s³ − TI_{s−1}³) + B_s/2 (TI_s² − TI_{s−1}²)],
+ *   area   = Σ [A_s/2 (TI_s² − TI_{s−1}²) + B_s (TI_s − TI_{s−1})],
+ *   TI*    = moment / area.
+ */
+function analyticCenterOfGravity(union, clipLevels, range = [0, 100]) {
+  const points = aggregatedBreakPoints(clipLevels, range);
+  let moment = 0;
+  let area = 0;
+  for (let s = 1; s < points.length; s += 1) {
+    const x0 = points[s - 1];
+    const x1 = points[s];
+    if (x1 - x0 < 1e-12) continue;
+    const y0 = union.valueAt(x0);
+    const y1 = union.valueAt(x1);
+    const A = (y1 - y0) / (x1 - x0);
+    const B = y0 - A * x0;
+    moment += (A / 3) * (x1 ** 3 - x0 ** 3) + (B / 2) * (x1 ** 2 - x0 ** 2);
+    area += (A / 2) * (x1 ** 2 - x0 ** 2) + B * (x1 - x0);
+  }
+  if (area <= 1e-15) return null;
+  return Math.min(range[1], Math.max(range[0], moment / area));
+}
+
 function calculateTrustIndex(errorsVal, connectionsVal, bytesVal) {
   const union = inferTrustUnion(errorsVal, connectionsVal, bytesVal);
-  return centerOfGravity(union, fuzzySystem.outputs[0].range);
+  const range = fuzzySystem.outputs[0].range;
+  const exact = analyticCenterOfGravity(union, getOutputTermActivations(), range);
+  return exact === null ? centerOfGravity(union, range) : exact;
 }
 
 function getOutputTermActivations() {
@@ -204,14 +282,15 @@ function getTrustRuleEvaluations(membershipData) {
   });
 }
 
-function sampleAggregatedOutput(union, range, points = 100) {
+function sampleAggregatedOutput(union, range, points = 100, breakPoints = []) {
   const [start, end] = range;
-  const series = [];
+  const xs = new Set();
   for (let i = 0; i <= points; i += 1) {
-    const x = start + (i / points) * (end - start);
-    series.push({ x, y: union.valueAt(x) });
+    xs.add(start + (i / points) * (end - start));
   }
-  return series;
+  // Add polygon corners so the plotted contour is the exact polygon used by COG.
+  breakPoints.forEach((x) => xs.add(x));
+  return [...xs].sort((a, b) => a - b).map((x) => ({ x, y: union.valueAt(x) }));
 }
 
 function getAggregatedOutput(errorsVal, connectionsVal, bytesVal) {
@@ -221,7 +300,13 @@ function getAggregatedOutput(errorsVal, connectionsVal, bytesVal) {
     Number.isFinite(bytesVal)
       ? inferTrustUnion(errorsVal, connectionsVal, bytesVal)
       : buildOutputUnion();
-  return sampleAggregatedOutput(union, fuzzySystem.outputs[0].range, 100);
+  const range = fuzzySystem.outputs[0].range;
+  return sampleAggregatedOutput(
+    union,
+    range,
+    100,
+    aggregatedBreakPoints(getOutputTermActivations(), range)
+  );
 }
 
 // Calculate membership degrees
@@ -257,6 +342,8 @@ module.exports = {
   fuzzySystem,
   calculateTrustIndex,
   centerOfGravity,
+  analyticCenterOfGravity,
+  aggregatedBreakPoints,
   getAggregatedOutput,
   getOutputTermActivations,
   getTrustRuleEvaluations,
