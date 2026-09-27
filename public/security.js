@@ -42,6 +42,13 @@ document.addEventListener("DOMContentLoaded", async () => {
     rules: {
       containerId: "securityRuleEval",
     },
+    // Assignment rule table: the terms of inputs EC, TP and Lat take the
+    // feminine form; output SR keeps the default (masculine) labels.
+    termForms: {
+      energy: "f",
+      strength: "f",
+      response: "f",
+    },
     membership: {
       energy: "energyMembership",
       strength: "strengthMembership",

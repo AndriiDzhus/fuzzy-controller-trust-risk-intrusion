@@ -295,9 +295,24 @@ function drawAxes(ctx, width, height, pad, axisLabels = null, view = 100) {
   ctx.textBaseline = "alphabetic";
 }
 
-function termLabel(term) {
-  if (window.i18nHelper) return window.i18nHelper.t(`common.terms.${term}`, term);
-  return term;
+// Ukrainian term labels agree in grammatical gender with their variable, as in
+// the assignment rule tables (e.g. feminine inputs vs. masculine outputs).
+// config.termForms maps a variable key to a form ("f" feminine, "n" neuter);
+// the forms live in i18n common.termForms.<form>.<term> and fall back to
+// common.terms (masculine in Ukrainian, and the English labels).
+const pageTermForms = { byVar: {}, outputKey: null };
+
+function configureTermForms(config) {
+  pageTermForms.byVar = { ...(config.termForms || {}) };
+  pageTermForms.outputKey = config.graphs?.output?.key || null;
+}
+
+function termLabel(term, varKey) {
+  if (!window.i18nHelper) return term;
+  const base = window.i18nHelper.t(`common.terms.${term}`, term);
+  const form = varKey ? pageTermForms.byVar[varKey] : null;
+  if (!form) return base;
+  return window.i18nHelper.t(`common.termForms.${form}.${term}`, base);
 }
 
 function i18nText(key, fallback) {
@@ -511,14 +526,14 @@ function showGraphProbe(canvas, geo, cssX) {
   probe.style.height = `${Math.max(0, geo.plotBottom - geo.plotTop)}px`;
 }
 
-function muRowHtml(term, value, color, { dominant = false, zero = false } = {}) {
+function muRowHtml(term, value, color, { dominant = false, zero = false, varKey = null } = {}) {
   const pct = Math.round(Math.max(0, Math.min(1, Number(value) || 0)) * 100);
   const classes = ["tt-row"];
   if (dominant) classes.push("is-dominant");
   if (zero) classes.push("is-zero");
   return `<div class="${classes.join(" ")}">
     <i style="background:${color}"></i>
-    <span class="tt-term">${escapeHtml(termLabel(term))}</span>
+    <span class="tt-term">${escapeHtml(termLabel(term, varKey))}</span>
     <span class="tt-mu">${formatNumber(value, { minimumFractionDigits: 3, maximumFractionDigits: 3 })}</span>
     <span class="tt-bar"><span style="width:${pct}%"></span></span>
   </div>`;
@@ -562,7 +577,9 @@ function tooltipFooter(model) {
   }
 
   if (!Number.isFinite(Number(model.resultValue))) return "";
-  const term = model.resultTerm ? ` · ${escapeHtml(termLabel(model.resultTerm))}` : "";
+  const term = model.resultTerm
+    ? ` · ${escapeHtml(termLabel(model.resultTerm, model.varKey))}`
+    : "";
   return `<div class="tt-foot">${i18nText("common.tooltip.result")}: ${formatNumber(
     Number(model.resultValue),
     {
@@ -594,6 +611,7 @@ function buildCurveTooltip(model, x) {
         muRowHtml(row.term, row.value, row.color, {
           dominant: max > 0.001 && row.value === max,
           zero: row.value < 0.005,
+          varKey: model.varKey,
         })
       )
       .join("")}
@@ -620,7 +638,7 @@ function buildSingletonTooltip(model, x) {
   }));
   const max = rows.reduce((best, row) => Math.max(best, row.value), 0);
   const status = onSpike
-    ? `${i18nText("common.tooltip.singletonAt")}: ${termLabel(nearest.term)}`
+    ? `${i18nText("common.tooltip.singletonAt")}: ${termLabel(nearest.term, model.varKey)}`
     : i18nText("common.tooltip.notSingleton");
 
   return `
@@ -632,6 +650,7 @@ function buildSingletonTooltip(model, x) {
         muRowHtml(row.term, row.value, row.color, {
           dominant: onSpike ? row.term === nearest.term : max > 0 && row.value === max,
           zero: row.value <= 0,
+          varKey: model.varKey,
         })
       )
       .join("")}
@@ -725,7 +744,7 @@ function drawCurveGraph(canvasId, termSeries, currentValue, options = {}) {
     ctx.fillStyle = color;
     ctx.font = "11px Arial";
     ctx.textAlign = "center";
-    ctx.fillText(termLabel(term), labelX, Math.max(14, labelY - 18));
+    ctx.fillText(termLabel(term, options.varKey), labelX, Math.max(14, labelY - 18));
   });
 
   if (currentValue !== null && currentValue !== undefined && inXView(currentValue, view)) {
@@ -770,7 +789,7 @@ function drawResultMarker(ctx, w, h, p, resultValue, view = 100) {
   );
 }
 
-function drawTermPeakLabel(ctx, w, h, p, term, points, color, view = 100) {
+function drawTermPeakLabel(ctx, w, h, p, term, points, color, view = 100, varKey = null) {
   const peak = findPeakPoint(points);
   if (!peak || peak.y <= 0.04 || !inXView(peak.x, view)) return;
   const labelX = toPlotX(peak.x, w, p, view);
@@ -778,7 +797,7 @@ function drawTermPeakLabel(ctx, w, h, p, term, points, color, view = 100) {
   ctx.fillStyle = color;
   ctx.font = "11px Arial";
   ctx.textAlign = "center";
-  ctx.fillText(termLabel(term), labelX, Math.max(14, labelY - 16));
+  ctx.fillText(termLabel(term, varKey), labelX, Math.max(14, labelY - 16));
 }
 
 function drawAggregatedSetGraph(canvasId, points, resultValue, options = {}) {
@@ -845,12 +864,12 @@ function drawAggregatedSetGraph(canvasId, points, resultValue, options = {}) {
 
   if (showDefuzz && termSeries && options.showPeakLabels) {
     Object.entries(termSeries).forEach(([term, series]) => {
-      drawTermPeakLabel(ctx, w, h, p, term, series, termColor(term, allTerms), view);
+      drawTermPeakLabel(ctx, w, h, p, term, series, termColor(term, allTerms), view, options.varKey);
     });
   }
   if (showAcc && options.showPeakLabels && !showDefuzz) {
     clippedTerms.forEach((term) => {
-      drawTermPeakLabel(ctx, w, h, p, term, clipped[term], termColor(term, allTerms), view);
+      drawTermPeakLabel(ctx, w, h, p, term, clipped[term], termColor(term, allTerms), view, options.varKey);
     });
   }
 
@@ -908,14 +927,14 @@ function drawSingletonGraph(canvasId, singletonValues, ruleOutputs, resultValue,
   ensureLegend(canvasId, terms, highlightTerm);
 }
 
-function renderMembership(containerId, data) {
+function renderMembership(containerId, data, varKey = null) {
   const container = document.getElementById(containerId);
   if (!container) return;
   container.innerHTML = "";
-  appendMembershipItems(container, data);
+  appendMembershipItems(container, data, varKey);
 }
 
-function appendMembershipItems(container, data) {
+function appendMembershipItems(container, data, varKey = null) {
   const entries = Object.entries(data || {});
   const maxValue = entries.reduce((best, [, value]) => Math.max(best, Number(value) || 0), 0);
 
@@ -930,7 +949,7 @@ function appendMembershipItems(container, data) {
     item.style.borderLeftColor = color;
     item.innerHTML = `
       <i class="membership-swatch" style="background:${color}"></i>
-      <span class="membership-label">${termLabel(term)}</span>
+      <span class="membership-label">${termLabel(term, varKey)}</span>
       <span class="membership-value">${formatNumber(value, {
         minimumFractionDigits: 3,
         maximumFractionDigits: 3,
@@ -954,12 +973,16 @@ function completeTermMap(termSeries, values) {
 function renderControllerMemberships(config, result, mfData) {
   if (!result) return;
   Object.entries(config.membership || {}).forEach(([key, containerId]) => {
-    renderMembership(containerId, result.membershipData?.[key]);
+    renderMembership(containerId, result.membershipData?.[key], key);
   });
   const activationsId = config.graphs.aggregated?.membershipId;
   if (!activationsId) return;
   const termSeries = mfData?.output?.[config.graphs.output.key];
-  renderMembership(activationsId, completeTermMap(termSeries, result.ruleOutputs));
+  renderMembership(
+    activationsId,
+    completeTermMap(termSeries, result.ruleOutputs),
+    config.graphs.output.key
+  );
 }
 
 const RULE_FIRE_EPS = 0.001;
@@ -995,7 +1018,7 @@ function renderRuleRow(rule, maxAlpha) {
         : "";
       return `${join}<span class="rule-cond${isMin ? " is-min" : ""}">
         <span class="rule-cond-sym">${escapeHtml(cond.symbol)}</span>
-        <span class="rule-cond-term">${escapeHtml(termLabel(cond.term))}</span>
+        <span class="rule-cond-term">${escapeHtml(termLabel(cond.term, cond.key))}</span>
         <span class="rule-cond-mu">${formatMembership(cond.mu)}</span>
       </span>`;
     })
@@ -1054,7 +1077,7 @@ function renderRuleEvaluations(config, result, mfData) {
     const color = termColor(out, outputTermOrder(config, mfData));
     cards.push(`<article class="rule-group" style="border-top-color:${color}">
       <header class="rule-group-head">
-        <span class="rule-group-term">${escapeHtml(termLabel(out))}</span>
+        <span class="rule-group-term">${escapeHtml(termLabel(out, config.graphs?.output?.key))}</span>
         <span class="rule-group-max">${
           productRules && items.length === 1
             ? `<span class="sym-greek">w</span>`
@@ -1205,7 +1228,7 @@ function stickyShortLabel(spec, fullLabel) {
 }
 
 // Variable name as in the main input label, without symbol, range and colon:
-// "Потужність передачі (TP) (0–40 дБм):" -> "Потужність передачі".
+// "Transmit Power (TP) (0–40 dBm):" -> "Transmit Power".
 function stickyInputName(fullLabel) {
   return String(fullLabel || "")
     .replace(/\s*\(.*$/, "")
@@ -1407,7 +1430,7 @@ function setOutputText(valueEl, termEl, data) {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   });
-  termEl.textContent = termLabel(data.dominantTerm);
+  termEl.textContent = termLabel(data.dominantTerm, pageTermForms.outputKey);
   termEl.style.color = termColor(data.dominantTerm, outputTermNames(data));
   hosts.forEach((el) => markUncoveredTip(el, false));
   markTermTip(termEl, true);
@@ -1948,6 +1971,7 @@ function setupTooltips(config, state) {
       return {
         type: "curve",
         kind: "input",
+        varKey: key,
         series: state.mfData.inputs[key],
         currentValue: Number.isFinite(fromResult) ? fromResult : fromInput,
         xLabel: graphOptions.axisLabels?.x || "x",
@@ -1963,6 +1987,7 @@ function setupTooltips(config, state) {
       return {
         type: "singleton",
         kind: "output",
+        varKey: config.graphs.output.key,
         singletonValues: state.mfData.meta.singletonValues,
         activations: state.result.ruleOutputs || {},
         resultValue: hasFiredOutput(state.result) ? state.result.value : null,
@@ -1976,6 +2001,7 @@ function setupTooltips(config, state) {
     return {
       type: "curve",
       kind: "output",
+      varKey: outputKey,
       series: state.mfData.output?.[outputKey] || {},
       resultValue: hasFiredOutput(state.result) ? state.result.value : null,
       resultTerm: hasFiredOutput(state.result) ? state.result.dominantTerm : null,
@@ -1999,6 +2025,7 @@ function setupTooltips(config, state) {
       return {
         type: "curve",
         kind: "aggregated",
+        varKey: outputKey,
         series,
         resultValue: null,
         resultTerm: null,
@@ -2052,6 +2079,7 @@ async function loadMembershipFunctions(controller) {
 }
 
 async function createFuzzyPage(config) {
+  configureTermForms(config);
   if (window.i18nHelper) {
     await window.i18nHelper.init();
     window.i18nHelper.bindSwitcher();
@@ -2111,6 +2139,7 @@ async function createFuzzyPage(config) {
         buildMapFromSpecs(config.inputs)[key],
         {
           ...getGraphOptions(canvasId),
+          varKey: key,
           highlightTerm: dominantTermFromMemberships(state.result.membershipData?.[key]),
         }
       );
@@ -2143,6 +2172,7 @@ async function createFuzzyPage(config) {
           null,
           {
             ...getGraphOptions(config.graphs.aggregated || config.graphs.output),
+            varKey: outputKey,
             termSeries: hasOutputCurves ? outputSeries : null,
             activations: state.result.ruleOutputs,
             showPeakLabels: true,
@@ -2158,6 +2188,7 @@ async function createFuzzyPage(config) {
           crispValue,
           {
             ...getGraphOptions(config.graphs.output),
+            varKey: outputKey,
             highlightTerm: outputHighlight,
             showResultLabel: true,
           }
