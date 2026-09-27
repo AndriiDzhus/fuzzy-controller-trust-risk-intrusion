@@ -56,3 +56,33 @@ describe("term color palette", () => {
     expect(resolveTermColor("none", ["none", "low", "medium", "high"])).toBe(TERM_PALETTE.absent);
   });
 });
+
+describe("favourable / unfavourable direction", () => {
+  const { TERM_PALETTE, resolveTermColor } = loadTermColors();
+  const trustIndex = ["VeryLow", "Low", "Medium", "High", "VeryHigh"];
+  const mirrored = (term) => resolveTermColor(term, trustIndex, { higherIsBetter: true });
+
+  test("trust index: very high is light green, very low is red", () => {
+    expect(mirrored("VeryHigh")).toBe(TERM_PALETTE.absent);
+    expect(mirrored("High")).toBe(TERM_PALETTE.low);
+    expect(mirrored("Medium")).toBe(TERM_PALETTE.medium);
+    expect(mirrored("Low")).toBe(TERM_PALETTE.high);
+    expect(mirrored("VeryLow")).toBe(TERM_PALETTE.peak);
+  });
+
+  test("risk-like scales keep low = green, high = red", () => {
+    const risk = ["none", "veryLow", "low", "medium", "high", "veryHigh"];
+    expect(resolveTermColor("veryLow", risk)).toBe(TERM_PALETTE.absent);
+    expect(resolveTermColor("veryHigh", risk)).toBe(TERM_PALETTE.peak);
+    const intrusion = ["none", "low", "medium", "high"];
+    expect(resolveTermColor("none", intrusion)).toBe(TERM_PALETTE.absent);
+    expect(resolveTermColor("high", intrusion)).toBe(TERM_PALETTE.peak);
+  });
+
+  test("the trust page and the trust formula modal mark TI as higher-is-better", () => {
+    const trustPage = fs.readFileSync(path.join(__dirname, "../public/trust.js"), "utf8");
+    expect(trustPage).toMatch(/higherIsBetter: \["trustIndex"\]/);
+    const docs = fs.readFileSync(path.join(__dirname, "../public/controller-docs.js"), "utf8");
+    expect(docs).toMatch(/symbol: "TI",[\s\S]{0,200}higherIsBetter: true/);
+  });
+});

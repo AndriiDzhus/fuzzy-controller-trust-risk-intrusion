@@ -122,7 +122,7 @@ h3 {
   accent-color: #3498db;
 }
 
-.input-group input[type="number"] {
+.input-group input.value-input {
   grid-area: number;
   width: 4.25rem;
   min-width: 4.25rem;
@@ -134,7 +134,7 @@ h3 {
   transition: border-color 0.3s ease;
 }
 
-.input-group input[type="number"]:focus {
+.input-group input.value-input:focus {
   outline: none;
   border-color: #3498db;
   box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
@@ -166,11 +166,13 @@ h3 {
   font-size: 0.78rem;
 }
 
+/* The crisp result has one neutral color on every page; the term below it
+   carries the favourable / unfavourable color. */
 .result-value {
   display: block;
   font-size: clamp(1.25rem, 3vw, 1.7rem);
   font-weight: bold;
-  color: #e74c3c;
+  color: #2c3e50;
 }
 
 .result-term {
@@ -872,7 +874,7 @@ body.graph-expanded::after {
 }
 
 @media (max-width: 768px) {
-  .input-group input[type="number"] {
+  .input-group input.value-input {
     width: 4.25rem;
     min-width: 4.25rem;
     padding: 5px 6px;
@@ -1025,7 +1027,7 @@ body.graph-expanded::after {
   accent-color: #3498db;
 }
 
-.sticky-input-group input[type="number"] {
+.sticky-input-group input.value-input {
   grid-area: number;
   width: 4.25rem;
   min-width: 4.25rem;
@@ -1036,7 +1038,7 @@ body.graph-expanded::after {
   text-align: center;
 }
 
-.sticky-input-group input[type="number"]:focus {
+.sticky-input-group input.value-input:focus {
   outline: none;
   border-color: #3498db;
   box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.12);
@@ -1059,7 +1061,7 @@ body.graph-expanded::after {
 }
 
 .sticky-inputs-result-value {
-  color: #e74c3c;
+  color: #2c3e50;
   font-size: 1.2rem;
   font-weight: 700;
   line-height: 1.2;
@@ -1099,7 +1101,7 @@ body.graph-expanded::after {
 }
 
 @media (max-width: 600px) {
-  .sticky-input-group input[type="number"] {
+  .sticky-input-group input.value-input {
     width: 3.1rem;
     min-width: 3.1rem;
     padding: 3px 4px;
@@ -1753,4 +1755,42 @@ body.docs-modal-open {
   font-weight: 600;
   color: #5d6d7e;
   margin-right: 4px;
+}
+
+/* Initial load: keep the page hidden until the first render is complete
+   (removed by revealPage() in fuzzy-page-core.js; inline failsafe in HTML). */
+html.is-loading .container {
+  visibility: hidden;
+}
+
+html.is-loading body::after {
+  content: "";
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  width: 36px;
+  height: 36px;
+  margin: -18px 0 0 -18px;
+  border: 3px solid rgba(255, 255, 255, 0.35);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: page-loading-spin 0.8s linear infinite;
+}
+
+@keyframes page-loading-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html.is-loading body::after {
+    animation: none;
+  }
+}
+
+/* Value field with text that is not (yet) a number inside the domain. */
+input.value-input.is-invalid {
+  border-color: #e74c3c;
+  box-shadow: 0 0 0 2px rgba(231, 76, 60, 0.15);
 }

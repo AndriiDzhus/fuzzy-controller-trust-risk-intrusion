@@ -1,6 +1,6 @@
 const fs = require("fs");
 const path = require("path");
-const { execSync } = require("child_process");
+const esbuild = require("esbuild");
 
 const rootDir = path.join(__dirname, "..");
 const publicDir = path.join(rootDir, "public");
@@ -39,10 +39,15 @@ fs.rmSync(distDir, { recursive: true, force: true });
 copyDir(publicDir, distDir);
 copyDir(path.join(rootDir, "node_modules/katex/dist"), path.join(distDir, "vendor/katex"));
 
-execSync(
-  "npx --yes esbuild@0.25.12 scripts/controllers-browser-entry.js --bundle --platform=browser --format=iife --outfile=dist/controllers-bundle.js",
-  { cwd: rootDir, stdio: "inherit" }
-);
+// Bundles src/controllers for the browser as window.fuzzyControllers.
+esbuild.buildSync({
+  entryPoints: [path.join(rootDir, "scripts/controllers-browser-entry.js")],
+  bundle: true,
+  platform: "browser",
+  format: "iife",
+  outfile: bundlePath,
+  logLevel: "info",
+});
 
 for (const page of ["index.html", "security.html", "intrusion.html"]) {
   injectBundleScript(path.join(distDir, page));

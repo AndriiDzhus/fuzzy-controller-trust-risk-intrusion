@@ -29,6 +29,7 @@
     "katex": "^0.18.5"
   },
   "devDependencies": {
+    "esbuild": "^0.25.12",
     "jest": "^29.7.0",
     "nodemon": "^3.0.1",
     "supertest": "^6.3.3"

@@ -34,10 +34,11 @@ app.post("/api/controllers/:controller/calculate", (req, res) => {
     const controller = findController(req, res);
     if (!controller) return;
 
-    const inputs = req.body || {};
-    if (!controller.validate(inputs)) {
+    const { values: inputs, errors } = controller.parseInputs(req.body);
+    if (errors) {
       res.status(400).json({
         error: "Invalid input values. All values must be within the allowed range.",
+        fields: errors,
       });
       return;
     }
