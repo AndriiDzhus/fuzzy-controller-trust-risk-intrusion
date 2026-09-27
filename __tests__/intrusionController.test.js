@@ -1,4 +1,6 @@
-const { calculateIntrusion } = require("../controllers");
+const { intrusionController } = require("../src/controllers");
+
+const calculateIntrusion = intrusionController.calculate;
 
 const nonePeak = { packets: 9.5, rate: 15, weight: 141.5 };
 const lowPeak = { packets: 9.5, rate: 150, weight: 141.5 };
@@ -76,7 +78,6 @@ describe("Intrusion controller logic", () => {
 
 describe("Intrusion COG grid", () => {
   test("aggregated output covers the whole universe [0, 100] with step 0.2", () => {
-    const { calculateIntrusion } = require("../controllers");
     const result = calculateIntrusion({ packets: 14, rate: 1500, weight: 240 });
     expect(result.aggregatedOutput).toHaveLength(501);
     expect(result.aggregatedOutput.at(-1).x).toBe(100);

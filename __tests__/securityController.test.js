@@ -1,4 +1,6 @@
-const { calculateSecurity, controllers } = require("../controllers");
+const { controllers, securityController } = require("../src/controllers");
+
+const calculateSecurity = securityController.calculate;
 
 // Assignment piecewise MFs from docs/tasks/security/2_security_controller_data_updated.
 const assignment = {
@@ -265,5 +267,33 @@ describe("Security Sugeno layers 3–5 (theory section 3)", () => {
 
   test("membership-functions meta advertises the product t-norm", () => {
     expect(controllers.security.membershipFunctions().meta.tnorm).toBe("product");
+  });
+});
+
+describe("Security term labels follow the assignment rule table", () => {
+  const fs = require("fs");
+  const path = require("path");
+  const i18n = JSON.parse(fs.readFileSync(path.join(__dirname, "../public/i18n.json"), "utf8"));
+  const pageConfig = fs.readFileSync(path.join(__dirname, "../public/security.js"), "utf8");
+
+  test("inputs EC, TP, Lat use feminine terms Мала / Середня / Велика", () => {
+    ["energy", "strength", "response"].forEach((key) => {
+      expect(pageConfig).toMatch(new RegExp(`${key}: "f"`));
+    });
+    const f = i18n.uk.common.termForms.f;
+    expect([f.low, f.medium, f.high]).toEqual(["Мала", "Середня", "Велика"]);
+  });
+
+  test("output SR keeps Немає / Дуже малий / Малий / Середній / Великий / Дуже великий", () => {
+    expect(pageConfig).not.toMatch(/risk: "f"/);
+    const t = i18n.uk.common.terms;
+    expect([t.none, t.veryLow, t.low, t.medium, t.high, t.veryHigh]).toEqual([
+      "Немає",
+      "Дуже малий",
+      "Малий",
+      "Середній",
+      "Великий",
+      "Дуже великий",
+    ]);
   });
 });
