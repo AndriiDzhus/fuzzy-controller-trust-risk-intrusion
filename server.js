@@ -1,108 +1,51 @@
+/**
+ * HTTP server: serves the static UI from public/ and the controller API.
+ *
+ *   POST /api/controllers/:controller/calculate
+ *   GET  /api/controllers/:controller/membership-functions
+ *
+ * where :controller is trust | security | intrusion.
+ */
 const express = require("express");
 const path = require("path");
 const pkg = require("./package.json");
-const fuzzyController = require("./fuzzyController");
-const { controllers } = require("./controllers");
+const { controllers } = require("./src/controllers");
 
 const app = express();
 const PORT = process.env.PORT || 3002;
 
-// Middleware
 app.use("/vendor/katex", express.static(path.join(__dirname, "node_modules/katex/dist")));
-app.use(express.static("public"));
+app.use(express.static(path.join(__dirname, "public")));
 app.use(express.json());
 
-// API endpoint for calculation
-app.post("/api/calculate", (req, res) => {
-  try {
-    const {
-      errors: e,
-      connections: c,
-      bytes: b,
-    } = req.body;
+function findController(req, res) {
+  const controller = controllers[req.params.controller];
+  if (!controller) res.status(404).json({ error: "Controller not found" });
+  return controller;
+}
 
-    if (
-      isNaN(e) ||
-      isNaN(c) ||
-      isNaN(b) ||
-      e < 0 ||
-      e > 1 ||
-      c < 0 ||
-      c > 200 ||
-      b < 0 ||
-      b > 12
-    ) {
-      return res.status(400).json({
-        error: "Invalid input values. ER must be 0–1, CC 0–200, BS 0–12.",
-      });
-    }
-
-    // Run fuzzy inference via fuzzyController
-    const trustIndex = fuzzyController.calculateTrustIndex(e, c, b);
-
-    // Calculate membership degrees for input and output values
-    const inputMemberships = {
-      errors: fuzzyController.calculateMembershipValues(
-        "errors",
-        e
-      ),
-      connections: fuzzyController.calculateMembershipValues(
-        "connections",
-        c
-      ),
-      bytes: fuzzyController.calculateMembershipValues(
-        "bytes",
-        b
-      ),
-    };
-
-    const outputMemberships = fuzzyController.calculateMembershipValues(
-      "trustIndex",
-      trustIndex
-    );
-    const mostActiveTerm = fuzzyController.getMostActiveTerm(outputMemberships);
-
-    // Build membership data payload
-    const membershipData = {
-      errors: inputMemberships.errors,
-      connections: inputMemberships.connections,
-      bytes: inputMemberships.bytes,
-      trustIndex: outputMemberships,
-    };
-
-    // Return the result
-    res.json({
-      trustIndex: parseFloat(trustIndex.toFixed(2)),
-      mostActiveTerm: mostActiveTerm,
-      membershipData: membershipData,
-      inputValues: { e, c, b },
-    });
-  } catch (error) {
-    console.error("Error in calculation:", error);
-    res.status(500).json({ error: "Internal server error: " + error.message });
-  }
-});
+function sendServerError(res, error) {
+  console.error(error);
+  res.status(500).json({ error: `Internal server error: ${error.message}` });
+}
 
 app.post("/api/controllers/:controller/calculate", (req, res) => {
   try {
-    const controllerName = req.params.controller;
-    const controller = controllers[controllerName];
+    const controller = findController(req, res);
+    if (!controller) return;
 
-    if (!controller) {
-      return res.status(404).json({ error: "Controller not found" });
-    }
-
-    const inputs = req.body || {};
-    if (!controller.validate(inputs)) {
-      return res.status(400).json({
+    const { values: inputs, errors } = controller.parseInputs(req.body);
+    if (errors) {
+      res.status(400).json({
         error: "Invalid input values. All values must be within the allowed range.",
+        fields: errors,
       });
+      return;
     }
 
     const result = controller.calculate(inputs);
-    const value = result.value == null ? null : parseFloat(result.value.toFixed(2));
-    return res.json({
-      value,
+    res.json({
+      value: result.value == null ? null : parseFloat(result.value.toFixed(2)),
       dominantTerm: result.dominantTerm ?? null,
       noRuleFired: Boolean(result.noRuleFired),
       membershipData: result.membershipData,
@@ -114,151 +57,22 @@ app.post("/api/controllers/:controller/calculate", (req, res) => {
       inputs,
     });
   } catch (error) {
-    console.error("Error in unified calculation:", error);
-    return res.status(500).json({ error: "Internal server error: " + error.message });
-  }
-});
-
-// API endpoint for membership function data
-app.get("/api/membership-functions", (req, res) => {
-  try {
-    const data = {
-      inputs: {
-        errors: generateMembershipData("errors", 1, 0.01),
-        connections: generateMembershipData("connections", 200, 1),
-        bytes: generateMembershipData("bytes", 12, 0.05),
-      },
-      output: {
-        trustIndex: generateMembershipData("trustIndex", 100, 1),
-      },
-    };
-    res.json(data);
-  } catch (error) {
-    console.error("Error getting membership functions:", error);
-    res.status(500).json({ error: "Internal server error: " + error.message });
+    sendServerError(res, error);
   }
 });
 
 app.get("/api/controllers/:controller/membership-functions", (req, res) => {
   try {
-    const controllerName = req.params.controller;
-    const controller = controllers[controllerName];
-
-    if (!controller) {
-      return res.status(404).json({ error: "Controller not found" });
-    }
-
-    return res.json(controller.membershipFunctions());
+    const controller = findController(req, res);
+    if (!controller) return;
+    res.json(controller.membershipFunctions());
   } catch (error) {
-    console.error("Error getting unified membership functions:", error);
-    return res.status(500).json({ error: "Internal server error: " + error.message });
+    sendServerError(res, error);
   }
 });
 
-// Generate membership function chart data
-function generateMembershipData(variableName, maxRange = 100, step = 2) {
-  const data = {};
-  const params = fuzzyController.membershipParams[variableName];
-
-  for (const termName in params) {
-    data[termName] = [];
-    const termParams = params[termName];
-    const n = Math.round(maxRange / step);
-
-    for (let i = 0; i <= n; i += 1) {
-      const x = i === n ? maxRange : Number((i * step).toFixed(10));
-      let membershipValue = 0;
-
-      if (termParams.type === "trapeze") {
-        membershipValue = fuzzyController.trapezoidalMF(
-          x,
-          ...termParams.params
-        );
-      } else if (termParams.type === "triangle") {
-        membershipValue = fuzzyController.triangularMF(x, ...termParams.params);
-      }
-
-      data[termName].push({
-        x: parseFloat(x.toFixed(2)),
-        y: membershipValue,
-      });
-    }
-  }
-
-  return data;
-}
-
-// Home page
 app.get("/", (req, res) => {
   res.sendFile(path.join(__dirname, "public", "index.html"));
-});
-
-// API endpoint for rule metadata
-app.get("/api/rules", (req, res) => {
-  try {
-    res.json({
-      totalRules: fuzzyController.fuzzySystem.rules.length,
-      rules: fuzzyController.fuzzySystem.rules.map((rule, index) => {
-        // fuzzyis rule shape: conditions and conclusions
-        const conditions = rule.conditions || [];
-        const conclusions = rule.conclusions || [];
-
-        return {
-          id: index + 1,
-          condition: `IF errors IS ${
-            conditions[0] || "Unknown"
-          } AND connections IS ${
-            conditions[1] || "Unknown"
-          } AND bytes IS ${conditions[2] || "Unknown"}`,
-          conclusion: `THEN trustIndex IS ${
-            conclusions[0] || "Unknown"
-          }`,
-          beliefDegree: rule.beliefDegree || 0,
-        };
-      }),
-    });
-  } catch (error) {
-    console.error("Error getting rules:", error);
-    res.status(500).json({
-      error: "Internal server error: " + error.message,
-      rulesLength: fuzzyController.fuzzySystem.rules
-        ? fuzzyController.fuzzySystem.rules.length
-        : 0,
-    });
-  }
-});
-
-// API endpoint for system information
-app.get("/api/system-info", (req, res) => {
-  res.json({
-    systemName: fuzzyController.fuzzySystem.name,
-    inputVariables: [
-      {
-        name: "errors",
-        range: [0, 1],
-        terms: Object.keys(fuzzyController.membershipParams.errors),
-      },
-      {
-        name: "connections",
-        range: [0, 200],
-        terms: Object.keys(fuzzyController.membershipParams.connections),
-      },
-      {
-        name: "bytes",
-        range: [0, 12],
-        terms: Object.keys(fuzzyController.membershipParams.bytes),
-      },
-    ],
-    outputVariables: [
-      {
-        name: "trustIndex",
-        range: [0, 100],
-        terms: Object.keys(fuzzyController.membershipParams.trustIndex),
-      },
-    ],
-    totalRules: fuzzyController.fuzzySystem.rules.length,
-    fuzzyLibrary: "FuzzyIS",
-  });
 });
 
 if (require.main === module) {
@@ -266,9 +80,7 @@ if (require.main === module) {
     console.log(pkg.description);
     console.log(`${pkg.name} v${pkg.version}`);
     console.log(`Server running on http://localhost:${PORT}`);
-    console.log("Controllers: trust, security, intrusion");
-    console.log(`Using FuzzyIS library for fuzzy inference`);
-    console.log(`Total trust rules: ${fuzzyController.fuzzySystem.rules.length}`);
+    console.log(`Controllers: ${Object.keys(controllers).join(", ")}`);
   });
 }
 

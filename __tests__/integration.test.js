@@ -77,3 +77,37 @@ describe("Unified controllers API", () => {
     expect(intrusionMF.body.output).toHaveProperty("intrusion");
   });
 });
+
+describe("API input validation", () => {
+  const post = (body) => request(app).post("/api/controllers/trust/calculate").send(body);
+  const valid = { errors: 0.25, connections: 50, bytes: 7.5 };
+
+  test.each([
+    ["null", { ...valid, errors: null }],
+    ["empty string", { ...valid, errors: "" }],
+    ["boolean", { ...valid, errors: true }],
+    ["hex string", { ...valid, errors: "0x0" }],
+    ["array", { ...valid, bytes: [7.5] }],
+    ["object", { ...valid, bytes: { value: 7.5 } }],
+    ["missing key", { errors: 0.25, connections: 50 }],
+    ["out of range", { ...valid, connections: 201 }],
+    ["text", { ...valid, errors: "abc" }],
+  ])("rejects %s with 400 and names the field", async (_name, body) => {
+    const response = await post(body);
+    expect(response.status).toBe(400);
+    expect(Object.keys(response.body.fields).length).toBeGreaterThan(0);
+  });
+
+  test("accepts decimal strings with a dot or a comma and returns numbers", async () => {
+    const response = await post({ errors: "0,25", connections: "50", bytes: "7.5" });
+    expect(response.status).toBe(200);
+    expect(response.body.inputs).toEqual(valid);
+    expect(response.body.value).toBe(25);
+  });
+
+  test("drops unknown keys from the echoed inputs", async () => {
+    const response = await post({ ...valid, foo: "bar" });
+    expect(response.status).toBe(200);
+    expect(response.body.inputs).toEqual(valid);
+  });
+});

@@ -40,6 +40,16 @@ document.addEventListener("DOMContentLoaded", async () => {
     rules: {
       containerId: "trustRuleEval",
     },
+    // Assignment rule table: the terms of inputs ER, CC and BS take the
+    // feminine form; output TI keeps the default (masculine) labels.
+    termForms: {
+      errors: "f",
+      connections: "f",
+      bytes: "f",
+    },
+    // A higher trust index is favourable: its colors run from red (VeryLow)
+    // to light green (VeryHigh), mirroring the risk-like scales.
+    higherIsBetter: ["trustIndex"],
     membership: {
       errors: "eMembership",
       connections: "cMembership",
