@@ -10,11 +10,32 @@ function inputSpecMeta(spec = {}) {
 }
 
 function clampInputValue(value, spec = {}) {
-  const numeric = Number(value);
-  if (!Number.isFinite(numeric)) return null;
+  const numeric = typeof value === "string" ? parseDecimalInput(value) : Number(value);
+  if (numeric === null || !Number.isFinite(numeric)) return null;
   const { min, max } = inputSpecMeta(spec);
   return Math.min(max, Math.max(min, numeric));
 }
+
+// Same rule as toNumber() in src/controllers/index.js: a plain decimal with
+// a dot or a comma ("0.25", "0,25", ".5"). Partial input such as "", "0," or
+// "-" gives null, so the field is left alone while the user is typing.
+const DECIMAL_INPUT_PATTERN = /^[+-]?(\d+([.,]\d*)?|[.,]\d+)([eE][+-]?\d+)?$/;
+
+function parseDecimalInput(text) {
+  const trimmed = String(text ?? "").trim();
+  if (!DECIMAL_INPUT_PATTERN.test(trimmed)) return null;
+  const value = Number(trimmed.replace(",", "."));
+  return Number.isFinite(value) ? value : null;
+}
+
+/** Text for a value field: locale decimal separator, no grouping. */
+function formatFieldValue(value) {
+  return formatNumber(value, { maximumFractionDigits: 6, useGrouping: false });
+}
+
+// Last valid value of every input on the page, by input key. The text fields
+// can hold partial input while the user types, so calculations read from here.
+const pageInputValues = {};
 
 function formatInputValue(value, spec = {}) {
   const { digits } = inputSpecMeta(spec);
@@ -206,9 +227,57 @@ function restoreControllerInputs(config, applyInputValue) {
 function buildMapFromSpecs(specs) {
   const data = {};
   specs.forEach((spec) => {
-    data[spec.key] = Number(document.getElementById(spec.numberId).value);
+    const stored = pageInputValues[spec.key];
+    data[spec.key] = Number.isFinite(stored)
+      ? stored
+      : parseDecimalInput(document.getElementById(spec.numberId)?.value);
   });
   return data;
+}
+
+/**
+ * Wires a text value field: accepts a dot or a comma, recalculates on every
+ * complete number, never rewrites the field while it is being edited, and
+ * normalises / clamps the text when the field loses focus or on Enter.
+ */
+function bindValueField(field, spec, { applyInputValue, recalc }) {
+  field.addEventListener("input", () => {
+    const value = parseDecimalInput(field.value);
+    const { min, max } = inputSpecMeta(spec);
+    const valid = value !== null && value >= min && value <= max;
+    field.classList.toggle("is-invalid", !valid && field.value.trim() !== "");
+    if (!valid) return;
+    applyInputValue(spec, value, field);
+    recalc();
+  });
+
+  const commit = () => {
+    const clamped = clampInputValue(field.value, spec);
+    field.classList.remove("is-invalid");
+    if (clamped === null) {
+      // Not a number: restore the last valid value.
+      field.value = formatFieldValue(pageInputValues[spec.key]);
+      return;
+    }
+    const changed = clamped !== pageInputValues[spec.key];
+    applyInputValue(spec, clamped);
+    if (changed) recalc();
+  };
+  field.addEventListener("change", commit);
+  field.addEventListener("keydown", (event) => {
+    if (event.key === "Enter") commit();
+  });
+}
+
+function refreshValueFields(config) {
+  config.inputs.forEach((spec) => {
+    const value = pageInputValues[spec.key];
+    if (!Number.isFinite(value)) return;
+    [spec.numberId, `${spec.numberId}Sticky`].forEach((id) => {
+      const field = document.getElementById(id);
+      if (field && document.activeElement !== field) field.value = formatFieldValue(value);
+    });
+  });
 }
 
 function drawPlotGrid(ctx, width, height, pad, view = 100) {
@@ -304,6 +373,8 @@ const pageTermForms = { byVar: {}, outputKey: null };
 
 function configureTermForms(config) {
   pageTermForms.byVar = { ...(config.termForms || {}) };
+  pageHigherIsBetter.clear();
+  (config.higherIsBetter || []).forEach((key) => pageHigherIsBetter.add(key));
   pageTermForms.outputKey = config.graphs?.output?.key || null;
 }
 
@@ -332,9 +403,15 @@ function formatNumber(value, options = {}) {
   return new Intl.NumberFormat(getCurrentLocale(), options).format(numericValue);
 }
 
-function termColor(term, siblingTerms = []) {
+// Variables where a higher value is the favourable end of the scale
+// (config.higherIsBetter, e.g. the trust index); their colors are mirrored.
+const pageHigherIsBetter = new Set();
+
+function termColor(term, siblingTerms = [], varKey = null) {
   if (typeof window.resolveTermColor === "function") {
-    return window.resolveTermColor(term, siblingTerms);
+    return window.resolveTermColor(term, siblingTerms, {
+      higherIsBetter: Boolean(varKey) && pageHigherIsBetter.has(varKey),
+    });
   }
   return "#3498db";
 }
@@ -594,7 +671,7 @@ function buildCurveTooltip(model, x) {
   const rows = terms.map((term) => ({
     term,
     value: interpolateSeriesY(model.series[term], x),
-    color: termColor(term, terms),
+    color: termColor(term, terms, model.varKey),
   }));
   const max = rows.reduce((best, row) => Math.max(best, row.value), 0);
   const caption =
@@ -626,14 +703,14 @@ function buildSingletonTooltip(model, x) {
   entries.forEach(([term, sx]) => {
     const dist = Math.abs(Number(sx) - x);
     if (!nearest || dist < nearest.dist) {
-      nearest = { term, dist, color: termColor(term, terms) };
+      nearest = { term, dist, color: termColor(term, terms, model.varKey) };
     }
   });
   const onSpike = Boolean(nearest && nearest.dist <= SINGLETON_SNAP);
   const rows = entries.map(([term, sx]) => ({
     term,
     value: Number(model.activations?.[term]) || 0,
-    color: termColor(term, terms),
+    color: termColor(term, terms, model.varKey),
     x: Number(sx),
   }));
   const max = rows.reduce((best, row) => Math.max(best, row.value), 0);
@@ -706,7 +783,7 @@ function drawCurveGraph(canvasId, termSeries, currentValue, options = {}) {
     fillTermArea(
       ctx,
       termSeries[highlightTerm],
-      termColor(highlightTerm, terms),
+      termColor(highlightTerm, terms, options.varKey),
       w,
       h,
       p,
@@ -717,7 +794,7 @@ function drawCurveGraph(canvasId, termSeries, currentValue, options = {}) {
 
   terms.forEach((term) => {
     const points = termSeries[term];
-    const color = termColor(term, terms);
+    const color = termColor(term, terms, options.varKey);
 
     ctx.strokeStyle = color;
     ctx.lineWidth = term === highlightTerm ? 3 : 2;
@@ -738,7 +815,7 @@ function drawCurveGraph(canvasId, termSeries, currentValue, options = {}) {
     const points = termSeries[term];
     const peak = findPeakPoint(points);
     if (!peak || !inXView(peak.x, view)) return;
-    const color = termColor(term, terms);
+    const color = termColor(term, terms, options.varKey);
     const labelX = toPlotX(peak.x, w, p, view);
     const labelY = h - p - peak.y * (h - 2 * p);
     ctx.fillStyle = color;
@@ -827,7 +904,7 @@ function drawAggregatedSetGraph(canvasId, points, resultValue, options = {}) {
       fillTermArea(
         ctx,
         termSeries[highlightTerm],
-        termColor(highlightTerm, allTerms),
+        termColor(highlightTerm, allTerms, options.varKey),
         w,
         h,
         p,
@@ -836,7 +913,7 @@ function drawAggregatedSetGraph(canvasId, points, resultValue, options = {}) {
       );
     }
     Object.entries(termSeries).forEach(([term, series]) => {
-      ctx.strokeStyle = termColor(term, allTerms);
+      ctx.strokeStyle = termColor(term, allTerms, options.varKey);
       ctx.lineWidth = term === highlightTerm ? 3 : 2;
       ctx.globalAlpha = showAcc ? 0.5 : 1;
       strokePlotCurve(ctx, series, w, h, p, view);
@@ -846,7 +923,7 @@ function drawAggregatedSetGraph(canvasId, points, resultValue, options = {}) {
 
   if (showAcc) {
     clippedTerms.forEach((term) => {
-      const color = termColor(term, allTerms);
+      const color = termColor(term, allTerms, options.varKey);
       fillTermArea(ctx, clipped[term], color, w, h, p, 0.22, view);
       ctx.strokeStyle = hexToRgba(color, 0.9);
       ctx.lineWidth = 1.6;
@@ -864,12 +941,12 @@ function drawAggregatedSetGraph(canvasId, points, resultValue, options = {}) {
 
   if (showDefuzz && termSeries && options.showPeakLabels) {
     Object.entries(termSeries).forEach(([term, series]) => {
-      drawTermPeakLabel(ctx, w, h, p, term, series, termColor(term, allTerms), view, options.varKey);
+      drawTermPeakLabel(ctx, w, h, p, term, series, termColor(term, allTerms, options.varKey), view, options.varKey);
     });
   }
   if (showAcc && options.showPeakLabels && !showDefuzz) {
     clippedTerms.forEach((term) => {
-      drawTermPeakLabel(ctx, w, h, p, term, clipped[term], termColor(term, allTerms), view, options.varKey);
+      drawTermPeakLabel(ctx, w, h, p, term, clipped[term], termColor(term, allTerms, options.varKey), view, options.varKey);
     });
   }
 
@@ -899,7 +976,7 @@ function drawSingletonGraph(canvasId, singletonValues, ruleOutputs, resultValue,
     if (!inXView(x, view)) return;
     const activation = ruleOutputs?.[term] || 0;
     const px = toPlotX(x, w, p, view);
-    const color = termColor(term, terms);
+    const color = termColor(term, terms, options.varKey);
     const fired = activation > 0;
     const top = h - p - plotH;
 
@@ -942,7 +1019,7 @@ function appendMembershipItems(container, data, varKey = null) {
 
   entries.forEach(([term, value]) => {
     const numeric = Number(value) || 0;
-    const color = termColor(term, terms);
+    const color = termColor(term, terms, varKey);
     const item = document.createElement("div");
     item.className = "membership-item";
     if (maxValue > 0 && numeric === maxValue) item.classList.add("active");
@@ -1074,7 +1151,7 @@ function renderRuleEvaluations(config, result, mfData) {
     const maxAlpha = items.reduce((best, rule) => Math.max(best, Number(rule.alpha) || 0), 0);
     const visible = items.filter((rule) => showIdle || rule.alpha >= RULE_FIRE_EPS);
     if (!visible.length) return;
-    const color = termColor(out, outputTermOrder(config, mfData));
+    const color = termColor(out, outputTermOrder(config, mfData), config.graphs?.output?.key);
     cards.push(`<article class="rule-group" style="border-top-color:${color}">
       <header class="rule-group-head">
         <span class="rule-group-term">${escapeHtml(termLabel(out, config.graphs?.output?.key))}</span>
@@ -1431,7 +1508,7 @@ function setOutputText(valueEl, termEl, data) {
     maximumFractionDigits: 2,
   });
   termEl.textContent = termLabel(data.dominantTerm, pageTermForms.outputKey);
-  termEl.style.color = termColor(data.dominantTerm, outputTermNames(data));
+  termEl.style.color = termColor(data.dominantTerm, outputTermNames(data), pageTermForms.outputKey);
   hosts.forEach((el) => markUncoveredTip(el, false));
   markTermTip(termEl, true);
   const tip = document.getElementById("helpTooltip") || document.getElementById("uncoveredHelpTooltip");
@@ -1916,8 +1993,11 @@ function setupStickyInputs(config, { applyInputValue, recalc }) {
 
   const controls = bar.querySelector(".sticky-inputs-controls");
   config.inputs.forEach((spec) => {
-    const current = document.getElementById(spec.numberId)?.value ?? String(inputSpecMeta(spec).max / 2);
     const { min, max, step } = inputSpecMeta(spec);
+    const currentValue = Number.isFinite(pageInputValues[spec.key])
+      ? pageInputValues[spec.key]
+      : max / 2;
+    const current = String(currentValue);
     const group = document.createElement("div");
     group.className = "sticky-input-group";
     group.innerHTML = `
@@ -1926,7 +2006,7 @@ function setupStickyInputs(config, { applyInputValue, recalc }) {
         <span class="sticky-input-name"></span>
       </label>
       <input type="range" id="${spec.sliderId}Sticky" min="${min}" max="${max}" step="${step}" value="${current}" />
-      <input type="number" id="${spec.numberId}Sticky" min="${min}" max="${max}" step="${step}" value="${current}" />
+      <input type="text" inputmode="decimal" autocomplete="off" class="value-input" id="${spec.numberId}Sticky" value="${escapeHtml(formatFieldValue(currentValue))}" />
     `;
     controls.appendChild(group);
 
@@ -1937,12 +2017,7 @@ function setupStickyInputs(config, { applyInputValue, recalc }) {
       applyInputValue(spec, Number(slider.value));
       recalc();
     });
-    number.addEventListener("input", () => {
-      const val = clampInputValue(number.value, spec);
-      if (val === null) return;
-      applyInputValue(spec, val);
-      recalc();
-    });
+    bindValueField(number, spec, { applyInputValue, recalc });
   });
 
   document.body.appendChild(bar);
@@ -2053,8 +2128,9 @@ function normalizeCalculateResult(result, payload) {
 async function calculateController(controller, payload) {
   const local = window.fuzzyControllers?.[controller];
   if (local) {
-    if (!local.validate(payload)) return null;
-    return normalizeCalculateResult(local.calculate(payload), payload);
+    const { values } = local.parseInputs(payload);
+    if (!values) return null;
+    return normalizeCalculateResult(local.calculate(values), values);
   }
 
   const response = await fetch(`/api/controllers/${controller}/calculate`, {
@@ -2078,8 +2154,25 @@ async function loadMembershipFunctions(controller) {
   return response.json();
 }
 
+// The page stays hidden (html.is-loading, see style.css) until translations,
+// membership functions and the first calculation are rendered, so the user
+// never sees empty labels or the layout jumping into place.
+function revealPage() {
+  document.documentElement.classList.remove("is-loading");
+}
+
 async function createFuzzyPage(config) {
+  try {
+    await initFuzzyPage(config);
+  } finally {
+    revealPage();
+  }
+}
+
+async function initFuzzyPage(config) {
   configureTermForms(config);
+  // Chart data does not depend on the language: fetch it alongside i18n.json.
+  const mfDataPromise = loadMembershipFunctions(config.controller);
   if (window.i18nHelper) {
     await window.i18nHelper.init();
     window.i18nHelper.bindSwitcher();
@@ -2090,17 +2183,23 @@ async function createFuzzyPage(config) {
     result: null,
   };
 
-  const applyInputValue = (spec, value) => {
+  // Pushes a valid value to every control of the input. `source` is the text
+  // field being edited, which is left untouched so the caret and partial
+  // input ("0,0") survive.
+  const applyInputValue = (spec, value, source = null) => {
+    pageInputValues[spec.key] = value;
     if (spec.sliderId) {
       const slider = document.getElementById(spec.sliderId);
       if (slider) slider.value = value;
       const stickySlider = document.getElementById(`${spec.sliderId}Sticky`);
       if (stickySlider) stickySlider.value = value;
     }
-    const numberEl = document.getElementById(spec.numberId);
-    if (numberEl) numberEl.value = value;
-    const stickyNumber = document.getElementById(`${spec.numberId}Sticky`);
-    if (stickyNumber) stickyNumber.value = value;
+    [document.getElementById(spec.numberId), document.getElementById(`${spec.numberId}Sticky`)]
+      .filter((field) => field && field !== source)
+      .forEach((field) => {
+        field.value = formatFieldValue(value);
+        field.classList.remove("is-invalid");
+      });
     if (spec.valueId) {
       const valueEl = document.getElementById(spec.valueId);
       if (valueEl) {
@@ -2161,6 +2260,7 @@ async function createFuzzyPage(config) {
         crispValue,
         {
           ...getGraphOptions(config.graphs.output),
+          varKey: outputKey,
           highlightTerm: outputHighlight,
         }
       );
@@ -2199,24 +2299,20 @@ async function createFuzzyPage(config) {
 
   config.inputs.forEach((spec) => {
     const { min, max, step } = inputSpecMeta(spec);
-    [spec.sliderId, spec.numberId].forEach((id) => {
-      const el = document.getElementById(id);
-      if (!el) return;
-      el.min = String(min);
-      el.max = String(max);
-      el.step = String(step);
-    });
+    const sliderEl = spec.sliderId ? document.getElementById(spec.sliderId) : null;
+    if (sliderEl) {
+      sliderEl.min = String(min);
+      sliderEl.max = String(max);
+      sliderEl.step = String(step);
+    }
 
     const numberEl = document.getElementById(spec.numberId);
-    numberEl.addEventListener("input", () => {
-      const val = clampInputValue(numberEl.value, spec);
-      if (val === null) return;
-      applyInputValue(spec, val);
-      recalc();
-    });
+    const initial = clampInputValue(numberEl.value, spec);
+    pageInputValues[spec.key] = initial ?? (min + max) / 2;
+    numberEl.value = formatFieldValue(pageInputValues[spec.key]);
+    bindValueField(numberEl, spec, { applyInputValue, recalc });
 
-    if (spec.sliderId) {
-      const sliderEl = document.getElementById(spec.sliderId);
+    if (sliderEl) {
       sliderEl.addEventListener("input", () => {
         applyInputValue(spec, Number(sliderEl.value));
         recalc();
@@ -2231,13 +2327,14 @@ async function createFuzzyPage(config) {
   restoreControllerInputs(config, applyInputValue);
   if (window.setupDocsModals) window.setupDocsModals(config.controller);
 
-  state.mfData = await loadMembershipFunctions(config.controller);
+  state.mfData = await mfDataPromise;
 
   setupTooltips(config, state);
 
   window.addEventListener("languageChanged", () => {
     decoratePipelineMuHints(config);
     refreshStickyCopy(config);
+    refreshValueFields(config);
     if (!state.result) return;
     setOutputText(
       document.getElementById(config.output.valueId),

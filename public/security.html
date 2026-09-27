@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="uk">
+<html lang="uk" class="is-loading">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -8,6 +8,7 @@
     <link rel="icon" href="favicon-32.png" type="image/png" sizes="32x32" />
     <link rel="apple-touch-icon" href="apple-touch-icon.png" />
     <meta name="theme-color" content="#667eea" />
+    <link rel="preload" href="i18n.json" as="fetch" crossorigin="anonymous" />
     <link rel="stylesheet" href="style.css" />
     <link rel="stylesheet" href="navigation.css" />
     <link rel="stylesheet" href="vendor/katex/katex.min.css" />
@@ -60,19 +61,19 @@
           <div class="input-group">
             <label for="energySlider" data-i18n="security.inputs.energy"></label>
             <input type="range" id="energySlider" min="0" max="0.05" step="0.001" value="0.025" />
-            <input type="number" id="energyNumber" min="0" max="0.05" step="0.001" value="0.025" />
+            <input type="text" inputmode="decimal" autocomplete="off" class="value-input" id="energyNumber" value="0.025" />
             <span class="input-value" id="energyValue">0.025</span>
           </div>
           <div class="input-group">
             <label for="strengthSlider" data-i18n="security.inputs.strength"></label>
             <input type="range" id="strengthSlider" min="0" max="40" step="0.1" value="20" />
-            <input type="number" id="strengthNumber" min="0" max="40" step="0.1" value="20" />
+            <input type="text" inputmode="decimal" autocomplete="off" class="value-input" id="strengthNumber" value="20" />
             <span class="input-value" id="strengthValue">20.0</span>
           </div>
           <div class="input-group">
             <label for="responseSlider" data-i18n="security.inputs.response"></label>
             <input type="range" id="responseSlider" min="0" max="10" step="0.1" value="5" />
-            <input type="number" id="responseNumber" min="0" max="10" step="0.1" value="5" />
+            <input type="text" inputmode="decimal" autocomplete="off" class="value-input" id="responseNumber" value="5" />
             <span class="input-value" id="responseValue">5.0</span>
           </div>
         </div>
@@ -165,6 +166,10 @@
 
     </div>
 
+    <script>
+      // Failsafe: never keep the page hidden if a script fails to load.
+      setTimeout(() => document.documentElement.classList.remove("is-loading"), 5000);
+    </script>
     <script src="i18n-helper.js"></script>
     <script src="vendor/katex/katex.min.js"></script>
     <script src="term-colors.js"></script>

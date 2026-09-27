@@ -4,14 +4,25 @@ class I18nHelper {
     this.currentLang = localStorage.getItem("lang") || "uk";
   }
 
-  async loadTranslations() {
-    if (this.translations) return this.translations;
-    const response = await fetch("i18n.json");
-    if (!response.ok) {
-      throw new Error("Unable to load i18n.json");
+  // One shared request: the page starts it at parse time (see the bottom of
+  // this file), and init() / setLanguage() reuse the same promise.
+  loadTranslations() {
+    if (!this.loading) {
+      this.loading = fetch("i18n.json")
+        .then((response) => {
+          if (!response.ok) throw new Error("Unable to load i18n.json");
+          return response.json();
+        })
+        .then((translations) => {
+          this.translations = translations;
+          return translations;
+        })
+        .catch((error) => {
+          this.loading = null;
+          throw error;
+        });
     }
-    this.translations = await response.json();
-    return this.translations;
+    return this.loading;
   }
 
   t(key, fallback = "") {
@@ -83,4 +94,6 @@ class I18nHelper {
 }
 
 window.i18nHelper = new I18nHelper();
+// Start downloading the dictionary while the rest of the page loads.
+window.i18nHelper.loadTranslations().catch(() => {});
 window.t = (key, fallback = "") => window.i18nHelper.t(key, fallback);
