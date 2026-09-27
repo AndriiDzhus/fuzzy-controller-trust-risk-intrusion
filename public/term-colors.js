@@ -9,6 +9,11 @@
    * medium  — medium
    * high    — high / large when a more severe term exists (veryHigh)
    * peak    — very high / very large, and also 3-term high
+   *
+   * The scale reads from favourable (green) to unfavourable (orange / red):
+   * for risk-like variables (inputs, SR, IP) low is favourable. For variables
+   * where a higher value is better (the trust index TI) pass
+   * { higherIsBetter: true } and the scale is mirrored.
    */
   const TERM_PALETTE = {
     none: "#95a5a6",
@@ -33,6 +38,22 @@
     VeryHigh: "peak",
   };
 
+  // Mirror of every term on the low-high scale (medium and none stay).
+  const MIRROR = {
+    veryLow: "veryHigh",
+    VeryLow: "VeryHigh",
+    low: "high",
+    Low: "High",
+    high: "low",
+    High: "Low",
+    veryHigh: "veryLow",
+    VeryHigh: "VeryLow",
+  };
+
+  function mirrorTerm(term) {
+    return MIRROR[term] || term;
+  }
+
   function canonicalTermKey(term) {
     return TERM_KEY[term] || null;
   }
@@ -41,10 +62,17 @@
     return new Set((Array.isArray(terms) ? terms : []).map(canonicalTermKey).filter(Boolean));
   }
 
-  function resolveTermColor(term, siblingTerms) {
-    const key = canonicalTermKey(term);
+  /**
+   * @param {string} term
+   * @param {string[]} siblingTerms all terms of the same variable
+   * @param {{higherIsBetter?: boolean}} [options]
+   */
+  function resolveTermColor(term, siblingTerms, options = {}) {
+    const mirrored = Boolean(options.higherIsBetter);
+    const key = canonicalTermKey(mirrored ? mirrorTerm(term) : term);
     if (!key) return TERM_PALETTE.medium;
-    const keys = siblingKeys(siblingTerms);
+    const siblings = Array.isArray(siblingTerms) ? siblingTerms : [];
+    const keys = siblingKeys(mirrored ? siblings.map(mirrorTerm) : siblings);
     if (key === "high" && !keys.has("peak")) return TERM_PALETTE.peak;
     if (key === "none" && !keys.has("absent")) return TERM_PALETTE.absent;
     return TERM_PALETTE[key];

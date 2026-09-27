@@ -131,6 +131,10 @@ const controllerDocs = {
       symbol: "TI",
       titleKey: "index.membership.trust",
       gender: "m",
+      // A higher trust index is the favourable end of the scale.
+      higherIsBetter: true,
+      // Terms read "very low … very high", as in the assignment.
+      commonTermLabels: true,
       domain: [0, 100],
       unitKey: "index.docs.units.trust",
       noteKey: "index.docs.notes.trust",
@@ -411,9 +415,9 @@ const controllerDocs = {
   },
 };
 
-function docsTermColor(term, siblingTerms) {
+function docsTermColor(term, siblingTerms, higherIsBetter = false) {
   if (typeof window.resolveTermColor === "function") {
-    return window.resolveTermColor(term, siblingTerms);
+    return window.resolveTermColor(term, siblingTerms, { higherIsBetter });
   }
   return "#3498db";
 }
@@ -428,6 +432,19 @@ function docsEscape(value) {
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;");
+}
+
+// Variables whose terms read "low / high" rather than "small / large" (the
+// trust index TI in its assignment) take their labels from common.terms, the
+// same dictionary as the rest of the page.
+function commonTermLabel(term) {
+  const pascal = term.charAt(0).toUpperCase() + term.slice(1);
+  return docsText(`common.terms.${pascal}`, term);
+}
+
+function variableTermLabel(term, variable) {
+  if (variable?.commonTermLabels) return commonTermLabel(term);
+  return lingLabel(term, variable?.gender);
 }
 
 function lingLabel(term, gender = "m") {
@@ -518,7 +535,7 @@ function renderSingleton(symbol, term) {
 
 function renderTermBlock(variable, term, punct = "") {
   const siblings = (variable.terms || []).map((item) => item.term);
-  const color = docsTermColor(term.term, siblings);
+  const color = docsTermColor(term.term, siblings, Boolean(variable.higherIsBetter));
   let body = "";
   if (term.gaussian) body = renderGaussian(variable, term, punct);
   else if (term.singleton !== undefined) body = renderSingleton(variable.symbol, term);
@@ -528,7 +545,7 @@ function renderTermBlock(variable, term, punct = "") {
     <article class="docs-term">
       <header class="docs-term-head">
         <i style="background:${color}"></i>
-        <strong>${docsEscape(lingLabel(term.term, variable.gender))}</strong>
+        <strong>${docsEscape(variableTermLabel(term.term, variable))}</strong>
       </header>
       ${body}
     </article>
@@ -617,6 +634,12 @@ function renderRulesInterpretation(pageKey) {
   `;
 }
 
+function columnHigherIsBetter(spec, colIndex) {
+  const col = spec.rules.columns[colIndex];
+  const variable = col?.output ? spec.output : spec.inputs[colIndex];
+  return Boolean(variable?.higherIsBetter);
+}
+
 function siblingTermsForColumn(spec, colIndex) {
   const col = spec.rules.columns[colIndex];
   if (col?.output) return (spec.output.terms || []).map((item) => item.term);
@@ -637,10 +660,16 @@ function renderRules(spec, pageKey) {
       const tds = cells
         .map((term, i) => {
           const col = columns[i];
-          const color = docsTermColor(term, siblingTermsForColumn(spec, i));
+          const color = docsTermColor(
+            term,
+            siblingTermsForColumn(spec, i),
+            columnHigherIsBetter(spec, i)
+          );
           return `<td${col.output ? ' class="docs-out"' : ""}>
             <span class="docs-chip"><i style="background:${color}"></i>${docsEscape(
-              lingLabel(term, col.gender)
+              col.output && spec.output.commonTermLabels
+                ? commonTermLabel(term)
+                : lingLabel(term, col.gender)
             )}</span>
           </td>`;
         })

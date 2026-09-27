@@ -40,6 +40,14 @@ document.addEventListener("DOMContentLoaded", async () => {
     rules: {
       containerId: "intrusionRuleEval",
     },
+    // Assignment rule table: NP, Rate and output IP take the feminine form
+    // (IP "none" reads as absent), We takes the neuter form.
+    termForms: {
+      packets: "f",
+      rate: "f",
+      weight: "n",
+      intrusion: "f",
+    },
     membership: {
       packets: "packetsMembership",
       rate: "rateMembership",
