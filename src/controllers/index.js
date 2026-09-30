@@ -8,10 +8,12 @@
  *
  * Every controller module exposes the same interface:
  *   system, variables, ranges, calculate(inputs), membershipFunctions()
+ * The registry adds input parsing and the response surface (surface.js).
  */
 const trustController = require("./trustController");
 const securityController = require("./securityController");
 const intrusionController = require("./intrusionController");
+const { computeSurface } = require("./surface");
 
 // A plain decimal number: "0.25", "0,25", ".5", "1e-3". Hex, binary, empty
 // strings, Infinity etc. are rejected.
@@ -58,6 +60,19 @@ function register(controller) {
     validate: (inputs) => parseInputs(inputs, controller.ranges).errors === null,
     calculate: controller.calculate,
     membershipFunctions: controller.membershipFunctions,
+    /**
+     * Response surface over two inputs; the third input stays at its value
+     * in `inputs`. Returns {errors} when the request is invalid.
+     */
+    surface: ({ xKey, yKey, inputs, points } = {}) => {
+      const parsed = parseInputs(inputs, controller.ranges);
+      if (parsed.errors) return { errors: parsed.errors };
+      const keys = Object.keys(controller.ranges);
+      if (!keys.includes(xKey) || !keys.includes(yKey) || xKey === yKey) {
+        return { errors: { axes: `x and y must be two different inputs of ${keys.join(", ")}` } };
+      }
+      return { surface: computeSurface(controller, { xKey, yKey, inputs: parsed.values, points }) };
+    },
   };
 }
 

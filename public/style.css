@@ -1794,3 +1794,100 @@ input.value-input.is-invalid {
   border-color: #e74c3c;
   box-shadow: 0 0 0 2px rgba(231, 76, 60, 0.15);
 }
+
+/* Response surface modal */
+.surface-dialog {
+  width: min(1040px, 100%);
+}
+
+.surface-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.surface-pairs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.surface-pair.is-active {
+  background: #3498db;
+  border-color: #3498db;
+  color: #fff;
+}
+
+.surface-fixed {
+  color: #5d6d7e;
+  font-size: 0.9rem;
+}
+
+.surface-inputs {
+  margin-bottom: 12px;
+  padding: 10px 12px;
+  background: #f8f9fa;
+  border: 1px solid #ecf0f1;
+  border-radius: 10px;
+}
+
+/* The input held fixed for the current pair: changing it rebuilds the surface */
+.surface-input-group.is-fixed .sticky-input-letter {
+  background: #2c3e50;
+  color: #fff;
+}
+
+.surface-input-group.is-fixed input[type="range"] {
+  accent-color: #2c3e50;
+}
+
+.surface-canvas-wrap {
+  position: relative;
+}
+
+.surface-canvas {
+  display: block;
+  width: 100%;
+  height: min(62vh, 560px);
+  cursor: grab;
+  touch-action: none;
+  background: #fbfcfd;
+  border: 1px solid #ecf0f1;
+  border-radius: 10px;
+}
+
+.surface-canvas:active {
+  cursor: grabbing;
+}
+
+.surface-status {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0;
+  color: #5d6d7e;
+}
+
+.surface-status[hidden] {
+  display: none;
+}
+
+.surface-hint {
+  margin: 10px 0 0;
+  font-size: 0.85rem;
+}
+
+@media (max-width: 600px) {
+  .surface-inputs {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .surface-canvas {
+    height: min(56vh, 380px);
+  }
+}

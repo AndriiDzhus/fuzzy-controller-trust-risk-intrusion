@@ -29,12 +29,14 @@ src/
     trustController.js            модель і вивід Trust
     securityController.js         модель і вивід Security
     intrusionController.js        модель і вивід Intrusion
+    surface.js                    поверхня відгуку: вихід як функція двох входів
 public/
   index.html  trust.js            сторінка Trust
   security.html  security.js      сторінка Security
   intrusion.html  intrusion.js    сторінка Intrusion
   fuzzy-page-core.js              спільний UI: входи, графіки, кроки виводу, підказки
   controller-docs.js              модалки «Формули» та «База правил»
+  surface-view.js                 модалка «Поверхня відгуку»: 3D-поверхня на canvas
   i18n.json  i18n-helper.js       переклади uk / en
   term-colors.js  style.css  navigation.css
 scripts/
@@ -71,6 +73,9 @@ module.exports = { system, variables, ranges, calculate, membershipFunctions };
 
 - `POST /api/controllers/:controller/calculate`
 - `GET /api/controllers/:controller/membership-functions`
+- `POST /api/controllers/:controller/surface` — поверхня відгуку
+  (`{ xKey, yKey, inputs, points }` → `{ x, y, z, fixed }`, `z[j][i]` = вихід у точці `(x[i], y[j])`,
+  `null` там, де жодне правило не спрацювало)
 
 де `:controller` — `trust | security | intrusion`. Статична збірка для GitHub Pages
 рахує те саме в браузері через `window.fuzzyControllers`.
@@ -268,5 +273,6 @@ npm test
 | `securityController.test.js` | Security: функції належності завдання, добуток, Σ w̄·c, дірки бази правил, назви термів |
 | `intrusionController.test.js` | Intrusion: піки правил, агрегована множина, сітка |
 | `docsConsistency.test.js` | модалки формул і правил збігаються з моделями |
+| `surface.test.js` | поверхня відгуку збігається з `calculate`, дірки Security, API |
 | `controllerDocs.test.js`, `termColors.test.js` | модалки та кольори термів |
 | `integration.test.js`, `e2e.smoke.test.js` | API та сторінки |
