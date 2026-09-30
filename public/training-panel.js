@@ -204,6 +204,9 @@
   function bindPanel() {
     const { els } = state;
     els.download.addEventListener("click", downloadDataset);
+    els.rows.addEventListener("change", () => {
+      if (state.status === "idle") renderRun();
+    });
     els.choose.addEventListener("click", () => els.file.click());
     els.file.addEventListener("change", () => {
       const file = els.file.files && els.file.files[0];
@@ -296,6 +299,23 @@
       showError(t("common.training.errors.download", error.message));
     } finally {
       els.download.disabled = false;
+    }
+  }
+
+  /** Trains on the default dataset with the row count chosen in the select. */
+  async function trainOnDefaultDataset() {
+    if (state.status === "running" || state.status === "starting") return;
+    const value = state.els.rows.value;
+    const rows = value === "all" ? null : Number(value);
+    showError(null);
+    const button = state.els.status.querySelector('[data-role="train-default"]');
+    if (button) button.disabled = true;
+    try {
+      const { blob, filename } = await root.trainingBackend.downloadDataset(state.controller, rows);
+      await startTraining(new File([blob], filename, { type: blob.type }));
+    } catch (error) {
+      showError(t("common.training.errors.download", error.message));
+      if (button) button.disabled = false;
     }
   }
 
@@ -426,6 +446,20 @@
     const lines = [];
     if (status === "idle") {
       lines.push(`<p class="training-status-main is-muted">${escapeHtml(t("common.training.idle"))}</p>`);
+      const rows = els.rows?.value || "all";
+      const rowsText = rows === "all" ? t("common.training.rowsAll") : `${rows} ${t("common.training.rowsUnit")}`;
+      lines.push(`
+        <div class="training-empty">
+          <button type="button" class="docs-btn docs-btn-primary" data-role="train-default">${escapeHtml(t("common.training.trainDefaultBtn"))}</button>
+          <span class="training-note">${escapeHtml(t("common.training.trainDefaultHint").replace("{rows}", rowsText))}</span>
+        </div>`);
+      if (isApplied()) {
+        // A result was cleared while its parameters stay applied: keep a way back.
+        lines.push(`
+          <p class="training-note is-warn">${escapeHtml(t("common.training.appliedNoResult"))}
+            <button type="button" class="docs-btn training-revert" data-role="revert-idle">${escapeHtml(t("common.training.revertBtn"))}</button>
+          </p>`);
+      }
     } else if (status === "starting") {
       lines.push(`<p class="training-status-main">${escapeHtml(t("common.training.starting"))}</p>`);
       lines.push(`<p class="training-status-sub">${escapeHtml(datasetSummary(state.dataset))}</p>`);
@@ -451,6 +485,11 @@
       lines.push(`<p class="training-status-sub">${escapeHtml(datasetSummary(state.dataset))}</p>`);
     }
     els.status.innerHTML = lines.join("");
+    els.status.querySelector('[data-role="train-default"]')?.addEventListener("click", trainOnDefaultDataset);
+    els.status.querySelector('[data-role="revert-idle"]')?.addEventListener("click", async () => {
+      await revertToExpert();
+      renderRun();
+    });
 
     const running = status === "running" || status === "starting";
     els.progress.hidden = !(running || status === "done" || status === "stopped");
@@ -679,7 +718,16 @@
         )}</button>
         <button type="button" class="docs-btn training-revert" data-role="revert" ${applied ? "" : "hidden"}>${escapeHtml(t("common.training.revertBtn"))}</button>
         <button type="button" class="docs-btn docs-btn-alt" data-role="export">${escapeHtml(t("common.training.exportBtn"))}</button>
-        <button type="button" class="docs-btn docs-btn-alt training-clear" data-role="clear">${escapeHtml(t("common.training.clearBtn"))}</button>
+        <span class="training-clear" data-role="clear-wrap">
+          <button type="button" class="docs-btn docs-btn-alt" data-role="clear">${escapeHtml(t("common.training.clearBtn"))}</button>
+          <span class="training-confirm" data-role="clear-confirm" hidden>
+            <span>${escapeHtml(t("common.training.clearConfirm"))}${
+              applied ? ` <small>${escapeHtml(t("common.training.clearNoteApplied"))}</small>` : ""
+            }</span>
+            <button type="button" class="docs-btn training-confirm-yes" data-role="clear-yes">${escapeHtml(t("common.training.clearYes"))}</button>
+            <button type="button" class="docs-btn docs-btn-alt" data-role="clear-no">${escapeHtml(t("common.training.clearNo"))}</button>
+          </span>
+        </span>
       </div>
       ${applied && !appliedThis ? `<p class="training-note is-warn">${escapeHtml(t("common.training.appliedOther"))}</p>` : ""}
       <details class="training-changes">
@@ -695,7 +743,19 @@
     els.results.querySelector('[data-role="apply"]').addEventListener("click", applyResult);
     els.results.querySelector('[data-role="revert"]').addEventListener("click", revertToExpert);
     els.results.querySelector('[data-role="export"]').addEventListener("click", exportReport);
-    els.results.querySelector('[data-role="clear"]').addEventListener("click", clearResult);
+    const clearBtn = els.results.querySelector('[data-role="clear"]');
+    const confirmBox = els.results.querySelector('[data-role="clear-confirm"]');
+    const showConfirm = (on) => {
+      confirmBox.hidden = !on;
+      clearBtn.hidden = on;
+      if (on) confirmBox.querySelector('[data-role="clear-no"]').focus();
+    };
+    clearBtn.addEventListener("click", () => showConfirm(true));
+    els.results.querySelector('[data-role="clear-no"]').addEventListener("click", () => showConfirm(false));
+    els.results.querySelector('[data-role="clear-yes"]').addEventListener("click", clearResult);
+    confirmBox.addEventListener("keydown", (event) => {
+      if (event.key === "Escape") showConfirm(false);
+    });
   }
 
   function changesSummary(changes) {
