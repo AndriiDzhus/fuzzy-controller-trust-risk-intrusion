@@ -717,7 +717,6 @@
           appliedThis ? t("common.training.appliedBtn") : t("common.training.applyBtn")
         )}</button>
         <button type="button" class="docs-btn training-revert" data-role="revert" ${applied ? "" : "hidden"}>${escapeHtml(t("common.training.revertBtn"))}</button>
-        <button type="button" class="docs-btn docs-btn-alt" data-role="export">${escapeHtml(t("common.training.exportBtn"))}</button>
         <span class="training-clear" data-role="clear-wrap">
           <button type="button" class="docs-btn docs-btn-alt" data-role="clear">${escapeHtml(t("common.training.clearBtn"))}</button>
           <span class="training-confirm" data-role="clear-confirm" hidden>
@@ -742,7 +741,6 @@
     `;
     els.results.querySelector('[data-role="apply"]').addEventListener("click", applyResult);
     els.results.querySelector('[data-role="revert"]').addEventListener("click", revertToExpert);
-    els.results.querySelector('[data-role="export"]').addEventListener("click", exportReport);
     const clearBtn = els.results.querySelector('[data-role="clear"]');
     const confirmBox = els.results.querySelector('[data-role="clear-confirm"]');
     const showConfirm = (on) => {
@@ -953,57 +951,6 @@
     renderRun();
     renderResults();
     renderChip();
-  }
-
-  async function exportReport() {
-    const { result, method } = state;
-    if (!result || !root.xlsxLite) return;
-    const tr = result.training;
-    const summary = [
-      [t("common.training.dataset"), tr.datasetName || ""],
-      [t("common.training.resultsTitle"), tr.method],
-      [t(`common.training.${method.stepKey}s`), tr.steps],
-      [t("common.training.finished"), tr.stopReason || ""],
-      [t("common.training.seconds"), tr.seconds ?? ""],
-      ...Object.entries(tr.options || {}).map(([k, v]) => [k, v]),
-      ...Object.entries(tr.samples || {}).map(([k, v]) => [`${t("common.training.split." + k)} (n)`, v]),
-      [],
-      ["", "RMSE " + t("common.training.before"), "RMSE " + t("common.training.after"), "MAE " + t("common.training.before"), "MAE " + t("common.training.after"), "R² " + t("common.training.before"), "R² " + t("common.training.after")],
-      ...method.reportSplits
-        .filter((s) => tr.metrics.trained[s])
-        .map((s) => [
-          t(`common.training.split.${s}`),
-          tr.metrics.base[s]?.rmse ?? "", tr.metrics.trained[s].rmse ?? "",
-          tr.metrics.base[s]?.mae ?? "", tr.metrics.trained[s].mae ?? "",
-          tr.metrics.base[s]?.r2 ?? "", tr.metrics.trained[s].r2 ?? "",
-        ]),
-    ];
-    const historyHeader = [method.stepKey, ...method.series.map((s) => s.key), "stopReason"];
-    const history = [historyHeader, ...tr.history.map((h) => [h[method.stepKey], ...method.series.map((s) => h[s.key] ?? ""), h.stopReason || ""])];
-    const params = [["variable", "term", "type", "parameter", t("common.training.before"), t("common.training.after")]];
-    result.changes.variables.forEach((v) => {
-      v.terms.forEach((term) => {
-        term.after.forEach((after, i) => {
-          params.push([v.symbol, term.term, term.type, i + 1, term.before ? term.before[i] : "", after]);
-        });
-      });
-    });
-    const sheets = [
-      { name: "Summary", rows: summary },
-      { name: "History", rows: history },
-      { name: "Parameters", rows: params },
-    ];
-    if (result.params.rules) {
-      const rules = [["#", ...method.inputSymbols, method.outputSymbol, "changed"]];
-      result.params.rules.forEach(([c, o], i) => rules.push([i + 1, ...c, o, result.changes.rules.some((r) => r.index === i + 1) ? 1 : 0]));
-      sheets.push({ name: "Rules", rows: rules });
-    }
-    sheets.push({ name: "Params JSON", rows: [["params"], [JSON.stringify(result.params)]] });
-    const bytes = await root.xlsxLite.write(sheets);
-    saveBlob(
-      new Blob([bytes], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" }),
-      `${state.controller}-training-report.xlsx`
-    );
   }
 
   // -------------------------------------------------------------------------
