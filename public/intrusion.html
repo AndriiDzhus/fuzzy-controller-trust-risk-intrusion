@@ -94,6 +94,18 @@
         </div>
       </div>
 
+      <details id="trainingStep" class="process-step training-step" data-step="training" open>
+        <summary>
+          <span class="process-step-num training-badge" data-i18n="intrusion.training.badge">ГА</span>
+          <span class="process-step-title" data-i18n="common.training.title"></span>
+          <span class="training-chip is-expert"></span>
+        </summary>
+        <div class="process-step-body">
+          <p class="process-step-hint" data-i18n="intrusion.training.hint"></p>
+          <div id="trainingPanel"></div>
+        </div>
+      </details>
+
       <details class="process-step" data-step="fuzzification" open>
         <summary>
           <span class="process-step-num">1</span>
@@ -182,7 +194,9 @@
     <script src="vendor/katex/katex.min.js"></script>
     <script src="term-colors.js"></script>
     <script src="controller-docs.js"></script>
-    <script src="model-variant.js"></script>
+    <script src="xlsx-lite.js"></script>
+    <script src="training-backend.js"></script>
+    <script src="training-panel.js"></script>
     <script src="fuzzy-page-core.js"></script>
     <script src="surface-view.js"></script>
     <script src="intrusion.js"></script>

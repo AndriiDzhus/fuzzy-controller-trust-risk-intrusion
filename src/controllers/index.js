@@ -85,14 +85,29 @@ function register(controller) {
  * The object itself behaves as the base variant, so existing callers keep
  * working; `variant(name)` returns the requested one or null.
  */
-function registerWithVariants(module) {
+function registerWithVariants(module, controllerName) {
   const base = register(module.variants ? module.variants.base : module);
   const trained = module.variants?.trained ? register(module.variants.trained) : null;
   const variants = { base, trained };
+  // Models built from parameters sent by the client (a training result that
+  // the page applied). A small cache avoids rebuilding on every slider move.
+  const customCache = new Map();
+  const withParams = (params) => {
+    if (!module.buildModel) return null;
+    const key = JSON.stringify(params);
+    if (customCache.has(key)) return customCache.get(key);
+    const { buildModelFromParams } = require("../training/session");
+    const model = register(buildModelFromParams(controllerName, params, { variant: "custom" }));
+    if (customCache.size >= 8) customCache.delete(customCache.keys().next().value);
+    customCache.set(key, model);
+    return model;
+  };
   return {
     ...base,
     variants,
     variant: (name = "base") => (MODEL_VARIANTS.includes(name) ? variants[name] : null),
+    withParams,
+    trainable: Boolean(module.buildModel),
     availableVariants: () => MODEL_VARIANTS.filter((name) => variants[name]),
     trainingSummary: () => {
       const training = module.variants?.trained?.training;
@@ -106,9 +121,9 @@ function registerWithVariants(module) {
 const MODEL_VARIANTS = ["base", "trained"];
 
 const controllers = {
-  trust: registerWithVariants(trustController),
-  security: registerWithVariants(securityController),
-  intrusion: registerWithVariants(intrusionController),
+  trust: registerWithVariants(trustController, "trust"),
+  security: registerWithVariants(securityController, "security"),
+  intrusion: registerWithVariants(intrusionController, "intrusion"),
 };
 
 module.exports = {

@@ -271,8 +271,11 @@ function cloneState(state) {
  * @param {[number, number]} [args.options.outputRange=[0, 100]] consequents are
  *   clipped to the universe of SR
  * @returns {{params, history, best, metrics}}
+ *
+ * trainAnfisSteps is the generator form: one `yield` per epoch (the history
+ * entry), the result as the return value; trainAnfis drains it.
  */
-function trainAnfis({ spec, initial, train, test = [], coverage = [], options = {} }) {
+function* trainAnfisSteps({ spec, initial, train, test = [], coverage = [], options = {} }) {
   const {
     epochs = 200,
     stepSize: initialStep = 0.01,
@@ -313,24 +316,47 @@ function trainAnfis({ spec, initial, train, test = [], coverage = [], options = 
   const coveragePoints = [...coverage, ...train.map((s) => s.x)].filter(
     (x) => forward(current.state, spec, x).sum > 0
   );
-  const covers = (candidateState) => coveragePoints.every((x) => forward(candidateState, spec, x).sum > 0);
+  // The check runs on the parameters as they are saved (rounded to physical
+  // units and read back), so a break point that lands exactly on a sample
+  // after rounding cannot slip through.
+  const asSaved = (st) => {
+    const copy = cloneState(st);
+    spec.inputs.forEach(({ symbol, range }) => {
+      copy.premise[symbol] = toNormalized(toPhysical(st.premise[symbol], range), range);
+    });
+    return copy;
+  };
+  const covers = (candidateState) => {
+    const saved = asSaved(candidateState);
+    return coveragePoints.every((x) => forward(saved, spec, x).sum > 0);
+  };
 
   let best = { epoch: 1, objective: current.metrics.rmse, state: cloneState(current.state) };
   let stepSize = initialStep;
   let sinceImprovement = 0;
 
-  for (let epoch = 1; epoch <= epochs; epoch += 1) {
+  const record = (epoch, stopReason = null) => {
     const testMetrics = test.length ? evaluate(current.state, spec, test) : null;
-    history.push({
+    const entry = {
       epoch,
       trainRmse: current.metrics.rmse,
       testRmse: testMetrics ? testMetrics.rmse : null,
       stepSize,
-    });
+      stopReason,
+    };
+    history.push(entry);
     if (current.metrics.rmse < best.objective - 1e-12 && covers(current.state)) {
       best = { epoch, objective: current.metrics.rmse, state: cloneState(current.state) };
     }
-    if (epoch === epochs) break;
+    return entry;
+  };
+
+  for (let epoch = 1; epoch <= epochs; epoch += 1) {
+    const entry = record(epoch, epoch === epochs ? "epochs" : null);
+    if (entry.stopReason) {
+      yield entry;
+      break;
+    }
 
     // Step 2 (backward pass): gradient descent on the premises with the
     // consequents fixed, then the least squares of the next epoch. A step that
@@ -357,15 +383,22 @@ function trainAnfis({ spec, initial, train, test = [], coverage = [], options = 
       }
       stepSize *= 0.5;
     }
-    if (!accepted) break; // no descent direction left: converged
+    if (!accepted) {
+      // No descent direction left: converged.
+      entry.stopReason = "converged";
+      yield entry;
+      break;
+    }
+    // next(true) asks to stop after this epoch.
+    if (yield entry) {
+      entry.stopReason = "stopped";
+      break;
+    }
 
     sinceImprovement = current.metrics.rmse - accepted.metrics.rmse > tolerance ? 0 : sinceImprovement + 1;
     current = accepted;
     if (sinceImprovement >= patience) {
-      history.push({ epoch: epoch + 1, trainRmse: current.metrics.rmse, testRmse: test.length ? evaluate(current.state, spec, test).rmse : null, stepSize });
-      if (current.metrics.rmse < best.objective - 1e-12 && covers(current.state)) {
-        best = { epoch: epoch + 1, objective: current.metrics.rmse, state: cloneState(current.state) };
-      }
+      yield record(epoch + 1, "patience");
       break;
     }
   }
@@ -394,9 +427,20 @@ function trainAnfis({ spec, initial, train, test = [], coverage = [], options = 
   };
 }
 
+function trainAnfis({ onEpoch = null, ...args }) {
+  const steps = trainAnfisSteps(args);
+  let step = steps.next();
+  while (!step.done) {
+    if (onEpoch) onEpoch(step.value);
+    step = steps.next();
+  }
+  return step.value;
+}
+
 module.exports = {
   TERMS,
   trainAnfis,
+  trainAnfisSteps,
   toNormalized,
   toPhysical,
   termValues,

@@ -857,9 +857,9 @@ function buildTrainedDocs(controller, params) {
 
 /** Docs of the model shown on the page (base or trained). */
 function currentDocsSpec(controller) {
-  const trained = window.fuzzyModel?.current === "trained";
-  const params = window.fuzzyPageState?.mfData?.meta?.params;
-  return trained && params ? buildTrainedDocs(controller, params) : controllerDocs[controller];
+  const meta = window.fuzzyPageState?.mfData?.meta;
+  const trained = Boolean(window.fuzzyPage?.hasActiveModel?.()) && meta?.variant && meta.variant !== "base";
+  return trained && meta.params ? buildTrainedDocs(controller, meta.params) : controllerDocs[controller];
 }
 
 function openDocsModal(controller, kind) {

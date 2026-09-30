@@ -351,7 +351,12 @@ function gridOf([min, max], step) {
  * @param {(entry: object) => void} [args.onGeneration]
  * @returns {{params, best, history}}
  */
-function evolve({ spec, initial, train, validation = [], options = {}, onGeneration = null }) {
+/**
+ * Generator form of the evolution: one `yield` per recorded generation (the
+ * entry of the history), the final result as the return value. Lets the
+ * caller report progress or stop early (generator.return()).
+ */
+function* evolveSteps({ spec, initial, train, validation = [], options = {} }) {
   const {
     initialPopulation = 150, // N0
     populationSize = 50, // N < N0
@@ -392,7 +397,7 @@ function evolve({ spec, initial, train, validation = [], options = {}, onGenerat
   population = population.slice(0, populationSize);
 
   const history = [];
-  const record = (generation) => {
+  const record = (generation, stopReason = null) => {
     const best = population[0];
     const meanRmse = population.reduce((acc, ch) => acc + ch.rmse, 0) / population.length;
     const entry = {
@@ -401,12 +406,25 @@ function evolve({ spec, initial, train, validation = [], options = {}, onGenerat
       meanRmse,
       bestFitness: best.fitness,
       validationRmse: valData ? rmseOf(predict(best, valData, grid), valData.y) : null,
+      stopReason,
     };
     history.push(entry);
-    if (onGeneration) onGeneration(entry);
     return entry;
   };
-  record(0);
+  const result = () => {
+    const best = population[0];
+    return {
+      params: decode(best, spec),
+      best: { rmse: best.rmse, fitness: best.fitness },
+      expert: { rmse: expert.rmse, fitness: expert.fitness },
+      history,
+      chromosomeLength: REAL_GENES + RULE_GENES,
+    };
+  };
+  if (yield record(0)) {
+    history[0].stopReason = "stopped";
+    return result();
+  }
 
   let lastImprovement = 0;
   let bestRmse = population[0].rmse;
@@ -434,22 +452,35 @@ function evolve({ spec, initial, train, validation = [], options = {}, onGenerat
       bestRmse = entry.bestRmse;
       lastImprovement = generation;
     }
-    if (entry.bestRmse <= targetRmse) break;
-    if (generation - lastImprovement >= stagnation) break;
+    if (entry.bestRmse <= targetRmse) entry.stopReason = "target";
+    else if (generation - lastImprovement >= stagnation) entry.stopReason = "stagnation";
+    else if (generation === generations) entry.stopReason = "generations";
+    // next(true) asks to stop after this generation.
+    const stop = yield entry;
+    if (stop && !entry.stopReason) entry.stopReason = "stopped";
+    if (entry.stopReason) break;
   }
+  return result();
+}
 
-  const best = population[0];
-  return {
-    params: decode(best, spec),
-    best: { rmse: best.rmse, fitness: best.fitness },
-    expert: { rmse: expert.rmse, fitness: expert.fitness },
-    history,
-    chromosomeLength: REAL_GENES + RULE_GENES,
-  };
+/**
+ * @param {object} args see evolveSteps; `onGeneration(entry)` is called for
+ *   every recorded generation
+ * @returns {{params, best, expert, history, chromosomeLength}}
+ */
+function evolve({ onGeneration = null, ...args }) {
+  const steps = evolveSteps(args);
+  let step = steps.next();
+  while (!step.done) {
+    if (onGeneration) onGeneration(step.value);
+    step = steps.next();
+  }
+  return step.value;
 }
 
 module.exports = {
   evolve,
+  evolveSteps,
   encode,
   decode,
   validate,
