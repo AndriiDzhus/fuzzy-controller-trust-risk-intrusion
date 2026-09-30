@@ -209,7 +209,7 @@
           "seed": "Seed"
         },
         "runTitle": "Хід навчання",
-        "idle": "Завантажте датасет, щоб почати навчання.",
+        "idle": "Результатів навчання ще немає.",
         "starting": "Читання датасету…",
         "stopBtn": "Зупинити",
         "stopping": "Зупинка…",
@@ -277,7 +277,14 @@
           "apply": "Не вдалося застосувати параметри",
           "noBackend": "Модуль навчання не завантажено."
         },
-        "metaLabel": "Параметри:"
+        "metaLabel": "Параметри:",
+        "trainDefaultBtn": "Навчити на датасеті за замовчуванням",
+        "trainDefaultHint": "Візьме {rows} з датасету, вибраного ліворуч, і одразу почне навчання. Або завантажте власний файл.",
+        "clearConfirm": "Видалити результат навчання?",
+        "clearYes": "Так, видалити",
+        "clearNo": "Скасувати",
+        "clearNoteApplied": "Застосовані до контролера параметри залишаться, поки не натиснете «Повернути експертні параметри».",
+        "appliedNoResult": "До контролера застосовано навчені параметри попереднього результату."
       }
     },
     "navigation": {
@@ -684,7 +691,7 @@
           "seed": "Seed"
         },
         "runTitle": "Training progress",
-        "idle": "Upload a dataset to start the training.",
+        "idle": "No training results yet.",
         "starting": "Reading the dataset…",
         "stopBtn": "Stop",
         "stopping": "Stopping…",
@@ -752,7 +759,14 @@
           "apply": "Could not apply the parameters",
           "noBackend": "The training module is not loaded."
         },
-        "metaLabel": "Parameters:"
+        "metaLabel": "Parameters:",
+        "trainDefaultBtn": "Train on the default dataset",
+        "trainDefaultHint": "Takes {rows} of the dataset chosen on the left and starts the training right away. Or upload your own file.",
+        "clearConfirm": "Delete the training result?",
+        "clearYes": "Yes, delete",
+        "clearNo": "Cancel",
+        "clearNoteApplied": "The parameters applied to the controller stay until you press “Return expert parameters”.",
+        "appliedNoResult": "The trained parameters of a previous result are applied to the controller."
       }
     },
     "navigation": {
