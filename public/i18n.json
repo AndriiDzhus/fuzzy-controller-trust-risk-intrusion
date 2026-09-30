@@ -184,48 +184,100 @@
         "loading": "Обчислення…",
         "error": "Не вдалося обчислити поверхню."
       },
-      "model": {
-        "label": "Модель:",
-        "base": "Експертна",
-        "trained": "Навчена",
-        "resultsBtn": "Результати навчання",
-        "unavailable": "Навчена модель ще недоступна",
-        "results": {
-          "title": "Результати навчання",
-          "method": "Метод",
-          "samples": "Вибірки",
+      "training": {
+        "title": "Навчання моделі",
+        "chip": {
+          "expert": "Експертні параметри",
+          "running": "Навчання…",
+          "applied": "Застосовано навчену модель"
+        },
+        "dataTitle": "Дані",
+        "defaultDataset": "Датасет за замовчуванням",
+        "rowsLabel": "Кількість рядків",
+        "rowsUnit": "рядків",
+        "rowsAll": "усі рядки",
+        "downloadBtn": "Отримати .xlsx",
+        "trainOn": "Навчити за датасетом",
+        "chooseFile": "Вибрати файл .xlsx / .csv",
+        "dropHint": "або перетягніть файл сюди — навчання почнеться одразу",
+        "optionsTitle": "Параметри алгоритму",
+        "options": {
           "epochs": "Епохи",
           "generations": "Покоління",
-          "genes": "генів",
-          "bestEpoch": "найкраща",
-          "date": "Дата навчання",
-          "metricsTitle": "Точність до і після навчання",
-          "termAccuracy": "Збіг лінгвістичного терму",
-          "balancedAccuracy": "Збалансована точність виявлення (IP ≥ 50)",
-          "split": {
-            "train": "Навчальна",
-            "validation": "Валідаційна",
-            "test": "Тестова"
-          },
-          "curveTitle": "Крива навчання (RMSE)",
-          "epoch": "Епоха",
-          "generation": "Покоління",
-          "categoryTitle": "Середнє IP за категоріями трафіку (тестова вибірка)",
-          "categoryHint": "Еталон — експертне значення IP з data/intrusion/label_to_ip.csv; стовпці показують середній вихід контролера до і після навчання.",
-          "category": "Категорія",
-          "target": "Еталон IP",
-          "categories": {
-            "Benign": "Нормальний трафік (Benign)",
-            "BruteForce": "Підбір паролів (Brute Force)",
-            "DDoS": "DDoS",
-            "DoS": "DoS",
-            "Mirai": "Mirai (ботнет)",
-            "Recon": "Розвідка (Recon)",
-            "Spoofing": "Підміна (Spoofing)",
-            "Web": "Веб-атаки (Web)"
-          },
-          "chosen": "збережена модель"
-        }
+          "populationSize": "Популяція N",
+          "initialPopulation": "Початкова популяція N₀",
+          "seed": "Seed"
+        },
+        "runTitle": "Хід навчання",
+        "idle": "Завантажте датасет, щоб почати навчання.",
+        "starting": "Читання датасету…",
+        "stopBtn": "Зупинити",
+        "stopping": "Зупинка…",
+        "generation": "Покоління",
+        "epoch": "Епоха",
+        "generations": "Покоління",
+        "epochs": "Епохи",
+        "of": "з",
+        "finished": "Завершено",
+        "stop": {
+          "generations": "досягнуто кількість поколінь",
+          "epochs": "досягнуто кількість епох",
+          "stagnation": "крива вирівнялась (немає покращення)",
+          "target": "досягнуто цільову похибку",
+          "stopped": "зупинено користувачем",
+          "converged": "збіжність (немає напрямку спуску)",
+          "patience": "похибка перестала зменшуватись"
+        },
+        "series": {
+          "best": "Найкраще",
+          "mean": "Середнє по популяції",
+          "validation": "Валідаційна",
+          "train": "Навчальна",
+          "test": "Тестова"
+        },
+        "split": {
+          "train": "навчальна",
+          "validation": "валідаційна",
+          "test": "тестова"
+        },
+        "skippedRows": "пропущено рядків без значень:",
+        "chosen": "збережена епоха",
+        "resultsTitle": "Результати навчання",
+        "dataset": "Датасет",
+        "bestEpoch": "найкраща епоха",
+        "seconds": "с",
+        "balancedAccuracy": "Збалансована точність виявлення (IP ≥ 50)",
+        "applyBtn": "Застосувати до контролера",
+        "appliedBtn": "Застосовано",
+        "revertBtn": "Повернути експертні параметри",
+        "exportBtn": "Експортувати звіт (.xlsx)",
+        "clearBtn": "Очистити результат",
+        "appliedOther": "Зараз застосовано інший результат навчання. Натисніть «Застосувати», щоб замінити його цим.",
+        "whatChanged": "Що змінилося",
+        "changedParams": "параметрів функцій належності",
+        "changedRules": "правил",
+        "rulesKept": "база правил без змін (маска ANFIS)",
+        "before": "до навчання",
+        "after": "після",
+        "params": {
+          "center": "центр c",
+          "sigma": "ширина σ",
+          "value": "значення"
+        },
+        "changedRulesTitle": "Змінені правила",
+        "noRuleChanges": "Структура правил не змінилась.",
+        "errors": {
+          "download": "Не вдалося отримати датасет",
+          "fileType": "Підтримуються файли .xlsx і .csv",
+          "missingColumns": "У файлі немає потрібних колонок",
+          "tooFewRows": "Замало рядків для навчання. Мінімум у навчальній вибірці:",
+          "unreadableFile": "Не вдалося прочитати файл",
+          "busy": "Уже виконується інше навчання, зачекайте",
+          "generic": "Помилка навчання",
+          "apply": "Не вдалося застосувати параметри",
+          "noBackend": "Модуль навчання не завантажено."
+        },
+        "metaLabel": "Параметри:"
       }
     },
     "navigation": {
@@ -354,13 +406,14 @@
         "category3": "Велика споживана енергія (EC): підвищений ризик, особливо за великої потужності передачі та великої затримки."
       },
       "training": {
-        "methodShort": "ANFIS",
-        "methodLong": "ANFIS: гібридне навчання — метод найменших квадратів для наслідків і градієнтний спуск для точок зламу трикутників; база з 6 правил незмінна (маска правил)",
-        "howTo": "Заповніть колонку SR_expert у data/security/security_labeling.csv і виконайте npm run train:security",
-        "banner": "Навчена модель (ANFIS): точки зламу функцій належності та значення синглтонів підібрано за експертною розміткою датасету 6G IoT. База з 6 правил та сама.",
-        "note": "Еталон — експертна оцінка SR для 250 рядків датасету 6G IoT (70 % навчальна, 30 % тестова вибірка).",
+        "badge": "ANFIS",
+        "hint": "Нейро-нечітке навчання (ANFIS): за датасетом з еталонним індексом ризику SR налаштовуються значення наслідків (метод найменших квадратів) і точки зламу трикутних функцій належності (градієнтний спуск). База з 6 правил лишається незмінною — це маска правил.",
+        "datasetNote": "Колонки EC, TP, Lat, SR (0–100) — 250 рядків 6G IoT з експертною оцінкою SR (або запропонованою, якщо експертної ще немає) та розподілом на навчальну і тестову вибірки.",
+        "uploadNote": "Файл з колонками EC, TP, Lat, SR; колонка split (train/test) необов'язкова — інакше поділ 70/30.",
+        "changesNote": "Трикутники входів задано точками зламу a, b, c; вихід — значення синглтонів.",
         "rulesTitle": "Правила після навчання",
-        "rulesDescription": "ANFIS не змінює структуру бази: маска залишає ті самі 6 правил табл. 3.1. Навчаються лише функції належності входів і значення наслідків (синглтонів) — див. «Формули»."
+        "rulesDescription": "ANFIS не змінює структуру бази: маска залишає ті самі 6 правил табл. 3.1. Навчаються лише функції належності входів і значення наслідків (синглтонів) — див. «Формули».",
+        "metaChip": "навчені (ANFIS)"
       }
     },
     "intrusion": {
@@ -429,14 +482,14 @@
         "category3": "Велика кількість пакетів (NP): переважно велика вірогідність вторгнення; за малої Rate — середня."
       },
       "training": {
-        "methodShort": "ГА",
-        "methodLong": "Генетичний алгоритм: хромосома з 74 генів (18 + 8 параметрів гаусоїд, 48 генів структури 12 правил), турнірна селекція, арифметичний і двоточковий кросовер, гаусова та індексна мутація",
-        "howTo": "Виконайте npm run train:intrusion",
-        "banner": "Навчена модель (генетичний алгоритм): гаусоїди всіх величин і структуру 12 правил підібрано на CICIoT2023. Rate задається в логарифмічній шкалі lg(1 + pps), 0–7.",
-        "note": "Еталон IP задано експертом для кожного класу трафіку CICIoT2023 (data/intrusion/label_to_ip.csv). Вибірки збалансовано за 8 категоріями.",
+        "badge": "ГА",
+        "hint": "Генетичний алгоритм підлаштовує гаусові функції належності всіх величин і структуру 12 правил під датасет з еталонною вірогідністю вторгнення IP. Хромосома — 74 гени; пристосованість F = 1 / (1 + RMSE). У навченій моделі Rate задається в логарифмічній шкалі lg(1 + pps).",
+        "datasetNote": "Колонки NP, Rate (pps), We, IP (0–100) з CICIoT2023, збалансовано за 8 категоріями трафіку; додатково label, category, split.",
+        "uploadNote": "Файл з колонками NP, Rate, We, IP; колонка split (train/validation/test) необов'язкова — інакше поділ 70/15/15.",
+        "changesNote": "Гаусоїди задано центром c і шириною σ; Rate — у шкалі lg(1 + pps), 0–7 (експертні параметри перераховано в цю шкалу).",
         "rulesTitle": "Правила після навчання",
-        "rulesDescription": "Структуру всіх 12 правил (терми передумов і наслідку) сформовано генетичним алгоритмом за мінімумом RMSE на навчальній вибірці CICIoT2023.",
-        "description": "Оцінка вірогідності вторгнення (IP) навченим контролером: кількість пакетів (NP), швидкість передавання в логарифмічній шкалі lg(1 + Rate) та вага потоку (We) з датасету CICIoT2023."
+        "rulesDescription": "Структуру всіх 12 правил (терми передумов і наслідку) сформовано генетичним алгоритмом за мінімумом RMSE на навчальній вибірці.",
+        "metaChip": "навчені (ГА)"
       }
     }
   },
@@ -606,48 +659,100 @@
         "loading": "Calculating…",
         "error": "Could not calculate the surface."
       },
-      "model": {
-        "label": "Model:",
-        "base": "Expert",
-        "trained": "Trained",
-        "resultsBtn": "Training results",
-        "unavailable": "The trained model is not available yet",
-        "results": {
-          "title": "Training results",
-          "method": "Method",
-          "samples": "Samples",
+      "training": {
+        "title": "Model training",
+        "chip": {
+          "expert": "Expert parameters",
+          "running": "Training…",
+          "applied": "Trained model applied"
+        },
+        "dataTitle": "Data",
+        "defaultDataset": "Default dataset",
+        "rowsLabel": "Number of rows",
+        "rowsUnit": "rows",
+        "rowsAll": "all rows",
+        "downloadBtn": "Download .xlsx",
+        "trainOn": "Train on a dataset",
+        "chooseFile": "Choose a .xlsx / .csv file",
+        "dropHint": "or drop the file here — training starts right away",
+        "optionsTitle": "Algorithm settings",
+        "options": {
           "epochs": "Epochs",
           "generations": "Generations",
-          "genes": "genes",
-          "bestEpoch": "best",
-          "date": "Trained on",
-          "metricsTitle": "Accuracy before and after training",
-          "termAccuracy": "Linguistic term match",
-          "balancedAccuracy": "Balanced detection accuracy (IP ≥ 50)",
-          "split": {
-            "train": "Training",
-            "validation": "Validation",
-            "test": "Test"
-          },
-          "curveTitle": "Learning curve (RMSE)",
-          "epoch": "Epoch",
-          "generation": "Generation",
-          "categoryTitle": "Mean IP by traffic category (test set)",
-          "categoryHint": "The reference is the expert IP from data/intrusion/label_to_ip.csv; the columns show the mean controller output before and after training.",
-          "category": "Category",
-          "target": "Reference IP",
-          "categories": {
-            "Benign": "Benign traffic",
-            "BruteForce": "Brute force",
-            "DDoS": "DDoS",
-            "DoS": "DoS",
-            "Mirai": "Mirai (botnet)",
-            "Recon": "Reconnaissance",
-            "Spoofing": "Spoofing",
-            "Web": "Web-based"
-          },
-          "chosen": "saved model"
-        }
+          "populationSize": "Population N",
+          "initialPopulation": "Initial population N₀",
+          "seed": "Seed"
+        },
+        "runTitle": "Training progress",
+        "idle": "Upload a dataset to start the training.",
+        "starting": "Reading the dataset…",
+        "stopBtn": "Stop",
+        "stopping": "Stopping…",
+        "generation": "Generation",
+        "epoch": "Epoch",
+        "generations": "Generations",
+        "epochs": "Epochs",
+        "of": "of",
+        "finished": "Finished",
+        "stop": {
+          "generations": "generation limit reached",
+          "epochs": "epoch limit reached",
+          "stagnation": "curve levelled off (no improvement)",
+          "target": "target error reached",
+          "stopped": "stopped by the user",
+          "converged": "converged (no descent direction)",
+          "patience": "error stopped decreasing"
+        },
+        "series": {
+          "best": "Best",
+          "mean": "Population mean",
+          "validation": "Validation",
+          "train": "Training",
+          "test": "Test"
+        },
+        "split": {
+          "train": "training",
+          "validation": "validation",
+          "test": "test"
+        },
+        "skippedRows": "rows without values skipped:",
+        "chosen": "saved epoch",
+        "resultsTitle": "Training results",
+        "dataset": "Dataset",
+        "bestEpoch": "best epoch",
+        "seconds": "s",
+        "balancedAccuracy": "Balanced detection accuracy (IP ≥ 50)",
+        "applyBtn": "Apply to the controller",
+        "appliedBtn": "Applied",
+        "revertBtn": "Return expert parameters",
+        "exportBtn": "Export report (.xlsx)",
+        "clearBtn": "Clear result",
+        "appliedOther": "Another training result is applied now. Press “Apply” to replace it with this one.",
+        "whatChanged": "What changed",
+        "changedParams": "membership-function parameters",
+        "changedRules": "rules",
+        "rulesKept": "rule base unchanged (ANFIS mask)",
+        "before": "before training",
+        "after": "after",
+        "params": {
+          "center": "centre c",
+          "sigma": "width σ",
+          "value": "value"
+        },
+        "changedRulesTitle": "Changed rules",
+        "noRuleChanges": "The rule structure did not change.",
+        "errors": {
+          "download": "Could not download the dataset",
+          "fileType": ".xlsx and .csv files are supported",
+          "missingColumns": "The file lacks the required columns",
+          "tooFewRows": "Too few rows for training. Minimum in the training split:",
+          "unreadableFile": "Could not read the file",
+          "busy": "Another training is running, please wait",
+          "generic": "Training error",
+          "apply": "Could not apply the parameters",
+          "noBackend": "The training module is not loaded."
+        },
+        "metaLabel": "Parameters:"
       }
     },
     "navigation": {
@@ -776,13 +881,14 @@
         "category3": "High energy consumption (EC): elevated risk, especially with high transmit power and high latency."
       },
       "training": {
-        "methodShort": "ANFIS",
-        "methodLong": "ANFIS: hybrid learning — least squares for the consequents and gradient descent for the triangle break points; the 6-rule base is fixed (rule mask)",
-        "howTo": "Fill the SR_expert column of data/security/security_labeling.csv and run npm run train:security",
-        "banner": "Trained model (ANFIS): the break points of the membership functions and the singleton values were fitted to the expert labels of the 6G IoT dataset. The same 6 rules.",
-        "note": "The reference is the expert SR for 250 rows of the 6G IoT dataset (70 % training, 30 % test).",
+        "badge": "ANFIS",
+        "hint": "Neuro-fuzzy training (ANFIS): on a dataset with a reference security-risk index SR the consequent values (least squares) and the break points of the triangular membership functions (gradient descent) are fitted. The 6-rule base stays fixed — the rule mask.",
+        "datasetNote": "Columns EC, TP, Lat, SR (0–100): 250 rows of 6G IoT with the expert SR (or the proposed one when the expert value is missing) and a training / test split.",
+        "uploadNote": "A file with columns EC, TP, Lat, SR; the split column (train/test) is optional — otherwise a 70/30 split.",
+        "changesNote": "Input triangles are given by their break points a, b, c; the output by the singleton values.",
         "rulesTitle": "Rules after training",
-        "rulesDescription": "ANFIS keeps the structure of the rule base: the mask keeps the same 6 rules of table 3.1. Only the input membership functions and the consequent values (singletons) are learned — see “Formulas”."
+        "rulesDescription": "ANFIS keeps the structure of the rule base: the mask keeps the same 6 rules of table 3.1. Only the input membership functions and the consequent values (singletons) are learned — see “Formulas”.",
+        "metaChip": "trained (ANFIS)"
       }
     },
     "intrusion": {
@@ -851,14 +957,14 @@
         "category3": "High packet count (NP): intrusion probability is mostly high; medium when Rate is low."
       },
       "training": {
-        "methodShort": "GA",
-        "methodLong": "Genetic algorithm: 74-gene chromosome (18 + 8 Gaussian parameters, 48 genes of the 12-rule structure), tournament selection, arithmetic and two-point crossover, Gaussian and index mutation",
-        "howTo": "Run npm run train:intrusion",
-        "banner": "Trained model (genetic algorithm): the Gaussians of all variables and the structure of the 12 rules were fitted on CICIoT2023. Rate is given on the log scale lg(1 + pps), 0–7.",
-        "note": "The reference IP is set by the expert for every CICIoT2023 traffic class (data/intrusion/label_to_ip.csv). The samples are balanced over 8 categories.",
+        "badge": "GA",
+        "hint": "The genetic algorithm fits the Gaussian membership functions of all variables and the structure of the 12 rules to a dataset with a reference intrusion probability IP. The chromosome has 74 genes; fitness F = 1 / (1 + RMSE). The trained model reads Rate on the log scale lg(1 + pps).",
+        "datasetNote": "Columns NP, Rate (pps), We, IP (0–100) from CICIoT2023, balanced over 8 traffic categories; plus label, category, split.",
+        "uploadNote": "A file with columns NP, Rate, We, IP; the split column (train/validation/test) is optional — otherwise a 70/15/15 split.",
+        "changesNote": "Gaussians are given by the centre c and width σ; Rate on the scale lg(1 + pps), 0–7 (the expert parameters are converted to it).",
         "rulesTitle": "Rules after training",
-        "rulesDescription": "The structure of all 12 rules (premise and consequent terms) was formed by the genetic algorithm at the minimum RMSE on the CICIoT2023 training set.",
-        "description": "Intrusion probability (IP) by the trained controller: packet count (NP), transmission rate on the log scale lg(1 + Rate) and flow weight (We) from the CICIoT2023 dataset."
+        "rulesDescription": "The structure of all 12 rules (premise and consequent terms) was formed by the genetic algorithm at the minimum RMSE on the training set.",
+        "metaChip": "trained (GA)"
       }
     }
   }

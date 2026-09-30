@@ -11,9 +11,9 @@
 | Security | 6G IoT | EC, TP, Lat — трикутники | SR — 6 синглтонів | Sugeno 0-го порядку, 6 правил, добуток; **навчання ANFIS** | зважена сума Σ w̄·c |
 | Intrusion | CICIoT2023 | NP, Rate, We — гаусові | IP — 4 гаусові | Mamdani, 12 правил, min; **оптимізація ГА** | центр тяжіння, сума з кроком 0,2 |
 
-Security та Intrusion мають дві моделі, між якими перемикає кнопка «Модель» у шапці
-сторінки (або `?model=trained` в адресі): **експертну** (з завдання, без змін) і
-**навчену** (див. розділ «Навчання контролерів»).
+Security та Intrusion можна навчити прямо на сторінці: блок **«Навчання моделі»**
+перед кроком «Фазифікація» (див. розділ «Навчання контролерів»). Експертні
+параметри з завдання лишаються без змін, доки навчений результат не застосовано.
 
 ## Архітектура
 
@@ -34,27 +34,35 @@ src/
     securityController.js         модель і вивід Security
     intrusionController.js        модель і вивід Intrusion
     surface.js                    поверхня відгуку: вихід як функція двох входів
-    trained/security.json         параметри навченої моделі Security (ANFIS)
-    trained/intrusion.json        параметри навченої моделі Intrusion (ГА)
+    trained/security.json         параметри навченої моделі Security (ANFIS, npm run train:security)
+    trained/intrusion.json        параметри навченої моделі Intrusion (ГА, npm run train:intrusion)
   training/
-    anfis.js                      гібридне навчання ANFIS: МНК + градієнтний спуск
-    genetic.js                    генетичний алгоритм: хромосома з 74 генів
+    anfis.js                      гібридне навчання ANFIS: МНК + градієнтний спуск (генератор епох)
+    genetic.js                    генетичний алгоритм: хромосома з 74 генів (генератор поколінь)
+    datasets.js                   формат датасетів, розбір xlsx/csv, поділ на вибірки, датасети за замовчуванням
+    session.js                    сеанс навчання: прогрес, зупинка, метрики до/після, diff параметрів
+    jobs.js, worker-node.js       завдання навчання API у worker_threads, події прогресу
     utils.js                      seeded random, CSV, метрики, МНК
 public/
   index.html  trust.js            сторінка Trust
   security.html  security.js      сторінка Security
   intrusion.html  intrusion.js    сторінка Intrusion
   fuzzy-page-core.js              спільний UI: входи, графіки, кроки виводу, підказки
-  controller-docs.js              модалки «Формули» та «База правил»
-  model-variant.js                перемикач «Експертна / Навчена», «Результати навчання»
+  controller-docs.js              модалки «Формули» та «База правил» (і для навченої моделі)
+  training-panel.js               блок «Навчання моделі»: датасет, живий графік, результати, застосування
+  training-backend.js             де виконується навчання: API (сервер) або Web Worker (статична збірка)
+  xlsx-lite.js                    читання / запис .xlsx без залежностей (Node і браузер)
   surface-view.js                 модалка «Поверхня відгуку»: 3D-поверхня на canvas
   i18n.json  i18n-helper.js       переклади uk / en
   term-colors.js  style.css  navigation.css
 scripts/
   data/prepare_datasets.py        навчальні датасети з 6G IoT і CICIoT2023 -> data/
+  data/propose_security_labels.py запропоновані експертні мітки SR (матриця ризику)
   train-security.js               навчання ANFIS -> src/controllers/trained/security.json
   train-intrusion.js              оптимізація ГА -> src/controllers/trained/intrusion.json
   build-pages.js                  статична збірка для GitHub Pages (dist/)
+  training-worker-entry.js        Web Worker навчання для статичної збірки
+  mini-bundle.js                  запасний бандлер, коли esbuild не запускається на цій машині
   controllers-browser-entry.js    window.fuzzyControllers = src/controllers
 __tests__/                        Jest + supertest
 data/                             навчальні вибірки та експертна розмітка (data/README.md)
@@ -93,8 +101,18 @@ module.exports = { system, variables, ranges, calculate, membershipFunctions };
   `null` там, де жодне правило не спрацювало)
 
 де `:controller` — `trust | security | intrusion`. Параметр `?model=trained` вибирає
-навчену модель (404, якщо її ще немає); `GET /api/controllers/:controller/models`
-повертає список доступних моделей і підсумок навчання. Статична збірка для GitHub Pages
+модель, навчену скриптом (404, якщо її ще немає); `GET /api/controllers/:controller/models`
+повертає список доступних моделей і підсумок навчання. Якщо тіло POST-запиту містить
+`params` (результат навчання, застосований на сторінці), модель будується з них;
+`membership-functions` для цього приймає і POST.
+
+Навчання на сторінці:
+
+- `GET /api/controllers/:controller/dataset?rows=20|40|100|all` — датасет за замовчуванням (.xlsx)
+- `POST /api/training/:controller/jobs?name=<файл>&generations=…` — тіло запиту: файл .xlsx або .csv;
+  відповідь — завдання (`id`, поділ на вибірки, параметри)
+- `GET /api/training/jobs/:id/events` — прогрес як server-sent events (`snapshot`, `progress`, `done`, `error`, `end`)
+- `GET /api/training/jobs/:id`, `POST /api/training/jobs/:id/stop` Статична збірка для GitHub Pages
 рахує те саме в браузері через `window.fuzzyControllers`.
 
 ### Frontend
@@ -136,9 +154,33 @@ C = (AᵀA)⁻¹Aᵀy, за нормованими вагами правил. П
 покоління — найкращі N з батьків і нащадків. Вхід Rate навченої моделі
 задається в логарифмічній шкалі lg(1 + pps) ∈ [0, 7].
 
-Навчена модель зберігається в `src/controllers/trained/*.json` разом із
-метриками до і після навчання та кривою навчання. Їх показує кнопка
-«Результати навчання» на сторінці контролера.
+### Блок «Навчання моделі» на сторінці
+
+На сторінках Security та Intrusion перед кроком «Фазифікація» є акордеон
+«Навчання моделі» (бейдж ANFIS або ГА):
+
+1. **Датасет за замовчуванням** — 20 / 40 / 100 / усі рядки як `.xlsx`
+   (Intrusion: NP, Rate, We, IP + label, category, split; Security: EC, TP, Lat, SR + split).
+2. **Навчити за датасетом** — цей або власний файл `.xlsx` / `.csv` з такими самими
+   колонками; навчання стартує одразу після завантаження. Колонка `split` необов'язкова
+   (інакше поділ 70/15/15 або 70/30). Параметри алгоритму (покоління, популяція, seed;
+   епохи) — у розкривному блоці.
+3. **Хід навчання** — рядок стану (покоління / епоха, RMSE, F), прогрес, живий графік
+   RMSE (найкраще / середнє по популяції / валідаційна; для ANFIS — навчальна / тестова),
+   кнопка «Зупинити».
+4. **Результати** — RMSE і R² до → після на всіх вибірках, збалансована точність виявлення
+   (Intrusion), «Що змінилося»: графіки функцій належності до / після, таблиця параметрів,
+   змінені правила; експорт звіту `.xlsx`.
+5. **«Застосувати до контролера»** — усі кроки, графіки, модалки «Формули» / «База правил»
+   і поверхня відгуку переходять на навчені параметри (стан зберігається в браузері між
+   перезавантаженнями); **«Повернути експертні параметри»** скасовує це.
+
+З локальним сервером навчання виконується на сервері в окремому потоці, прогрес іде
+через server-sent events; у статичній збірці — у Web Worker прямо в браузері
+(`dist/training-worker.js`). Результати однакові (seed фіксовано).
+
+Скрипти `npm run train:*` навчають на повних датасетах з `data/` і зберігають результат
+у `src/controllers/trained/*.json` (доступний через API як `?model=trained`).
 
 ## Запуск
 

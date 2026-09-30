@@ -15,9 +15,8 @@
  */
 const fs = require("fs");
 const path = require("path");
-const security = require("../src/controllers/securityController");
-const { trainAnfis } = require("../src/training/anfis");
-const { readCsv, cellNumber, round } = require("../src/training/utils");
+const { runTraining, securityCoverage } = require("../src/training/session");
+const { readCsv, cellNumber } = require("../src/training/utils");
 
 const root = path.join(__dirname, "..");
 
@@ -54,45 +53,28 @@ function loadSamples(file, target) {
       return;
     }
     if (y < 0 || y > 100) throw new Error(`${target} must be within [0, 100], row_id ${row.row_id}: ${y}`);
-    samples[row.split === "test" ? "test" : "train"].push({ id: Number(row.row_id), x, y });
+    samples[row.split === "test" ? "test" : "train"].push({
+      id: Number(row.row_id),
+      raw: { EC: x[0], TP: x[1], Lat: x[2] },
+      y,
+    });
   });
   return { ...samples, total: rows.length, skipped };
 }
 
-/**
- * Inputs where the trained model must keep a fired rule: all 1000 rows of the
- * 6G dataset and a 12×12×12 grid over the box they span (no targets used).
- */
+/** Coverage inputs: all 1000 rows of the 6G dataset plus a grid (no targets). */
 function coveragePoints() {
   const file = path.join(root, "data/security/security_6g.csv");
   const rows = fs.existsSync(file)
     ? readCsv(file).map((r) => [cellNumber(r.EC), cellNumber(r.TP), cellNumber(r.Lat)])
     : [];
-  if (!rows.length) return [];
-  const lo = [0, 1, 2].map((i) => Math.min(...rows.map((r) => r[i])));
-  const hi = [0, 1, 2].map((i) => Math.max(...rows.map((r) => r[i])));
-  const n = 12;
-  const axis = (i) => Array.from({ length: n }, (_, k) => lo[i] + ((hi[i] - lo[i]) * k) / (n - 1));
-  const grid = [];
-  axis(0).forEach((a) => axis(1).forEach((b) => axis(2).forEach((c) => grid.push([a, b, c]))));
-  return [...rows, ...grid];
+  return securityCoverage(rows);
 }
 
 function fmt(metrics) {
   if (!metrics || metrics.rmse == null) return "—";
   const r2 = metrics.r2 == null ? "—" : metrics.r2.toFixed(3);
   return `RMSE ${metrics.rmse.toFixed(2)}  MAE ${metrics.mae.toFixed(2)}  R² ${r2}  (n=${metrics.n}, no rule: ${metrics.notFired})`;
-}
-
-function roundMetrics(m) {
-  if (!m) return null;
-  return {
-    n: m.n,
-    rmse: m.rmse == null ? null : round(m.rmse, 4),
-    mae: m.mae == null ? null : round(m.mae, 4),
-    r2: m.r2 == null ? null : round(m.r2, 4),
-    notFired: m.notFired,
-  };
 }
 
 function main() {
@@ -108,28 +90,31 @@ function main() {
     process.exit(1);
   }
 
-  const spec = { inputs: security.INPUTS, rules: security.rules };
-  const coverage = coveragePoints();
-  const started = Date.now();
-  const result = trainAnfis({
-    spec,
-    initial: security.BASE_PARAMS,
-    train,
-    test,
-    coverage,
+  runTraining({
+    controller: "security",
+    bySplit: { train, test },
     options: { epochs: args.epochs },
-  });
-  const seconds = (Date.now() - started) / 1000;
+    coverage: coveragePoints(),
+    datasetName: path.relative(root, args.data),
+  })
+    .then((result) => report(result, args))
+    .catch((error) => {
+      console.error(error);
+      process.exit(1);
+    });
+}
 
-  console.log(`\nepochs run: ${result.history.length}, best epoch: ${result.best.epoch}, ${seconds.toFixed(1)} s`);
-  console.log(`base     train  ${fmt(result.metrics.base.train)}`);
-  console.log(`base     test   ${fmt(result.metrics.base.test)}`);
-  console.log(`trained  train  ${fmt(result.metrics.trained.train)}`);
-  console.log(`trained  test   ${fmt(result.metrics.trained.test)}`);
-  console.log("\nconsequents:", JSON.stringify(result.params.consequents));
-  Object.entries(result.params.inputs).forEach(([symbol, terms]) => {
+function report(result, args) {
+  const { params, training } = result;
+  console.log(`\nepochs run: ${training.steps} (${training.stopReason}), best epoch: ${training.bestEpoch}, ${training.seconds} s`);
+  console.log(`base     train  ${fmt(training.metrics.base.train)}`);
+  console.log(`base     test   ${fmt(training.metrics.base.test)}`);
+  console.log(`trained  train  ${fmt(training.metrics.trained.train)}`);
+  console.log(`trained  test   ${fmt(training.metrics.trained.test)}`);
+  console.log("\nconsequents:", JSON.stringify(params.consequents));
+  Object.entries(params.inputs).forEach(([symbol, terms]) => {
     const text = Object.entries(terms)
-      .map(([term, { params }]) => `${term} [${params.join(", ")}]`)
+      .map(([term, cfg]) => `${term} [${cfg.params.join(", ")}]`)
       .join("  ");
     console.log(`${symbol.padEnd(4)} ${text}`);
   });
@@ -141,28 +126,9 @@ function main() {
 
   const output = {
     status: "trained",
-    params: result.params,
-    training: {
-      method: "ANFIS hybrid: least squares (consequents) + gradient descent (premises)",
-      createdAt: new Date().toISOString(),
-      dataset: path.relative(root, args.data),
-      target: args.target,
-      samples: { train: train.length, test: test.length },
-      epochs: result.history.length,
-      bestEpoch: result.best.epoch,
-      metrics: {
-        base: { train: roundMetrics(result.metrics.base.train), test: roundMetrics(result.metrics.base.test) },
-        trained: {
-          train: roundMetrics(result.metrics.trained.train),
-          test: roundMetrics(result.metrics.trained.test),
-        },
-      },
-      history: result.history.map((h) => ({
-        epoch: h.epoch,
-        trainRmse: round(h.trainRmse, 4),
-        testRmse: h.testRmse == null ? null : round(h.testRmse, 4),
-      })),
-    },
+    params,
+    training: { ...training, target: args.target },
+    changes: result.changes,
   };
   fs.mkdirSync(path.dirname(args.out), { recursive: true });
   fs.writeFileSync(args.out, `${JSON.stringify(output, null, 2)}\n`);

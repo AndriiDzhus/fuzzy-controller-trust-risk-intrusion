@@ -335,11 +335,11 @@
       const { surface } = local.surface(request);
       return surface || null;
     }
-    const query = typeof root.modelQuery === "function" ? root.modelQuery() : "";
-    const response = await fetch(`/api/controllers/${controller}/surface${query}`, {
+    const body = typeof root.withModelParams === "function" ? root.withModelParams(request) : request;
+    const response = await fetch(`/api/controllers/${controller}/surface`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(request),
+      body: JSON.stringify(body),
     });
     return response.ok ? response.json() : null;
   }

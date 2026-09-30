@@ -203,10 +203,48 @@ function readPersistedInputs() {
   }
 }
 
-// Inputs are remembered per controller and model variant: the trained
-// Intrusion model reads Rate on the log scale, so values must not mix.
+// ---------------------------------------------------------------------------
+// Active model: the expert parameters of the assignment, or the parameters
+// of a training result applied on the page (see training-panel.js). The
+// applied parameters travel with every request (`params` in the body) or,
+// in the static build, build a local model; they are remembered per
+// controller in localStorage.
+// ---------------------------------------------------------------------------
+
+const ACTIVE_MODEL_KEY = "fuzzyActiveModel";
+const activeModel = { controller: null, params: null, meta: null };
+
+function readActiveModel(controller) {
+  try {
+    const raw = localStorage.getItem(`${ACTIVE_MODEL_KEY}:${controller}`);
+    const parsed = raw ? JSON.parse(raw) : null;
+    return parsed && parsed.params && typeof parsed.params === "object" ? parsed : null;
+  } catch {
+    return null;
+  }
+}
+
+function writeActiveModel(controller, entry) {
+  try {
+    if (entry) localStorage.setItem(`${ACTIVE_MODEL_KEY}:${controller}`, JSON.stringify(entry));
+    else localStorage.removeItem(`${ACTIVE_MODEL_KEY}:${controller}`);
+  } catch {
+    // Ignore quota / private-mode failures.
+  }
+}
+
+function activeModelParams() {
+  return activeModel.params;
+}
+
+function hasActiveModel() {
+  return Boolean(activeModel.params);
+}
+
+// Inputs are remembered per controller and model: the trained Intrusion
+// model reads Rate on the log scale, so values must not mix.
 function inputsStorageKey(controller) {
-  return window.fuzzyModel ? window.fuzzyModel.storageKey(controller) : controller;
+  return activeModel.params ? `${controller}:trained` : controller;
 }
 
 function persistControllerInputs(controller, values) {
@@ -2141,15 +2179,25 @@ function normalizeCalculateResult(result, payload) {
   };
 }
 
-// Controller of the static build for the page's model variant (base or
-// trained, see model-variant.js); null when the page talks to the API.
+// Controller of the static build for the page's active model (expert, or
+// built from the applied parameters); null when the page talks to the API.
 function localController(controller) {
-  if (!window.fuzzyControllers) return null;
-  return window.fuzzyModel ? window.fuzzyModel.local(controller) : window.fuzzyControllers[controller];
+  const entry = window.fuzzyControllers?.[controller];
+  if (!entry) return null;
+  if (activeModel.params && typeof entry.withParams === "function") {
+    try {
+      return entry.withParams(activeModel.params);
+    } catch (error) {
+      console.error("invalid trained parameters, using the expert model", error);
+      return entry;
+    }
+  }
+  return entry;
 }
 
-function modelQuery() {
-  return window.fuzzyModel ? window.fuzzyModel.query() : "";
+/** Body of an API request: the payload plus the applied parameters. */
+function withModelParams(payload) {
+  return activeModel.params ? { ...payload, params: activeModel.params } : payload;
 }
 
 async function calculateController(controller, payload) {
@@ -2160,10 +2208,10 @@ async function calculateController(controller, payload) {
     return normalizeCalculateResult(local.calculate(values), values);
   }
 
-  const response = await fetch(`/api/controllers/${controller}/calculate${modelQuery()}`, {
+  const response = await fetch(`/api/controllers/${controller}/calculate`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload),
+    body: JSON.stringify(withModelParams(payload)),
   });
 
   if (!response.ok) return null;
@@ -2176,9 +2224,98 @@ async function loadMembershipFunctions(controller) {
     return local.membershipFunctions();
   }
 
-  const response = await fetch(`/api/controllers/${controller}/membership-functions${modelQuery()}`);
+  const response = activeModel.params
+    ? await fetch(`/api/controllers/${controller}/membership-functions`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(withModelParams({})),
+      })
+    : await fetch(`/api/controllers/${controller}/membership-functions`);
   if (!response.ok) return null;
   return response.json();
+}
+
+// ---------------------------------------------------------------------------
+// Input specs of the active model. A trained model may change the scale of
+// an input (config.trainedInputs, e.g. Rate as lg(1 + pps) in Intrusion):
+// the spec, the sliders in the form / sticky bar / surface modal and the
+// label follow the model that is active.
+// ---------------------------------------------------------------------------
+
+const originalInputSpecs = new Map();
+
+function trainedInputsApply(config, meta) {
+  if (!config.trainedInputs || !meta) return false;
+  if (typeof config.trainedInputs.when === "function") return Boolean(config.trainedInputs.when(meta));
+  return meta.variant && meta.variant !== "base";
+}
+
+function applyInputSpecToControls(spec) {
+  const { min, max, step } = inputSpecMeta(spec);
+  INPUT_CONTROL_SUFFIXES.forEach((suffix) => {
+    const slider = spec.sliderId ? document.getElementById(`${spec.sliderId}${suffix}`) : null;
+    if (!slider) return;
+    slider.min = String(min);
+    slider.max = String(max);
+    slider.step = String(step);
+  });
+  const label = document.querySelector(`label[for="${spec.sliderId}"]`);
+  if (label && spec.inputLabelKey) label.setAttribute("data-i18n", spec.inputLabelKey);
+}
+
+/**
+ * Values of the inputs after a model switch: the values remembered for this
+ * model, else the default of the trained spec, else the current value
+ * limited to the new range.
+ */
+function resetInputsToSpecs(config, applyInputValue) {
+  const stored = readPersistedInputs()[inputsStorageKey(config.controller)] || {};
+  config.inputs.forEach((spec) => {
+    const { min, max } = inputSpecMeta(spec);
+    const remembered = clampInputValue(stored[spec.key], spec);
+    const fallback = clampInputValue(pageInputValues[spec.key], spec);
+    const value = remembered ?? (Number.isFinite(spec.value) ? spec.value : fallback ?? (min + max) / 2);
+    applyInputValue(spec, value);
+  });
+}
+
+/** Switches the input specs and graph options of `config` to the active model. */
+function syncInputSpecs(config, meta) {
+  const trained = trainedInputsApply(config, meta);
+  config.inputs.forEach((spec) => {
+    if (!originalInputSpecs.has(spec.key)) {
+      const graph = config.graphs.inputs[spec.key];
+      originalInputSpecs.set(spec.key, {
+        spec: { ...spec },
+        graph: graph && typeof graph === "object" ? JSON.parse(JSON.stringify(graph)) : graph,
+        labelKey: document.querySelector(`label[for="${spec.sliderId}"]`)?.getAttribute("data-i18n") || null,
+      });
+    }
+    const original = originalInputSpecs.get(spec.key);
+    const patch = trained ? config.trainedInputs?.inputs?.[spec.key] : null;
+    // Restore the original spec, then apply the patch of the trained model.
+    Object.keys(spec).forEach((key) => {
+      if (!(key in original.spec)) delete spec[key];
+    });
+    Object.assign(spec, original.spec);
+    if (patch) {
+      const { graph, ...specPatch } = patch;
+      Object.assign(spec, specPatch);
+    } else {
+      spec.inputLabelKey = original.labelKey;
+    }
+    const graph = config.graphs.inputs[spec.key];
+    if (graph && typeof graph === "object") {
+      Object.keys(graph).forEach((key) => delete graph[key]);
+      Object.assign(graph, JSON.parse(JSON.stringify(original.graph)));
+      if (patch?.graph) {
+        Object.assign(graph, patch.graph, { axisLabels: { ...graph.axisLabels, ...(patch.graph.axisLabels || {}) } });
+      }
+    }
+    applyInputSpecToControls(spec);
+  });
+  if (window.i18nHelper) window.i18nHelper.applyTranslations(document);
+  return trained;
 }
 
 // The page stays hidden (html.is-loading, see style.css) until translations,
@@ -2197,15 +2334,21 @@ async function createFuzzyPage(config) {
 }
 
 async function initFuzzyPage(config) {
-  if (window.fuzzyModel) window.fuzzyModel.applyConfig(config);
   configureTermForms(config);
+  // The applied training result of this controller, if any, is restored
+  // before the first request so that every chart uses it from the start.
+  activeModel.controller = config.controller;
+  const stored = config.trainable ? readActiveModel(config.controller) : null;
+  if (stored) {
+    activeModel.params = stored.params;
+    activeModel.meta = stored.meta || null;
+  }
   // Chart data does not depend on the language: fetch it alongside i18n.json.
   const mfDataPromise = loadMembershipFunctions(config.controller);
   if (window.i18nHelper) {
     await window.i18nHelper.init();
     window.i18nHelper.bindSwitcher();
   }
-  const modelSwitchReady = window.fuzzyModel ? window.fuzzyModel.setupSwitch(config) : null;
 
   const state = {
     mfData: null,
@@ -2360,7 +2503,61 @@ async function initFuzzyPage(config) {
   if (window.setupSurfaceModal) window.setupSurfaceModal(config, { applyInputValue, recalc });
 
   state.mfData = await mfDataPromise;
-  await modelSwitchReady;
+  if (config.trainable) {
+    // The stored parameters may be invalid (older format): fall back to the
+    // expert model rather than showing an empty page.
+    if (activeModel.params && !state.mfData) {
+      activeModel.params = null;
+      activeModel.meta = null;
+      writeActiveModel(config.controller, null);
+      state.mfData = await loadMembershipFunctions(config.controller);
+    }
+    syncInputSpecs(config, state.mfData?.meta);
+    resetInputsToSpecs(config, applyInputValue);
+    refreshStickyCopy(config);
+    refreshInputControlLabels(config, "Surface");
+  }
+
+  /**
+   * Applies training parameters (or null for the expert model) to the page:
+   * every step, chart, modal and the surface then use the active model.
+   * @param {object|null} params
+   * @param {object|null} meta {source, datasetName, appliedAt, …} kept with the params
+   */
+  const setActiveModel = async (params, meta = null) => {
+    activeModel.params = params || null;
+    activeModel.meta = params ? meta : null;
+    writeActiveModel(config.controller, params ? { params, meta } : null);
+    const mfData = await loadMembershipFunctions(config.controller);
+    if (!mfData) {
+      // Invalid parameters: keep the expert model.
+      activeModel.params = null;
+      activeModel.meta = null;
+      writeActiveModel(config.controller, null);
+      state.mfData = await loadMembershipFunctions(config.controller);
+    } else {
+      state.mfData = mfData;
+    }
+    syncInputSpecs(config, state.mfData?.meta);
+    resetInputsToSpecs(config, applyInputValue);
+    refreshStickyCopy(config);
+    refreshInputControlLabels(config, "Surface");
+    refreshValueFields(config);
+    await recalc();
+    window.dispatchEvent(new CustomEvent("activeModelChanged", { detail: { params: activeModel.params } }));
+    return Boolean(activeModel.params);
+  };
+
+  window.fuzzyPage = {
+    controller: config.controller,
+    config,
+    state,
+    setActiveModel,
+    activeModelParams,
+    activeModelMeta: () => activeModel.meta,
+    hasActiveModel,
+    recalc,
+  };
 
   setupTooltips(config, state);
 
@@ -2382,8 +2579,12 @@ async function initFuzzyPage(config) {
   });
 
   await recalc();
+  if (config.trainable && typeof window.setupTrainingPanel === "function") {
+    window.setupTrainingPanel(config.controller);
+  }
 }
 
 window.createFuzzyPage = createFuzzyPage;
 window.localController = localController;
-window.modelQuery = modelQuery;
+window.activeModelParams = activeModelParams;
+window.withModelParams = withModelParams;

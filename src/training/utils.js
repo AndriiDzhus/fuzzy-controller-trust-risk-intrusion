@@ -3,7 +3,6 @@
  * a seeded random generator, a small CSV reader, error metrics and a linear
  * solver for the least-squares step.
  */
-const fs = require("fs");
 
 // ---------------------------------------------------------------------------
 // Seeded random numbers (mulberry32), so every training run is reproducible.
@@ -69,7 +68,10 @@ function parseCsv(text) {
   });
 }
 
+/** Node only: parses a CSV file (kept out of the browser bundle). */
 function readCsv(path) {
+  // eslint-disable-next-line global-require
+  const fs = eval("require")("fs");
   return parseCsv(fs.readFileSync(path, "utf8"));
 }
 
