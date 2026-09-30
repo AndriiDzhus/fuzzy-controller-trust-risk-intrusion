@@ -183,6 +183,49 @@
         "hint": "Змінюйте вхідні параметри повзунками: для осей рухається точка, для фіксованого параметра перебудовується поверхня. Перетягуйте мишею, щоб обертати; подвійний клік повертає початковий вигляд. Порожні ділянки — жодне правило не спрацювало.",
         "loading": "Обчислення…",
         "error": "Не вдалося обчислити поверхню."
+      },
+      "model": {
+        "label": "Модель:",
+        "base": "Експертна",
+        "trained": "Навчена",
+        "resultsBtn": "Результати навчання",
+        "unavailable": "Навчена модель ще недоступна",
+        "results": {
+          "title": "Результати навчання",
+          "method": "Метод",
+          "samples": "Вибірки",
+          "epochs": "Епохи",
+          "generations": "Покоління",
+          "genes": "генів",
+          "bestEpoch": "найкраща",
+          "date": "Дата навчання",
+          "metricsTitle": "Точність до і після навчання",
+          "termAccuracy": "Збіг лінгвістичного терму",
+          "balancedAccuracy": "Збалансована точність виявлення (IP ≥ 50)",
+          "split": {
+            "train": "Навчальна",
+            "validation": "Валідаційна",
+            "test": "Тестова"
+          },
+          "curveTitle": "Крива навчання (RMSE)",
+          "epoch": "Епоха",
+          "generation": "Покоління",
+          "categoryTitle": "Середнє IP за категоріями трафіку (тестова вибірка)",
+          "categoryHint": "Еталон — експертне значення IP з data/intrusion/label_to_ip.csv; стовпці показують середній вихід контролера до і після навчання.",
+          "category": "Категорія",
+          "target": "Еталон IP",
+          "categories": {
+            "Benign": "Нормальний трафік (Benign)",
+            "BruteForce": "Підбір паролів (Brute Force)",
+            "DDoS": "DDoS",
+            "DoS": "DoS",
+            "Mirai": "Mirai (ботнет)",
+            "Recon": "Розвідка (Recon)",
+            "Spoofing": "Підміна (Spoofing)",
+            "Web": "Веб-атаки (Web)"
+          },
+          "chosen": "збережена модель"
+        }
       }
     },
     "navigation": {
@@ -309,6 +352,15 @@
         "category1": "Мала споживана енергія (EC): мінімальний ризик за малої потужності передачі та малої затримки.",
         "category2": "Середня споживана енергія (EC): рівень ризику залежить від потужності передачі та затримки.",
         "category3": "Велика споживана енергія (EC): підвищений ризик, особливо за великої потужності передачі та великої затримки."
+      },
+      "training": {
+        "methodShort": "ANFIS",
+        "methodLong": "ANFIS: гібридне навчання — метод найменших квадратів для наслідків і градієнтний спуск для точок зламу трикутників; база з 6 правил незмінна (маска правил)",
+        "howTo": "Заповніть колонку SR_expert у data/security/security_labeling.csv і виконайте npm run train:security",
+        "banner": "Навчена модель (ANFIS): точки зламу функцій належності та значення синглтонів підібрано за експертною розміткою датасету 6G IoT. База з 6 правил та сама.",
+        "note": "Еталон — експертна оцінка SR для 250 рядків датасету 6G IoT (70 % навчальна, 30 % тестова вибірка).",
+        "rulesTitle": "Правила після навчання",
+        "rulesDescription": "ANFIS не змінює структуру бази: маска залишає ті самі 6 правил табл. 3.1. Навчаються лише функції належності входів і значення наслідків (синглтонів) — див. «Формули»."
       }
     },
     "intrusion": {
@@ -323,20 +375,23 @@
           "packets": "шт.",
           "rate": "пакетів/с (pps)",
           "weight": "N_in × N_out",
-          "intrusion": "індекс 0–100"
+          "intrusion": "індекс 0–100",
+          "rateLog": "lg(1 + pps): 0 → 0 pps, 1 → 9 pps, 2 → 99 pps, 3 → 999 pps, 6 → ≈10⁶ pps"
         },
         "notes": {
           "packets": "Агрегована кількість пакетів у мережевому потоці CICIoT2023. Під час атак значення зазвичай зростає або поводиться нетипово.",
           "rate": "Швидкість передавання пакетів у потоці. Під час DoS/DDoS різко зростає порівняно з нормальним IoT-трафіком.",
           "weight": "Добуток кількості вхідних і вихідних пакетів у потоці; відображає інтенсивність і симетрію обміну. Аномально високі значення характерні для DDoS, DoS та сканування мережі (Reconnaissance).",
-          "intrusion": "Вірогідність вторгнення для IoT-пристрою: наскільки імовірно, що пристрій є об’єктом атаки або вже зазнав вторгнення."
+          "intrusion": "Вірогідність вторгнення для IoT-пристрою: наскільки імовірно, що пристрій є об’єктом атаки або вже зазнав вторгнення.",
+          "rateLog": "Rate у CICIoT2023 охоплює 0 … 8·10⁶ пакетів/с, тому навчена модель використовує логарифмічну шкалу, як BS у контролері довіри."
         }
       },
       "description": "Оцінка вірогідності вторгнення (IP) на основі кількості пакетів (NP), швидкості передавання (Rate) та ваги потоку (We) з датасету CICIoT2023.",
       "inputs": {
         "packets": "Кількість пакетів (NP) (0–15 шт.):",
         "rate": "Швидкість передавання (Rate) (0–3000 pps):",
-        "weight": "Вага / навантаження (We) (0–250):"
+        "weight": "Вага / навантаження (We) (0–250):",
+        "rateLog": "Швидкість передавання (Rate) (lg(1 + pps), 0–7):"
       },
       "results": {
         "title": "Результат обчислення",
@@ -349,7 +404,8 @@
         "rate": "Швидкість передавання (Rate)",
         "weight": "Вага / навантаження (We)",
         "intrusion": "Вірогідність вторгнення (IP)",
-        "aggregated": "Акумульована вихідна множина (IP)"
+        "aggregated": "Акумульована вихідна множина (IP)",
+        "rateLog": "Швидкість передавання (Rate), lg(1 + pps)"
       },
       "graphs": {
         "title": "Функції приналежності",
@@ -361,7 +417,8 @@
           "weightY": "μ(We)",
           "weightX": "We",
           "intrusionY": "μ(IP)",
-          "intrusionX": "IP"
+          "intrusionX": "IP",
+          "rateLogX": "lg(1 + Rate)"
         }
       },
       "rules": {
@@ -370,6 +427,16 @@
         "category1": "Мала кількість пакетів (NP): за малої швидкості вторгнення відсутнє; за великої Rate — середнє або велике.",
         "category2": "Середня кількість пакетів (NP): рівень залежить від Rate і We; велика швидкість з великою вагою дає велике IP.",
         "category3": "Велика кількість пакетів (NP): переважно велика вірогідність вторгнення; за малої Rate — середня."
+      },
+      "training": {
+        "methodShort": "ГА",
+        "methodLong": "Генетичний алгоритм: хромосома з 74 генів (18 + 8 параметрів гаусоїд, 48 генів структури 12 правил), турнірна селекція, арифметичний і двоточковий кросовер, гаусова та індексна мутація",
+        "howTo": "Виконайте npm run train:intrusion",
+        "banner": "Навчена модель (генетичний алгоритм): гаусоїди всіх величин і структуру 12 правил підібрано на CICIoT2023. Rate задається в логарифмічній шкалі lg(1 + pps), 0–7.",
+        "note": "Еталон IP задано експертом для кожного класу трафіку CICIoT2023 (data/intrusion/label_to_ip.csv). Вибірки збалансовано за 8 категоріями.",
+        "rulesTitle": "Правила після навчання",
+        "rulesDescription": "Структуру всіх 12 правил (терми передумов і наслідку) сформовано генетичним алгоритмом за мінімумом RMSE на навчальній вибірці CICIoT2023.",
+        "description": "Оцінка вірогідності вторгнення (IP) навченим контролером: кількість пакетів (NP), швидкість передавання в логарифмічній шкалі lg(1 + Rate) та вага потоку (We) з датасету CICIoT2023."
       }
     }
   },
@@ -538,6 +605,49 @@
         "hint": "Change the inputs with the sliders: an axis input moves the point, the fixed input rebuilds the surface. Drag to rotate; double-click restores the default view. Empty areas: no rule fired.",
         "loading": "Calculating…",
         "error": "Could not calculate the surface."
+      },
+      "model": {
+        "label": "Model:",
+        "base": "Expert",
+        "trained": "Trained",
+        "resultsBtn": "Training results",
+        "unavailable": "The trained model is not available yet",
+        "results": {
+          "title": "Training results",
+          "method": "Method",
+          "samples": "Samples",
+          "epochs": "Epochs",
+          "generations": "Generations",
+          "genes": "genes",
+          "bestEpoch": "best",
+          "date": "Trained on",
+          "metricsTitle": "Accuracy before and after training",
+          "termAccuracy": "Linguistic term match",
+          "balancedAccuracy": "Balanced detection accuracy (IP ≥ 50)",
+          "split": {
+            "train": "Training",
+            "validation": "Validation",
+            "test": "Test"
+          },
+          "curveTitle": "Learning curve (RMSE)",
+          "epoch": "Epoch",
+          "generation": "Generation",
+          "categoryTitle": "Mean IP by traffic category (test set)",
+          "categoryHint": "The reference is the expert IP from data/intrusion/label_to_ip.csv; the columns show the mean controller output before and after training.",
+          "category": "Category",
+          "target": "Reference IP",
+          "categories": {
+            "Benign": "Benign traffic",
+            "BruteForce": "Brute force",
+            "DDoS": "DDoS",
+            "DoS": "DoS",
+            "Mirai": "Mirai (botnet)",
+            "Recon": "Reconnaissance",
+            "Spoofing": "Spoofing",
+            "Web": "Web-based"
+          },
+          "chosen": "saved model"
+        }
       }
     },
     "navigation": {
@@ -664,6 +774,15 @@
         "category1": "Low energy consumption (EC): minimal risk when transmit power and latency are low.",
         "category2": "Medium energy consumption (EC): risk level depends on transmit power and latency.",
         "category3": "High energy consumption (EC): elevated risk, especially with high transmit power and high latency."
+      },
+      "training": {
+        "methodShort": "ANFIS",
+        "methodLong": "ANFIS: hybrid learning — least squares for the consequents and gradient descent for the triangle break points; the 6-rule base is fixed (rule mask)",
+        "howTo": "Fill the SR_expert column of data/security/security_labeling.csv and run npm run train:security",
+        "banner": "Trained model (ANFIS): the break points of the membership functions and the singleton values were fitted to the expert labels of the 6G IoT dataset. The same 6 rules.",
+        "note": "The reference is the expert SR for 250 rows of the 6G IoT dataset (70 % training, 30 % test).",
+        "rulesTitle": "Rules after training",
+        "rulesDescription": "ANFIS keeps the structure of the rule base: the mask keeps the same 6 rules of table 3.1. Only the input membership functions and the consequent values (singletons) are learned — see “Formulas”."
       }
     },
     "intrusion": {
@@ -678,20 +797,23 @@
           "packets": "packets",
           "rate": "packets/s (pps)",
           "weight": "N_in × N_out",
-          "intrusion": "index 0–100"
+          "intrusion": "index 0–100",
+          "rateLog": "lg(1 + pps): 0 → 0 pps, 1 → 9 pps, 2 → 99 pps, 3 → 999 pps, 6 → ≈10⁶ pps"
         },
         "notes": {
           "packets": "Aggregated packet count in a CICIoT2023 network flow. During attacks the value typically rises or behaves unusually.",
           "rate": "Packet transmission rate in the flow. Under DoS/DDoS it rises sharply compared with normal IoT traffic.",
           "weight": "Product of inbound and outbound packets in a flow; measures exchange intensity and symmetry. Abnormally high values are typical of DDoS, DoS, and network reconnaissance.",
-          "intrusion": "Intrusion probability for an IoT device: how likely it is that the device is under attack or has already been compromised."
+          "intrusion": "Intrusion probability for an IoT device: how likely it is that the device is under attack or has already been compromised.",
+          "rateLog": "Rate in CICIoT2023 spans 0 … 8·10⁶ packets/s, so the trained model uses a log scale, like BS in the trust controller."
         }
       },
       "description": "Evaluates intrusion probability (IP) from packet count (NP), transmission rate (Rate), and flow weight (We) in the CICIoT2023 dataset.",
       "inputs": {
         "packets": "Packet count (NP) (0–15 packets):",
         "rate": "Transmission rate (Rate) (0–3000 pps):",
-        "weight": "Weight / load (We) (0–250):"
+        "weight": "Weight / load (We) (0–250):",
+        "rateLog": "Transmission rate (Rate) (lg(1 + pps), 0–7):"
       },
       "results": {
         "title": "Calculation Result",
@@ -704,7 +826,8 @@
         "rate": "Transmission rate (Rate)",
         "weight": "Weight / load (We)",
         "intrusion": "Intrusion probability (IP)",
-        "aggregated": "Accumulated output set (IP)"
+        "aggregated": "Accumulated output set (IP)",
+        "rateLog": "Transmission rate (Rate), lg(1 + pps)"
       },
       "graphs": {
         "title": "Membership Functions",
@@ -716,7 +839,8 @@
           "weightY": "μ(We)",
           "weightX": "We",
           "intrusionY": "μ(IP)",
-          "intrusionX": "IP"
+          "intrusionX": "IP",
+          "rateLogX": "lg(1 + Rate)"
         }
       },
       "rules": {
@@ -725,6 +849,16 @@
         "category1": "Low packet count (NP): intrusion is absent at low rate; medium or high when Rate is high.",
         "category2": "Medium packet count (NP): the level depends on Rate and We; high rate with high weight yields high IP.",
         "category3": "High packet count (NP): intrusion probability is mostly high; medium when Rate is low."
+      },
+      "training": {
+        "methodShort": "GA",
+        "methodLong": "Genetic algorithm: 74-gene chromosome (18 + 8 Gaussian parameters, 48 genes of the 12-rule structure), tournament selection, arithmetic and two-point crossover, Gaussian and index mutation",
+        "howTo": "Run npm run train:intrusion",
+        "banner": "Trained model (genetic algorithm): the Gaussians of all variables and the structure of the 12 rules were fitted on CICIoT2023. Rate is given on the log scale lg(1 + pps), 0–7.",
+        "note": "The reference IP is set by the expert for every CICIoT2023 traffic class (data/intrusion/label_to_ip.csv). The samples are balanced over 8 categories.",
+        "rulesTitle": "Rules after training",
+        "rulesDescription": "The structure of all 12 rules (premise and consequent terms) was formed by the genetic algorithm at the minimum RMSE on the CICIoT2023 training set.",
+        "description": "Intrusion probability (IP) by the trained controller: packet count (NP), transmission rate on the log scale lg(1 + Rate) and flow weight (We) from the CICIoT2023 dataset."
       }
     }
   }

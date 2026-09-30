@@ -1,6 +1,8 @@
 document.addEventListener("DOMContentLoaded", async () => {
   await createFuzzyPage({
     controller: "security",
+    // Has a "trained" model (ANFIS), see model-variant.js.
+    trainable: true,
     inputs: [
       {
         key: "energy",

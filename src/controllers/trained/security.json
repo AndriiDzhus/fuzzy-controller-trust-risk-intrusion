@@ -1,0 +1,4 @@
+{
+  "status": "untrained",
+  "note": "Fill SR_expert in data/security/security_labeling.csv, then run: npm run train:security"
+}

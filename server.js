@@ -5,7 +5,12 @@
  *   GET  /api/controllers/:controller/membership-functions
  *   POST /api/controllers/:controller/surface   response surface over two inputs
  *
- * where :controller is trust | security | intrusion.
+ *   GET  /api/controllers/:controller/models    available model variants
+ *
+ * where :controller is trust | security | intrusion. The first three accept
+ * ?model=base|trained (default base): "trained" is the Security controller
+ * after ANFIS training or the Intrusion controller after the genetic
+ * optimisation; 404 when that model has not been trained yet.
  */
 const express = require("express");
 const path = require("path");
@@ -20,8 +25,17 @@ app.use(express.static(path.join(__dirname, "public")));
 app.use(express.json());
 
 function findController(req, res) {
-  const controller = controllers[req.params.controller];
-  if (!controller) res.status(404).json({ error: "Controller not found" });
+  const entry = controllers[req.params.controller];
+  if (!entry) {
+    res.status(404).json({ error: "Controller not found" });
+    return null;
+  }
+  const model = typeof req.query.model === "string" && req.query.model ? req.query.model : "base";
+  const controller = entry.variant(model);
+  if (!controller) {
+    res.status(404).json({ error: `Model "${model}" is not available for this controller` });
+    return null;
+  }
   return controller;
 }
 
@@ -86,6 +100,15 @@ app.post("/api/controllers/:controller/surface", (req, res) => {
   } catch (error) {
     sendServerError(res, error);
   }
+});
+
+app.get("/api/controllers/:controller/models", (req, res) => {
+  const entry = controllers[req.params.controller];
+  if (!entry) {
+    res.status(404).json({ error: "Controller not found" });
+    return;
+  }
+  res.json({ available: entry.availableVariants(), training: entry.trainingSummary() });
 });
 
 app.get("/", (req, res) => {

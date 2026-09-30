@@ -1,6 +1,24 @@
 document.addEventListener("DOMContentLoaded", async () => {
   await createFuzzyPage({
     controller: "intrusion",
+    // Has a "trained" model (genetic algorithm), see model-variant.js. Its Rate
+    // input is on the log scale lg(1 + pps), [0, 7].
+    trainable: true,
+    variants: {
+      trained: {
+        inputs: {
+          rate: { min: 0, max: 7, step: 0.01, digits: 2, value: 2, inputLabelKey: "intrusion.inputs.rateLog" },
+        },
+        graphs: {
+          inputs: {
+            rate: { xMax: 7, axisLabels: { xKey: "intrusion.graphs.axes.rateLogX" } },
+          },
+        },
+        i18n: {
+          ".description": "intrusion.training.description",
+        },
+      },
+    },
     inputs: [
       {
         key: "packets",
