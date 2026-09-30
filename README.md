@@ -8,8 +8,12 @@
 | Контролер | Датасет | Входи | Вихід | Модель | Дефазифікація |
 |---|---|---|---|---|---|
 | Trust | NSL-KDD | ER, CC, BS — трапеції | TI — 5 трикутників | Mamdani, 27 правил, min | точний аналітичний центр тяжіння (ф. 2.22–2.28) |
-| Security | 6G IoT | EC, TP, Lat — трикутники | SR — 6 синглтонів | Sugeno 0-го порядку, 6 правил, добуток | зважена сума Σ w̄·c |
-| Intrusion | CICIoT2023 | NP, Rate, We — гаусові | IP — 4 гаусові | Mamdani, 12 правил, min | центр тяжіння, сума з кроком 0,2 |
+| Security | 6G IoT | EC, TP, Lat — трикутники | SR — 6 синглтонів | Sugeno 0-го порядку, 6 правил, добуток; **навчання ANFIS** | зважена сума Σ w̄·c |
+| Intrusion | CICIoT2023 | NP, Rate, We — гаусові | IP — 4 гаусові | Mamdani, 12 правил, min; **оптимізація ГА** | центр тяжіння, сума з кроком 0,2 |
+
+Security та Intrusion мають дві моделі, між якими перемикає кнопка «Модель» у шапці
+сторінки (або `?model=trained` в адресі): **експертну** (з завдання, без змін) і
+**навчену** (див. розділ «Навчання контролерів»).
 
 ## Архітектура
 
@@ -30,19 +34,30 @@ src/
     securityController.js         модель і вивід Security
     intrusionController.js        модель і вивід Intrusion
     surface.js                    поверхня відгуку: вихід як функція двох входів
+    trained/security.json         параметри навченої моделі Security (ANFIS)
+    trained/intrusion.json        параметри навченої моделі Intrusion (ГА)
+  training/
+    anfis.js                      гібридне навчання ANFIS: МНК + градієнтний спуск
+    genetic.js                    генетичний алгоритм: хромосома з 74 генів
+    utils.js                      seeded random, CSV, метрики, МНК
 public/
   index.html  trust.js            сторінка Trust
   security.html  security.js      сторінка Security
   intrusion.html  intrusion.js    сторінка Intrusion
   fuzzy-page-core.js              спільний UI: входи, графіки, кроки виводу, підказки
   controller-docs.js              модалки «Формули» та «База правил»
+  model-variant.js                перемикач «Експертна / Навчена», «Результати навчання»
   surface-view.js                 модалка «Поверхня відгуку»: 3D-поверхня на canvas
   i18n.json  i18n-helper.js       переклади uk / en
   term-colors.js  style.css  navigation.css
 scripts/
+  data/prepare_datasets.py        навчальні датасети з 6G IoT і CICIoT2023 -> data/
+  train-security.js               навчання ANFIS -> src/controllers/trained/security.json
+  train-intrusion.js              оптимізація ГА -> src/controllers/trained/intrusion.json
   build-pages.js                  статична збірка для GitHub Pages (dist/)
   controllers-browser-entry.js    window.fuzzyControllers = src/controllers
 __tests__/                        Jest + supertest
+data/                             навчальні вибірки та експертна розмітка (data/README.md)
 docs/tasks/                       завдання та теоретичні розділи
 ```
 
@@ -77,7 +92,9 @@ module.exports = { system, variables, ranges, calculate, membershipFunctions };
   (`{ xKey, yKey, inputs, points }` → `{ x, y, z, fixed }`, `z[j][i]` = вихід у точці `(x[i], y[j])`,
   `null` там, де жодне правило не спрацювало)
 
-де `:controller` — `trust | security | intrusion`. Статична збірка для GitHub Pages
+де `:controller` — `trust | security | intrusion`. Параметр `?model=trained` вибирає
+навчену модель (404, якщо її ще немає); `GET /api/controllers/:controller/models`
+повертає список доступних моделей і підсумок навчання. Статична збірка для GitHub Pages
 рахує те саме в браузері через `window.fuzzyControllers`.
 
 ### Frontend
@@ -88,6 +105,40 @@ module.exports = { system, variables, ranges, calculate, membershipFunctions };
 - `public/controller-docs.js` — формули та бази правил для модалок; тест
   `__tests__/docsConsistency.test.js` звіряє їх із моделями контролерів.
 - `public/i18n.json`, `public/i18n-helper.js` — переклади (uk за замовчуванням, en).
+
+## Навчання контролерів
+
+Докладно про дані та експертну розмітку — у [data/README.md](data/README.md).
+
+```bash
+npm run data:prepare       # Python 3 + pandas: вибірки з вихідних датасетів -> data/
+npm run train:security     # ANFIS на data/security/security_labeling.csv (потрібен SR_expert)
+npm run train:intrusion    # генетичний алгоритм на data/intrusion/*.csv (≈ 3 хв)
+```
+
+**Security, ANFIS** (розділ 3.4.4). База з 6 правил не змінюється (маска правил).
+У кожній епосі спершу 6 наслідків обчислюються методом найменших квадратів,
+C = (AᵀA)⁻¹Aᵀy, за нормованими вагами правил. Потім 18 точок зламу трикутників
+(L: c; M: a, b, c; H: a, b для кожного входу) зсуваються градієнтним спуском із
+субградієнтами в точках зламу. Точки зламу нормуються на [0, 1], тому всі входи
+мають однаковий крок. Крок, що не зменшує похибку, відкидається, а сам крок
+зменшується вдвічі. Зберігається епоха з найменшою похибкою, за умови що
+жоден рядок не лишився без спрацьованого правила.
+
+**Intrusion, генетичний алгоритм** (розділ 4.3.4–4.3.5). Хромосома з 74 генів:
+18 параметрів (c, σ) вхідних гаусоїд, 8 параметрів вихідних гаусоїд і 48 цілих
+генів структури 12 правил. Пристосованість F = 1 / (1 + RMSE), селекція
+турнірна. Кросовер арифметичний для дійсних генів і двоточковий (на межах правил)
+для генів правил. Мутація гаусова для дійсних генів і перепризначення індексу
+терму для генів правил. Валідація забезпечує σ ≥ ε, центри в межах універсуму,
+впорядковані терми (мала < середня < велика) з мінімальною відстанню 10 % між
+центрами, а також відсутність двох правил з однаковими передумовами. Наступне
+покоління — найкращі N з батьків і нащадків. Вхід Rate навченої моделі
+задається в логарифмічній шкалі lg(1 + pps) ∈ [0, 7].
+
+Навчена модель зберігається в `src/controllers/trained/*.json` разом із
+метриками до і після навчання та кривою навчання. Їх показує кнопка
+«Результати навчання» на сторінці контролера.
 
 ## Запуск
 

@@ -203,9 +203,15 @@ function readPersistedInputs() {
   }
 }
 
+// Inputs are remembered per controller and model variant: the trained
+// Intrusion model reads Rate on the log scale, so values must not mix.
+function inputsStorageKey(controller) {
+  return window.fuzzyModel ? window.fuzzyModel.storageKey(controller) : controller;
+}
+
 function persistControllerInputs(controller, values) {
   const all = readPersistedInputs();
-  all[controller] = values;
+  all[inputsStorageKey(controller)] = values;
   try {
     localStorage.setItem(INPUTS_STORAGE_KEY, JSON.stringify(all));
   } catch {
@@ -214,7 +220,7 @@ function persistControllerInputs(controller, values) {
 }
 
 function restoreControllerInputs(config, applyInputValue) {
-  const stored = readPersistedInputs()[config.controller];
+  const stored = readPersistedInputs()[inputsStorageKey(config.controller)];
   if (!stored || typeof stored !== "object") return;
 
   config.inputs.forEach((spec) => {
@@ -2135,15 +2141,26 @@ function normalizeCalculateResult(result, payload) {
   };
 }
 
+// Controller of the static build for the page's model variant (base or
+// trained, see model-variant.js); null when the page talks to the API.
+function localController(controller) {
+  if (!window.fuzzyControllers) return null;
+  return window.fuzzyModel ? window.fuzzyModel.local(controller) : window.fuzzyControllers[controller];
+}
+
+function modelQuery() {
+  return window.fuzzyModel ? window.fuzzyModel.query() : "";
+}
+
 async function calculateController(controller, payload) {
-  const local = window.fuzzyControllers?.[controller];
+  const local = localController(controller);
   if (local) {
     const { values } = local.parseInputs(payload);
     if (!values) return null;
     return normalizeCalculateResult(local.calculate(values), values);
   }
 
-  const response = await fetch(`/api/controllers/${controller}/calculate`, {
+  const response = await fetch(`/api/controllers/${controller}/calculate${modelQuery()}`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload),
@@ -2154,12 +2171,12 @@ async function calculateController(controller, payload) {
 }
 
 async function loadMembershipFunctions(controller) {
-  const local = window.fuzzyControllers?.[controller];
+  const local = localController(controller);
   if (local) {
     return local.membershipFunctions();
   }
 
-  const response = await fetch(`/api/controllers/${controller}/membership-functions`);
+  const response = await fetch(`/api/controllers/${controller}/membership-functions${modelQuery()}`);
   if (!response.ok) return null;
   return response.json();
 }
@@ -2180,6 +2197,7 @@ async function createFuzzyPage(config) {
 }
 
 async function initFuzzyPage(config) {
+  if (window.fuzzyModel) window.fuzzyModel.applyConfig(config);
   configureTermForms(config);
   // Chart data does not depend on the language: fetch it alongside i18n.json.
   const mfDataPromise = loadMembershipFunctions(config.controller);
@@ -2187,6 +2205,7 @@ async function initFuzzyPage(config) {
     await window.i18nHelper.init();
     window.i18nHelper.bindSwitcher();
   }
+  const modelSwitchReady = window.fuzzyModel ? window.fuzzyModel.setupSwitch(config) : null;
 
   const state = {
     mfData: null,
@@ -2341,6 +2360,7 @@ async function initFuzzyPage(config) {
   if (window.setupSurfaceModal) window.setupSurfaceModal(config, { applyInputValue, recalc });
 
   state.mfData = await mfDataPromise;
+  await modelSwitchReady;
 
   setupTooltips(config, state);
 
@@ -2365,3 +2385,5 @@ async function initFuzzyPage(config) {
 }
 
 window.createFuzzyPage = createFuzzyPage;
+window.localController = localController;
+window.modelQuery = modelQuery;

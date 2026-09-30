@@ -9,6 +9,7 @@
  * Every controller module exposes the same interface:
  *   system, variables, ranges, calculate(inputs), membershipFunctions()
  * The registry adds input parsing and the response surface (surface.js).
+ * Security and Intrusion also have a "trained" variant (see variants below).
  */
 const trustController = require("./trustController");
 const securityController = require("./securityController");
@@ -76,10 +77,38 @@ function register(controller) {
   };
 }
 
+/**
+ * A controller with its model variants:
+ *   base     the expert model of the assignment (always present)
+ *   trained  the model after ANFIS (security) or genetic (intrusion)
+ *            training; null until the training has been run
+ * The object itself behaves as the base variant, so existing callers keep
+ * working; `variant(name)` returns the requested one or null.
+ */
+function registerWithVariants(module) {
+  const base = register(module.variants ? module.variants.base : module);
+  const trained = module.variants?.trained ? register(module.variants.trained) : null;
+  const variants = { base, trained };
+  return {
+    ...base,
+    variants,
+    variant: (name = "base") => (MODEL_VARIANTS.includes(name) ? variants[name] : null),
+    availableVariants: () => MODEL_VARIANTS.filter((name) => variants[name]),
+    trainingSummary: () => {
+      const training = module.variants?.trained?.training;
+      if (!training) return null;
+      const { history, ...summary } = training;
+      return summary;
+    },
+  };
+}
+
+const MODEL_VARIANTS = ["base", "trained"];
+
 const controllers = {
-  trust: register(trustController),
-  security: register(securityController),
-  intrusion: register(intrusionController),
+  trust: registerWithVariants(trustController),
+  security: registerWithVariants(securityController),
+  intrusion: registerWithVariants(intrusionController),
 };
 
 module.exports = {
@@ -89,4 +118,5 @@ module.exports = {
   intrusionController,
   toNumber,
   parseInputs,
+  MODEL_VARIANTS,
 };

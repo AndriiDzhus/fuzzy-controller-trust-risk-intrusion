@@ -329,12 +329,14 @@
   }
 
   async function fetchSurface(controller, request) {
-    const local = root.fuzzyControllers?.[controller];
+    const local =
+      typeof root.localController === "function" ? root.localController(controller) : root.fuzzyControllers?.[controller];
     if (local?.surface) {
       const { surface } = local.surface(request);
       return surface || null;
     }
-    const response = await fetch(`/api/controllers/${controller}/surface`, {
+    const query = typeof root.modelQuery === "function" ? root.modelQuery() : "";
+    const response = await fetch(`/api/controllers/${controller}/surface${query}`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(request),
