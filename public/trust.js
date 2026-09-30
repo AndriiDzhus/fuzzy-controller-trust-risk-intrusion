@@ -33,6 +33,9 @@ document.addEventListener("DOMContentLoaded", async () => {
         digits: 2,
       },
     ],
+    surface: {
+      outputTitleKey: "index.membership.trust",
+    },
     output: {
       valueId: "trustIndexOutput",
       termId: "activeOutputTerm",

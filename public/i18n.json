@@ -175,6 +175,14 @@
           "Medium": "Середнє",
           "High": "Велике"
         }
+      },
+      "surface": {
+        "button": "Поверхня відгуку",
+        "title": "Поверхня відгуку: {output}",
+        "fixed": "{name} = {value} (фіксовано)",
+        "hint": "Змінюйте вхідні параметри повзунками: для осей рухається точка, для фіксованого параметра перебудовується поверхня. Перетягуйте мишею, щоб обертати; подвійний клік повертає початковий вигляд. Порожні ділянки — жодне правило не спрацювало.",
+        "loading": "Обчислення…",
+        "error": "Не вдалося обчислити поверхню."
       }
     },
     "navigation": {
@@ -522,6 +530,14 @@
         "high": "High",
         "veryHigh": "Very High",
         "aggregated": "Accumulated set"
+      },
+      "surface": {
+        "button": "Response surface",
+        "title": "Response surface: {output}",
+        "fixed": "{name} = {value} (fixed)",
+        "hint": "Change the inputs with the sliders: an axis input moves the point, the fixed input rebuilds the surface. Drag to rotate; double-click restores the default view. Empty areas: no rule fired.",
+        "loading": "Calculating…",
+        "error": "Could not calculate the surface."
       }
     },
     "navigation": {

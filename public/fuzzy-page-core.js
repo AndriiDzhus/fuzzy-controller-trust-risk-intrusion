@@ -240,6 +240,10 @@ function buildMapFromSpecs(specs) {
  * complete number, never rewrites the field while it is being edited, and
  * normalises / clamps the text when the field loses focus or on Enter.
  */
+// Every input is mirrored by controls with these id suffixes: the main form,
+// the sticky bar and the response-surface modal.
+const INPUT_CONTROL_SUFFIXES = ["", "Sticky", "Surface"];
+
 function bindValueField(field, spec, { applyInputValue, recalc }) {
   field.addEventListener("input", () => {
     const value = parseDecimalInput(field.value);
@@ -273,7 +277,7 @@ function refreshValueFields(config) {
   config.inputs.forEach((spec) => {
     const value = pageInputValues[spec.key];
     if (!Number.isFinite(value)) return;
-    [spec.numberId, `${spec.numberId}Sticky`].forEach((id) => {
+    INPUT_CONTROL_SUFFIXES.map((suffix) => `${spec.numberId}${suffix}`).forEach((id) => {
       const field = document.getElementById(id);
       if (field && document.activeElement !== field) field.value = formatFieldValue(value);
     });
@@ -1332,8 +1336,14 @@ function refreshStickyCopy(config) {
     titleEl.textContent = i18nText(stickyTitleKey(config));
   }
 
+  refreshInputControlLabels(config, "Sticky");
+}
+
+// Short symbol + name labels of the compact slider groups (sticky bar and
+// response-surface modal); their sliders have the id `${sliderId}${suffix}`.
+function refreshInputControlLabels(config, suffix) {
   config.inputs.forEach((spec) => {
-    const label = document.querySelector(`label[for="${spec.sliderId}Sticky"]`);
+    const label = document.querySelector(`label[for="${spec.sliderId}${suffix}"]`);
     if (!label) return;
     const full = i18nText(stickyLabelKey(spec), spec.key);
     const letter = stickyShortLabel(spec, full);
@@ -2189,12 +2199,12 @@ async function initFuzzyPage(config) {
   const applyInputValue = (spec, value, source = null) => {
     pageInputValues[spec.key] = value;
     if (spec.sliderId) {
-      const slider = document.getElementById(spec.sliderId);
-      if (slider) slider.value = value;
-      const stickySlider = document.getElementById(`${spec.sliderId}Sticky`);
-      if (stickySlider) stickySlider.value = value;
+      INPUT_CONTROL_SUFFIXES.forEach((suffix) => {
+        const slider = document.getElementById(`${spec.sliderId}${suffix}`);
+        if (slider) slider.value = value;
+      });
     }
-    [document.getElementById(spec.numberId), document.getElementById(`${spec.numberId}Sticky`)]
+    INPUT_CONTROL_SUFFIXES.map((suffix) => document.getElementById(`${spec.numberId}${suffix}`))
       .filter((field) => field && field !== source)
       .forEach((field) => {
         field.value = formatFieldValue(value);
@@ -2326,6 +2336,9 @@ async function initFuzzyPage(config) {
   setupGraphExpand(drawAll);
   restoreControllerInputs(config, applyInputValue);
   if (window.setupDocsModals) window.setupDocsModals(config.controller);
+  // The response-surface modal reads the latest result from here.
+  window.fuzzyPageState = state;
+  if (window.setupSurfaceModal) window.setupSurfaceModal(config, { applyInputValue, recalc });
 
   state.mfData = await mfDataPromise;
 

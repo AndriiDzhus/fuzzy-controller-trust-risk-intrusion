@@ -33,6 +33,9 @@ document.addEventListener("DOMContentLoaded", async () => {
         digits: 1,
       },
     ],
+    surface: {
+      outputTitleKey: "intrusion.membership.intrusion",
+    },
     output: {
       valueId: "intrusionValue",
       termId: "intrusionTerm",

@@ -33,6 +33,9 @@ document.addEventListener("DOMContentLoaded", async () => {
         digits: 1,
       },
     ],
+    surface: {
+      outputTitleKey: "security.membership.risk",
+    },
     output: {
       valueId: "riskValue",
       termId: "riskTerm",

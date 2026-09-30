@@ -3,6 +3,7 @@
  *
  *   POST /api/controllers/:controller/calculate
  *   GET  /api/controllers/:controller/membership-functions
+ *   POST /api/controllers/:controller/surface   response surface over two inputs
  *
  * where :controller is trust | security | intrusion.
  */
@@ -66,6 +67,22 @@ app.get("/api/controllers/:controller/membership-functions", (req, res) => {
     const controller = findController(req, res);
     if (!controller) return;
     res.json(controller.membershipFunctions());
+  } catch (error) {
+    sendServerError(res, error);
+  }
+});
+
+app.post("/api/controllers/:controller/surface", (req, res) => {
+  try {
+    const controller = findController(req, res);
+    if (!controller) return;
+    const { xKey, yKey, inputs, points } = req.body || {};
+    const { surface, errors } = controller.surface({ xKey, yKey, inputs, points });
+    if (errors) {
+      res.status(400).json({ error: "Invalid surface request.", fields: errors });
+      return;
+    }
+    res.json(surface);
   } catch (error) {
     sendServerError(res, error);
   }
