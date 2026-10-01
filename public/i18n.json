@@ -77,21 +77,21 @@
         "panelAtResult": "μ у точці {var}*",
         "graphTitleSet": "Акумульована вихідна множина ({var})",
         "graphTitleCentroid": "Дефазифікація: {var}* на термах",
-        "fuzzificationHint": "Перетворення чітких входів на ступені приналежності μ(x) лінгвістичних термів. Вертикальна лінія — поточне значення входу.",
-        "rulesHintMamdani": "Для кожного правила α = {tip:min} μ умов. У групі терму виходу лишається {tip:max} — це висота зрізу на наступному кроці.",
-        "rulesHintSugeno": "Для кожного правила вага w = {tip:prod} μ умов. Кожне правило має власний синглтон-наслідок, тож його вага переходить на наступний крок без змін.",
+        "fuzzificationHint": "Кожен чіткий вхід перетворюється на ступені належності μ(x) до своїх термів. Пунктирна вертикаль — поточне значення входу, панель під графіком — μ кожного терму.",
+        "rulesHintMamdani": "Сила кожного правила α = {tip:min} μ його умов. Якщо кілька правил ведуть до одного терму виходу, лишається {tip:max} — це висота зрізу терму на наступному кроці.",
+        "rulesHintSugeno": "Вага кожного правила w = {tip:prod} μ його умов. Наслідок правила — синглтон cᵢ, тому вага переходить на наступний крок без змін.",
         "rulesClip": "висота зрізу",
         "rulesSingleton": "висота синглтона",
         "rulesShowIdle": "Показати неактивні ({n})",
         "rulesHideIdle": "Сховати неактивні",
         "rulesEmpty": "Жодне правило не спрацювало для цих входів.",
-        "accumulationHintMamdani": "{tip:clipped} терми збираються через {tip:max} у темний контур. Панель — сили правил α, тобто висота зрізу.",
-        "defuzzificationHintCog": "Вертикаль — {tip:cog} {var}*. Панель — μ термів у цій точці, не висота зрізу α; підсвічений терм має найбільше μ.",
-        "defuzzificationHintCentroid": "Вертикаль — {tip:cog} {var}*. Панель — μ термів у цій точці, не висота зрізу α; підсвічений терм має найбільше μ.",
-        "defuzzificationHintSugeno": "Чітке значення — {tip:wavg}. Вертикальні лінії — синглтони cᵢ, вертикаль результату — отримане значення.",
+        "accumulationHintMamdani": "{tip:clipped} на висоту α терми об'єднуються через {tip:max} в одну множину — темний контур. Панель — сили правил α.",
+        "defuzzificationHintCog": "Чітке значення {var}* — {tip:cog} акумульованої множини, пунктирна вертикаль. Панель — μ термів у точці {var}* (не α); підсвічено терм з найбільшим μ.",
+        "defuzzificationHintCentroid": "Чітке значення {var}* — {tip:cog} акумульованої множини, пунктирна вертикаль. Панель — μ термів у точці {var}* (не α); підсвічено терм з найбільшим μ.",
+        "defuzzificationHintSugeno": "Чітке значення — {tip:wavg}: {var} = Σ w̄ᵢ·cᵢ. Тонкі вертикалі — синглтони cᵢ, пунктир — результат.",
         "rulesWeight": "вага правила",
         "normalization": "Нормалізація ваг",
-        "normalizationHintSugeno": "{tip:norm}: кожну вагу ділимо на суму всіх ваг. Панель — w̄ᵢ для кожного синглтона, їх сума дорівнює 1.",
+        "normalizationHintSugeno": "{tip:norm}: вага кожного правила ділиться на суму ваг, w̄ᵢ = wᵢ / Σw. Панель — w̄ᵢ для кожного синглтона, їх сума дорівнює 1.",
         "sugenoSumLabel": "Розрахунок:"
       },
       "meta": {
@@ -197,9 +197,9 @@
         "rowsUnit": "рядків",
         "rowsAll": "усі рядки",
         "downloadBtn": "Отримати .xlsx",
-        "trainOn": "Навчити за датасетом",
+        "trainOn": "Власний датасет",
         "chooseFile": "Вибрати файл .xlsx / .csv",
-        "dropHint": "або перетягніть файл сюди — навчання почнеться одразу",
+        "dropHint": "або перетягніть файл сюди",
         "optionsTitle": "Параметри алгоритму",
         "options": {
           "epochs": "Епохи",
@@ -208,8 +208,8 @@
           "initialPopulation": "Початкова популяція N₀",
           "seed": "Seed"
         },
-        "runTitle": "Хід навчання",
-        "idle": "Результатів навчання ще немає.",
+        "runTitle": "Навчання",
+        "idle": "Результату ще немає.",
         "starting": "Читання датасету…",
         "stopBtn": "Зупинити",
         "stopping": "Зупинка…",
@@ -233,7 +233,8 @@
           "mean": "Середнє по популяції",
           "validation": "Валідаційна",
           "train": "Навчальна",
-          "test": "Тестова"
+          "test": "Тестова",
+          "meanShort": "середнє"
         },
         "split": {
           "train": "навчальна",
@@ -242,7 +243,7 @@
         },
         "skippedRows": "пропущено рядків без значень:",
         "chosen": "збережена епоха",
-        "resultsTitle": "Результати навчання",
+        "resultsTitle": "Результат",
         "dataset": "Датасет",
         "bestEpoch": "найкраща епоха",
         "seconds": "с",
@@ -278,12 +279,17 @@
         },
         "metaLabel": "Параметри:",
         "trainDefaultBtn": "Навчити на датасеті за замовчуванням",
-        "trainDefaultHint": "Візьме {rows} з датасету, вибраного ліворуч, і одразу почне навчання. Або завантажте власний файл.",
+        "trainDefaultHint": "Візьме {rows} з датасету за замовчуванням (крок 1) і одразу почне навчання. Або завантажте власний файл — навчання стартує відразу після вибору.",
         "clearConfirm": "Видалити результат навчання?",
         "clearYes": "Так, видалити",
         "clearNo": "Скасувати",
         "clearNoteApplied": "Застосовані до контролера параметри залишаться, поки не натиснете «Повернути експертні параметри».",
-        "appliedNoResult": "До контролера застосовано навчені параметри попереднього результату."
+        "appliedNoResult": "До контролера застосовано навчені параметри попереднього результату.",
+        "aboutTitle": "Як працює навчання і які дані потрібні",
+        "rowsCustom": "або",
+        "rowsCustomLabel": "Своя кількість рядків",
+        "rowsTotal": "У датасеті {total} рядків, мінімум для вивантаження — {min}. Число, більше за {total}, дасть увесь датасет.",
+        "rowsOverTotal": "Більше за розмір датасету ({total}) — буде вивантажено всі рядки."
       }
     },
     "navigation": {
@@ -413,13 +419,15 @@
       },
       "training": {
         "badge": "ANFIS",
-        "hint": "Нейро-нечітке навчання (ANFIS): за датасетом з еталонним індексом ризику SR налаштовуються значення наслідків (метод найменших квадратів) і точки зламу трикутних функцій належності (градієнтний спуск). База з 6 правил лишається незмінною — це маска правил.",
-        "datasetNote": "Колонки EC, TP, Lat, SR (0–100) — 250 рядків 6G IoT з експертною оцінкою SR (або запропонованою, якщо експертної ще немає) та розподілом на навчальну і тестову вибірки.",
-        "uploadNote": "Файл з колонками EC, TP, Lat, SR; колонка split (train/test) необов'язкова — інакше поділ 70/30.",
+        "hint": "ANFIS налаштовує за датасетом з еталонним індексом SR значення синглтонів-наслідків і точки зламу трикутних функцій належності. База з 6 правил не змінюється.",
+        "datasetNote": "Датасет за замовчуванням — 250 рядків 6G IoT Intelligent Management з експертною оцінкою SR (або запропонованою, якщо експертної ще немає) і поділом на навчальну (174) й тестову (76) вибірки.",
+        "uploadNote": "Колонки EC, TP, Lat, SR; split (train/test) необов'язкова — інакше поділ 70/30.",
         "changesNote": "Трикутники входів задано точками зламу a, b, c; вихід — значення синглтонів.",
         "rulesTitle": "Правила після навчання",
         "rulesDescription": "ANFIS не змінює структуру бази: маска залишає ті самі 6 правил табл. 3.1. Навчаються лише функції належності входів і значення наслідків (синглтонів) — див. «Формули».",
-        "metaChip": "навчені (ANFIS)"
+        "metaChip": "навчені (ANFIS)",
+        "about": "Гібридне навчання: на кожній епосі спочатку методом найменших квадратів знаходяться 6 наслідків (синглтонів) при зафіксованих функціях належності, потім градієнтним спуском зсуваються точки зламу трикутників при зафіксованих наслідках. Маска правил лишає ті самі 6 правил табл. 3.1 — нові правила не з'являються. Графік показує RMSE на навчальній і тестовій вибірках по епохах: головний спад дає перша епоха (МНК), далі крива вирівнюється.",
+        "columnsNote": "Колонки: EC, TP, Lat, SR (0–100), split."
       }
     },
     "intrusion": {
@@ -489,13 +497,15 @@
       },
       "training": {
         "badge": "ГА",
-        "hint": "Генетичний алгоритм підлаштовує гаусові функції належності всіх величин і структуру 12 правил під датасет з еталонною вірогідністю вторгнення IP. Хромосома — 74 гени; пристосованість F = 1 / (1 + RMSE). У навченій моделі Rate задається в логарифмічній шкалі lg(1 + pps).",
-        "datasetNote": "Колонки NP, Rate (pps), We, IP (0–100) з CICIoT2023, збалансовано за 8 категоріями трафіку; додатково label, category, split.",
-        "uploadNote": "Файл з колонками NP, Rate, We, IP; колонка split (train/validation/test) необов'язкова — інакше поділ 70/15/15.",
+        "hint": "Генетичний алгоритм підлаштовує гаусові функції належності всіх величин і структуру 12 правил за датасетом з еталонною вірогідністю вторгнення IP.",
+        "datasetNote": "Датасет за замовчуванням — 7200 рядків CICIoT2023 (MERGED), збалансованих за 8 категоріями трафіку; IP задано за класом трафіку з label_to_ip.csv; додатково колонки label, category, split.",
+        "uploadNote": "Колонки NP, Rate, We, IP; split (train/validation/test) необов'язкова — інакше поділ 70/15/15.",
         "changesNote": "Гаусоїди задано центром c і шириною σ; Rate — у шкалі lg(1 + pps), 0–7 (експертні параметри перераховано в цю шкалу).",
         "rulesTitle": "Правила після навчання",
         "rulesDescription": "Структуру всіх 12 правил (терми передумов і наслідку) сформовано генетичним алгоритмом за мінімумом RMSE на навчальній вибірці.",
-        "metaChip": "навчені (ГА)"
+        "metaChip": "навчені (ГА)",
+        "about": "Хромосома — 74 гени: 18 параметрів вхідних гаусоїд (c, σ), 8 параметрів вихідних і 48 індексів термів 12 правил. Пристосованість F = 1 / (1 + RMSE) на навчальній вибірці. Оператори: турнірна селекція, арифметичний кросовер для дійсних генів і двоточковий для правил, гаусова мутація параметрів та випадкова заміна індексу терму, валідація (σ > 0, центри в універсумі, порядок термів). Графік показує найкраще і середнє RMSE популяції та RMSE валідаційної вибірки по поколіннях. У навченій моделі Rate задається в логарифмічній шкалі lg(1 + pps), 0–7.",
+        "columnsNote": "Колонки: NP, Rate (pps), We, IP (0–100), split."
       }
     }
   },
@@ -577,21 +587,21 @@
         "panelAtResult": "μ at {var}*",
         "graphTitleSet": "Accumulated output set ({var})",
         "graphTitleCentroid": "Defuzzification: {var}* on the terms",
-        "fuzzificationHint": "Conversion of crisp inputs into membership degrees μ(x) of linguistic terms. The vertical line is the current input value.",
-        "rulesHintMamdani": "For each rule α = {tip:min} of the condition μ values. In an output-term group the {tip:max} remains — that is the clip height on the next step.",
-        "rulesHintSugeno": "For each rule the weight w is the {tip:prod} of the condition μ values. Every rule has its own singleton consequent, so its weight passes to the next step unchanged.",
+        "fuzzificationHint": "Every crisp input is turned into membership degrees μ(x) of its terms. The dashed vertical line is the current input value; the panel under the chart shows μ of each term.",
+        "rulesHintMamdani": "The strength of each rule α = {tip:min} of the μ of its conditions. When several rules lead to the same output term, the {tip:max} remains — the clip height of that term on the next step.",
+        "rulesHintSugeno": "The weight of each rule w = {tip:prod} of the μ of its conditions. The consequent is a singleton cᵢ, so the weight passes to the next step unchanged.",
         "rulesClip": "clip height",
         "rulesSingleton": "singleton height",
         "rulesShowIdle": "Show inactive ({n})",
         "rulesHideIdle": "Hide inactive",
         "rulesEmpty": "No rule fired for these inputs.",
-        "accumulationHintMamdani": "{tip:clipped} terms are merged by {tip:max} into the dark outline. The panel shows rule strengths α — the clip height.",
-        "defuzzificationHintCog": "The vertical line is the {tip:cog} {var}*. The panel shows μ of the terms at that point, not the clip height α; the highlighted term has the largest μ.",
-        "defuzzificationHintCentroid": "The vertical line is the {tip:cog} {var}*. The panel shows μ of the terms at that point, not the clip height α; the highlighted term has the largest μ.",
-        "defuzzificationHintSugeno": "The crisp value is the {tip:wavg}. Vertical lines are the singletons cᵢ; the result line is the obtained value.",
+        "accumulationHintMamdani": "{tip:clipped} at height α, the terms are merged by {tip:max} into one set — the dark outline. The panel shows the rule strengths α.",
+        "defuzzificationHintCog": "The crisp value {var}* is the {tip:cog} of the accumulated set — the dashed vertical line. The panel shows μ of the terms at {var}* (not α); the term with the largest μ is highlighted.",
+        "defuzzificationHintCentroid": "The crisp value {var}* is the {tip:cog} of the accumulated set — the dashed vertical line. The panel shows μ of the terms at {var}* (not α); the term with the largest μ is highlighted.",
+        "defuzzificationHintSugeno": "The crisp value is the {tip:wavg}: {var} = Σ w̄ᵢ·cᵢ. Thin vertical lines are the singletons cᵢ; the dashed one is the result.",
         "rulesWeight": "rule weight",
         "normalization": "Weight normalisation",
-        "normalizationHintSugeno": "{tip:norm}: every weight is divided by the sum of all weights. The panel shows w̄ᵢ for each singleton; they sum to 1.",
+        "normalizationHintSugeno": "{tip:norm}: the weight of each rule is divided by the sum of the weights, w̄ᵢ = wᵢ / Σw. The panel shows w̄ᵢ for each singleton; they sum to 1.",
         "sugenoSumLabel": "Calculation:"
       },
       "meta": {
@@ -678,9 +688,9 @@
         "rowsUnit": "rows",
         "rowsAll": "all rows",
         "downloadBtn": "Download .xlsx",
-        "trainOn": "Train on a dataset",
+        "trainOn": "Your own dataset",
         "chooseFile": "Choose a .xlsx / .csv file",
-        "dropHint": "or drop the file here — training starts right away",
+        "dropHint": "or drop the file here",
         "optionsTitle": "Algorithm settings",
         "options": {
           "epochs": "Epochs",
@@ -689,8 +699,8 @@
           "initialPopulation": "Initial population N₀",
           "seed": "Seed"
         },
-        "runTitle": "Training progress",
-        "idle": "No training results yet.",
+        "runTitle": "Training",
+        "idle": "No result yet.",
         "starting": "Reading the dataset…",
         "stopBtn": "Stop",
         "stopping": "Stopping…",
@@ -714,7 +724,8 @@
           "mean": "Population mean",
           "validation": "Validation",
           "train": "Training",
-          "test": "Test"
+          "test": "Test",
+          "meanShort": "mean"
         },
         "split": {
           "train": "training",
@@ -723,7 +734,7 @@
         },
         "skippedRows": "rows without values skipped:",
         "chosen": "saved epoch",
-        "resultsTitle": "Training results",
+        "resultsTitle": "Result",
         "dataset": "Dataset",
         "bestEpoch": "best epoch",
         "seconds": "s",
@@ -759,12 +770,17 @@
         },
         "metaLabel": "Parameters:",
         "trainDefaultBtn": "Train on the default dataset",
-        "trainDefaultHint": "Takes {rows} of the dataset chosen on the left and starts the training right away. Or upload your own file.",
+        "trainDefaultHint": "Takes {rows} of the default dataset (step 1) and starts training right away. Or upload your own file — training starts as soon as it is chosen.",
         "clearConfirm": "Delete the training result?",
         "clearYes": "Yes, delete",
         "clearNo": "Cancel",
         "clearNoteApplied": "The parameters applied to the controller stay until you press “Return expert parameters”.",
-        "appliedNoResult": "The trained parameters of a previous result are applied to the controller."
+        "appliedNoResult": "The trained parameters of a previous result are applied to the controller.",
+        "aboutTitle": "How the training works and what data it needs",
+        "rowsCustom": "or",
+        "rowsCustomLabel": "Custom number of rows",
+        "rowsTotal": "The dataset has {total} rows; the minimum download is {min}. A number above {total} gives the whole dataset.",
+        "rowsOverTotal": "Above the dataset size ({total}): all rows will be downloaded."
       }
     },
     "navigation": {
@@ -894,13 +910,15 @@
       },
       "training": {
         "badge": "ANFIS",
-        "hint": "Neuro-fuzzy training (ANFIS): on a dataset with a reference security-risk index SR the consequent values (least squares) and the break points of the triangular membership functions (gradient descent) are fitted. The 6-rule base stays fixed — the rule mask.",
-        "datasetNote": "Columns EC, TP, Lat, SR (0–100): 250 rows of 6G IoT with the expert SR (or the proposed one when the expert value is missing) and a training / test split.",
-        "uploadNote": "A file with columns EC, TP, Lat, SR; the split column (train/test) is optional — otherwise a 70/30 split.",
+        "hint": "ANFIS fits the singleton consequents and the break points of the triangular membership functions to a dataset with a reference SR index. The 6-rule base stays unchanged.",
+        "datasetNote": "The default dataset is 250 rows of 6G IoT Intelligent Management with the expert SR (or the proposed one when the expert value is missing) and a training (174) / test (76) split.",
+        "uploadNote": "Columns EC, TP, Lat, SR; split (train/test) is optional — otherwise a 70/30 split.",
         "changesNote": "Input triangles are given by their break points a, b, c; the output by the singleton values.",
         "rulesTitle": "Rules after training",
         "rulesDescription": "ANFIS keeps the structure of the rule base: the mask keeps the same 6 rules of table 3.1. Only the input membership functions and the consequent values (singletons) are learned — see “Formulas”.",
-        "metaChip": "trained (ANFIS)"
+        "metaChip": "trained (ANFIS)",
+        "about": "Hybrid learning: on every epoch the 6 consequents (singletons) are first found by least squares with the membership functions fixed, then the break points of the triangles move by gradient descent with the consequents fixed. The rule mask keeps the same 6 rules of table 3.1 — no new rules appear. The chart shows the RMSE on the training and test sets per epoch: the first epoch (least squares) gives the main drop, then the curve flattens.",
+        "columnsNote": "Columns: EC, TP, Lat, SR (0–100), split."
       }
     },
     "intrusion": {
@@ -970,13 +988,15 @@
       },
       "training": {
         "badge": "GA",
-        "hint": "The genetic algorithm fits the Gaussian membership functions of all variables and the structure of the 12 rules to a dataset with a reference intrusion probability IP. The chromosome has 74 genes; fitness F = 1 / (1 + RMSE). The trained model reads Rate on the log scale lg(1 + pps).",
-        "datasetNote": "Columns NP, Rate (pps), We, IP (0–100) from CICIoT2023, balanced over 8 traffic categories; plus label, category, split.",
-        "uploadNote": "A file with columns NP, Rate, We, IP; the split column (train/validation/test) is optional — otherwise a 70/15/15 split.",
+        "hint": "The genetic algorithm fits the Gaussian membership functions of all variables and the structure of the 12 rules to a dataset with a reference intrusion probability IP.",
+        "datasetNote": "The default dataset is 7200 rows of CICIoT2023 (MERGED), balanced over 8 traffic categories; IP is set per traffic class from label_to_ip.csv; plus the columns label, category, split.",
+        "uploadNote": "Columns NP, Rate, We, IP; split (train/validation/test) is optional — otherwise a 70/15/15 split.",
         "changesNote": "Gaussians are given by the centre c and width σ; Rate on the scale lg(1 + pps), 0–7 (the expert parameters are converted to it).",
         "rulesTitle": "Rules after training",
         "rulesDescription": "The structure of all 12 rules (premise and consequent terms) was formed by the genetic algorithm at the minimum RMSE on the training set.",
-        "metaChip": "trained (GA)"
+        "metaChip": "trained (GA)",
+        "about": "The chromosome has 74 genes: 18 parameters of the input Gaussians (c, σ), 8 of the output ones and 48 term indices of the 12 rules. Fitness F = 1 / (1 + RMSE) on the training set. Operators: tournament selection, arithmetic crossover for the real genes and two-point crossover for the rules, Gaussian mutation of the parameters and random re-assignment of a term index, validation (σ > 0, centres inside the universe, ordered terms). The chart shows the best and mean RMSE of the population and the RMSE of the validation set per generation. The trained model reads Rate on the log scale lg(1 + pps), 0–7.",
+        "columnsNote": "Columns: NP, Rate (pps), We, IP (0–100), split."
       }
     }
   }

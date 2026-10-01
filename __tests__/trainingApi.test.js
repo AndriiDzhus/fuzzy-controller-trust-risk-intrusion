@@ -37,6 +37,19 @@ describe("dataset download", () => {
     expect(sheets[0].rows).toHaveLength(21);
   });
 
+  test("reports the dataset size and gives all rows above it", async () => {
+    const info = await request(app).get("/api/controllers/security/dataset/info");
+    expect(info.status).toBe(200);
+    expect(info.body.total).toBe(250);
+    expect(info.body.columns[0]).toBe("EC");
+    const response = await binary(request(app).get("/api/controllers/security/dataset?rows=9999"));
+    expect(response.status).toBe(200);
+    expect(response.headers["x-row-count"]).toBe("250");
+    expect(response.headers["x-row-total"]).toBe("250");
+    expect(response.headers["content-disposition"]).toContain("security-dataset-all.xlsx");
+    expect((await request(app).get("/api/controllers/trust/dataset/info")).status).toBe(404);
+  });
+
   test("validates the rows parameter and the controller", async () => {
     expect((await request(app).get("/api/controllers/intrusion/dataset?rows=3")).status).toBe(400);
     expect((await request(app).get("/api/controllers/trust/dataset")).status).toBe(404);

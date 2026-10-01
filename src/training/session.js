@@ -428,7 +428,8 @@ async function runTraining({
     datasetName,
     samples,
     options: opts,
-    steps: method.method === "ga" ? history.length - 1 : history.length,
+    // Both histories start with step 0 (the expert model).
+    steps: history.length - 1,
     stopReason: last.stopReason || null,
     seconds: round(seconds, 1),
     metrics,

@@ -9,7 +9,8 @@
  *
  * The mode follows window.fuzzyControllers, exactly like the calculations.
  *
- *   trainingBackend.downloadDataset(controller, rows)  -> {blob, filename, rows}
+ *   trainingBackend.datasetInfo(controller)            -> {total, columns}
+ *   trainingBackend.downloadDataset(controller, rows)  -> {blob, filename, rows, total}
  *   trainingBackend.startTraining({controller, file, options, onProgress, onDone, onError}) -> {stop}
  */
 (function (root) {
@@ -28,12 +29,21 @@
   const remote = {
     mode: "remote",
 
+    async datasetInfo(controller) {
+      const response = await fetch(`/api/controllers/${controller}/dataset/info`);
+      if (!response.ok) throw new Error(`dataset info: HTTP ${response.status}`);
+      return response.json();
+    },
+
     async downloadDataset(controller, rows) {
       const response = await fetch(`/api/controllers/${controller}/dataset?rows=${rows === null ? "all" : rows}`);
       if (!response.ok) throw new Error(`dataset: HTTP ${response.status}`);
       const blob = await response.blob();
       const count = Number(response.headers.get("X-Row-Count")) || null;
-      return { blob, filename: `${controller}-dataset-${rows === null ? "all" : rows}.xlsx`, rows: count };
+      const total = Number(response.headers.get("X-Row-Total")) || null;
+      // Asking for at least the whole dataset gives all rows.
+      const all = rows === null || (total !== null && rows >= total);
+      return { blob, filename: `${controller}-dataset-${all ? "all" : rows}.xlsx`, rows: count, total };
     },
 
     async startTraining({ controller, file, options, onProgress, onDone, onError }) {
@@ -100,7 +110,7 @@
   const local = {
     mode: "local",
 
-    async downloadDataset(controller, rows) {
+    async defaultTable(controller, rows) {
       const { datasets } = root.fuzzyTraining;
       const files = datasets.DEFAULT_DATASET_FILES[controller];
       const csv = {};
@@ -109,12 +119,23 @@
           csv[key] = await fetchText(file);
         })
       );
-      const table = datasets.defaultDataset(controller, csv, rows);
+      return datasets.defaultDataset(controller, csv, rows);
+    },
+
+    async datasetInfo(controller) {
+      const table = await this.defaultTable(controller, null);
+      return { controller, total: table.total, columns: table.header };
+    },
+
+    async downloadDataset(controller, rows) {
+      const table = await this.defaultTable(controller, rows);
       const bytes = await root.xlsxLite.write([{ name: "Dataset", rows: [table.header, ...table.rows] }]);
       return {
         blob: new Blob([bytes], { type: XLSX_TYPE }),
-        filename: `${controller}-dataset-${rows === null ? "all" : rows}.xlsx`,
+        // table.limit is null when the request covered the whole dataset.
+        filename: `${controller}-dataset-${table.limit === null ? "all" : table.limit}.xlsx`,
         rows: table.rows.length,
+        total: table.total,
       };
     },
 
@@ -171,6 +192,7 @@
     get mode() {
       return isLocal() ? "local" : "remote";
     },
+    datasetInfo: (...args) => (isLocal() ? local : remote).datasetInfo(...args),
     downloadDataset: (...args) => (isLocal() ? local : remote).downloadDataset(...args),
     startTraining: (...args) => (isLocal() ? local : remote).startTraining(...args),
   };

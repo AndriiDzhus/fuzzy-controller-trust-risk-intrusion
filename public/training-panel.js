@@ -40,7 +40,7 @@
       ],
       series: [
         { key: "bestRmse", nameKey: "common.training.series.best", cls: "s1" },
-        { key: "meanRmse", nameKey: "common.training.series.mean", cls: "s3" },
+        { key: "meanRmse", nameKey: "common.training.series.mean", shortKey: "common.training.series.meanShort", cls: "s3" },
         { key: "validationRmse", nameKey: "common.training.series.validation", cls: "s2" },
       ],
       inputSymbols: ["NP", "Rate", "We"],
@@ -51,6 +51,7 @@
     },
   };
   const ROW_OPTIONS = [20, 40, 100, null];
+  const MIN_ROWS = 10; // the API refuses smaller downloads
   const STORAGE_KEY = "fuzzyTrainingResult";
 
   const t = (key, fallback = "") => (root.i18nHelper ? root.i18nHelper.t(key, fallback) : fallback || key);
@@ -82,6 +83,8 @@
     expectedSteps: null,
     result: null,
     error: null,
+    rows: ROW_OPTIONS[0], // rows of the default dataset: number or null (all)
+    datasetTotal: null, // size of the default dataset, once known
     els: {},
   };
 
@@ -111,15 +114,31 @@
   // Layout
   // -------------------------------------------------------------------------
 
+  /** Rows of the default dataset chosen in the picker: number or null (all). */
+  function selectedRows() {
+    const { rows, datasetTotal } = state;
+    if (rows === null) return null;
+    if (datasetTotal !== null && rows >= datasetTotal) return null;
+    return rows;
+  }
+
+  function rowsLabel(rows = selectedRows()) {
+    if (rows === null) {
+      const total = state.datasetTotal;
+      return total ? `${t("common.training.rowsAll")} (${total})` : t("common.training.rowsAll");
+    }
+    return `${rows} ${t("common.training.rowsUnit")}`;
+  }
+
   function renderPanel() {
     const { controller, method } = state;
     const page = pageKey(controller);
-    const rowOptions = ROW_OPTIONS.map(
-      (n) =>
-        `<option value="${n === null ? "all" : n}">${
-          n === null ? escapeHtml(t("common.training.rowsAll")) : `${n} ${escapeHtml(t("common.training.rowsUnit"))}`
-        }</option>`
-    ).join("");
+    const total = state.datasetTotal;
+    const chips = ROW_OPTIONS.map((n) => {
+      const value = n === null ? "all" : String(n);
+      const label = n === null ? (total ? `${t("common.training.rowsAll")} · ${total}` : t("common.training.rowsAll")) : String(n);
+      return `<button type="button" class="training-rows-chip" data-rows="${value}" aria-pressed="false">${escapeHtml(label)}</button>`;
+    }).join("");
     const optionFields = method.options
       .map(
         (opt) => `
@@ -131,16 +150,29 @@
       .join("");
 
     state.els.panel.innerHTML = `
+      <details class="training-about">
+        <summary>${escapeHtml(t("common.training.aboutTitle"))}</summary>
+        <p>${escapeHtml(t(`${page}.training.about`))}</p>
+        <p>${escapeHtml(t(`${page}.training.datasetNote`))}</p>
+      </details>
       <div class="training-grid">
-        <section class="training-card">
-          <h4>${escapeHtml(t("common.training.dataTitle"))}</h4>
+        <section class="training-card" data-stage="data">
+          <h4><span class="training-stage">1</span>${escapeHtml(t("common.training.dataTitle"))}</h4>
           <div class="training-row">
             <div class="training-row-label">${escapeHtml(t("common.training.defaultDataset"))}</div>
-            <div class="training-controls">
-              <select class="training-select" data-role="rows" aria-label="${escapeHtml(t("common.training.rowsLabel"))}">${rowOptions}</select>
-              <button type="button" class="docs-btn" data-role="download">${escapeHtml(t("common.training.downloadBtn"))}</button>
+            <div class="training-rows" role="group" aria-label="${escapeHtml(t("common.training.rowsLabel"))}">
+              ${chips}
+              <label class="training-rows-custom">
+                <span>${escapeHtml(t("common.training.rowsCustom"))}</span>
+                <input type="number" inputmode="numeric" min="${MIN_ROWS}" step="1" data-role="rows-custom"
+                  placeholder="N" aria-label="${escapeHtml(t("common.training.rowsCustomLabel"))}" />
+              </label>
             </div>
-            <p class="training-note">${escapeHtml(t(`${page}.training.datasetNote`))}</p>
+            <p class="training-note" data-role="rows-note"></p>
+            <div class="training-controls">
+              <button type="button" class="docs-btn" data-role="download">${escapeHtml(t("common.training.downloadBtn"))}</button>
+              <span class="training-note training-inline-note">${escapeHtml(t(`${page}.training.columnsNote`))}</span>
+            </div>
           </div>
           <div class="training-row">
             <div class="training-row-label">${escapeHtml(t("common.training.trainOn"))}</div>
@@ -157,8 +189,8 @@
             <p class="training-error" data-role="error" hidden></p>
           </div>
         </section>
-        <section class="training-card training-run" data-role="run">
-          <h4>${escapeHtml(t("common.training.runTitle"))}</h4>
+        <section class="training-card training-run" data-role="run" data-stage="run">
+          <h4><span class="training-stage">2</span>${escapeHtml(t("common.training.runTitle"))}</h4>
           <div class="training-status" data-role="status"></div>
           <div class="training-progress" data-role="progress" hidden><div class="training-progress-bar"></div></div>
           <div class="training-chart" data-role="chart"></div>
@@ -167,13 +199,14 @@
           </div>
         </section>
       </div>
-      <section class="training-results" data-role="results" hidden></section>
+      <section class="training-results" data-role="results" data-stage="results" hidden></section>
     `;
     const q = (role) => state.els.panel.querySelector(`[data-role="${role}"]`);
     Object.assign(state.els, {
-      rows: q("rows"), download: q("download"), drop: q("drop"), file: q("file"), choose: q("choose"),
+      rowsCustom: q("rows-custom"), rowsNote: q("rows-note"), download: q("download"), drop: q("drop"), file: q("file"), choose: q("choose"),
       error: q("error"), status: q("status"), progress: q("progress"), chart: q("chart"), stop: q("stop"),
       results: q("results"), run: q("run"),
+      rowChips: [...state.els.panel.querySelectorAll(".training-rows-chip")],
     });
     // Option defaults.
     const defaults = { ...(root.fuzzyTraining?.session?.METHODS?.[controller]?.defaultOptions || {}), ...DEFAULT_OPTIONS[controller] };
@@ -182,9 +215,46 @@
       input.value = state.options?.[key] ?? defaults[key] ?? "";
     });
     bindPanel();
+    renderRowsPicker();
     renderRun();
     renderResults();
     renderChip();
+  }
+
+  /** Highlights the chip of the chosen row count, or shows the custom value. */
+  function renderRowsPicker() {
+    const { els, rows, datasetTotal } = state;
+    if (!els.rowChips) return;
+    const preset = ROW_OPTIONS.includes(rows);
+    els.rowChips.forEach((chip) => {
+      const value = chip.dataset.rows === "all" ? null : Number(chip.dataset.rows);
+      const active = preset && value === rows;
+      chip.classList.toggle("is-active", active);
+      chip.setAttribute("aria-pressed", active ? "true" : "false");
+    });
+    if (preset) {
+      if (document.activeElement !== els.rowsCustom) els.rowsCustom.value = "";
+      els.rowsCustom.classList.remove("is-active");
+    } else {
+      els.rowsCustom.classList.add("is-active");
+    }
+    let note = "";
+    if (!preset && datasetTotal !== null && rows >= datasetTotal) {
+      note = t("common.training.rowsOverTotal").replaceAll("{total}", String(datasetTotal));
+    } else if (datasetTotal !== null) {
+      note = t("common.training.rowsTotal").replaceAll("{total}", String(datasetTotal)).replaceAll("{min}", String(MIN_ROWS));
+    }
+    els.rowsNote.textContent = note;
+    els.rowsNote.hidden = !note;
+  }
+
+  function setRows(rows) {
+    // Unchanged (e.g. the "change" event after "input"): do not rebuild the
+    // empty state, or a click on its button would be lost.
+    if (rows === state.rows) return;
+    state.rows = rows;
+    renderRowsPicker();
+    if (state.status === "idle") renderRun();
   }
 
   const DEFAULT_OPTIONS = {
@@ -204,8 +274,18 @@
   function bindPanel() {
     const { els } = state;
     els.download.addEventListener("click", downloadDataset);
-    els.rows.addEventListener("change", () => {
-      if (state.status === "idle") renderRun();
+    els.rowChips.forEach((chip) =>
+      chip.addEventListener("click", () => setRows(chip.dataset.rows === "all" ? null : Number(chip.dataset.rows)))
+    );
+    const readCustom = () => {
+      const value = Math.floor(Number(els.rowsCustom.value));
+      if (els.rowsCustom.value === "" || !Number.isFinite(value)) return;
+      setRows(Math.max(MIN_ROWS, value));
+    };
+    els.rowsCustom.addEventListener("input", readCustom);
+    els.rowsCustom.addEventListener("change", () => {
+      readCustom();
+      if (els.rowsCustom.value !== "" && Number(els.rowsCustom.value) < MIN_ROWS) els.rowsCustom.value = String(MIN_ROWS);
     });
     els.choose.addEventListener("click", () => els.file.click());
     els.file.addEventListener("change", () => {
@@ -288,8 +368,7 @@
 
   async function downloadDataset() {
     const { els } = state;
-    const value = els.rows.value;
-    const rows = value === "all" ? null : Number(value);
+    const rows = selectedRows();
     els.download.disabled = true;
     showError(null);
     try {
@@ -305,8 +384,7 @@
   /** Trains on the default dataset with the row count chosen in the select. */
   async function trainOnDefaultDataset() {
     if (state.status === "running" || state.status === "starting") return;
-    const value = state.els.rows.value;
-    const rows = value === "all" ? null : Number(value);
+    const rows = selectedRows();
     showError(null);
     const button = state.els.status.querySelector('[data-role="train-default"]');
     if (button) button.disabled = true;
@@ -446,8 +524,7 @@
     const lines = [];
     if (status === "idle") {
       lines.push(`<p class="training-status-main is-muted">${escapeHtml(t("common.training.idle"))}</p>`);
-      const rows = els.rows?.value || "all";
-      const rowsText = rows === "all" ? t("common.training.rowsAll") : `${rows} ${t("common.training.rowsUnit")}`;
+      const rowsText = rowsLabel();
       lines.push(`
         <div class="training-empty">
           <button type="button" class="docs-btn docs-btn-primary" data-role="train-default">${escapeHtml(t("common.training.trainDefaultBtn"))}</button>
@@ -466,23 +543,24 @@
     } else if (status === "error") {
       lines.push(`<p class="training-status-main is-error">${escapeHtml(state.error || t("common.training.errors.generic"))}</p>`);
     } else if (last) {
+      // Live figures as small tiles: the step counter and the RMSE of each series.
       const step = last[method.stepKey];
-      const total = state.expectedSteps ? ` ${t("common.training.of")} ${state.expectedSteps}` : "";
-      const main =
-        method.key === "ga"
-          ? `${stepLabel} ${step}${total} · RMSE ${fmt(last.bestRmse)} (${t("common.training.series.best").toLowerCase()}) · ${fmt(last.meanRmse)} (${t("common.training.series.mean").toLowerCase()})`
-          : `${stepLabel} ${step}${total} · RMSE ${fmt(last.trainRmse)} (${t("common.training.series.train").toLowerCase()})${
-              last.testRmse != null ? ` · ${fmt(last.testRmse)} (${t("common.training.series.test").toLowerCase()})` : ""
-            }`;
-      lines.push(`<p class="training-status-main">${escapeHtml(main)}</p>`);
+      const inProgress = status === "running" || status === "starting";
+      const total = inProgress && state.expectedSteps ? ` ${t("common.training.of")} ${state.expectedSteps}` : "";
+      const stat = (label, value) =>
+        `<div class="training-stat"><span class="training-stat-label">${escapeHtml(label)}</span><span class="training-stat-value">${escapeHtml(value)}</span></div>`;
+      const stats = [stat(stepLabel, `${step}${total}`)];
+      method.series.forEach((series) => {
+        if (last[series.key] != null) stats.push(stat(`RMSE · ${t(series.shortKey || series.nameKey).toLowerCase()}`, fmt(last[series.key])));
+      });
+      if (method.key === "ga" && last.bestFitness != null) stats.push(stat("F = 1 / (1 + RMSE)", fmt(last.bestFitness, 4)));
+      lines.push(`<div class="training-live">${stats.join("")}</div>`);
       const extras = [];
-      if (method.key === "ga" && last.bestFitness != null) extras.push(`F = 1 / (1 + RMSE) = ${fmt(last.bestFitness, 4)}`);
-      if (method.key === "ga" && last.validationRmse != null) extras.push(`${t("common.training.series.validation")}: RMSE ${fmt(last.validationRmse)}`);
       if (status === "done" || status === "stopped") {
         extras.push(`${t("common.training.finished")}: ${t(`common.training.stop.${last.stopReason || "generations"}`, last.stopReason || "")}`);
       }
-      if (extras.length) lines.push(`<p class="training-status-sub">${escapeHtml(extras.join(" · "))}</p>`);
-      lines.push(`<p class="training-status-sub">${escapeHtml(datasetSummary(state.dataset))}</p>`);
+      extras.push(datasetSummary(state.dataset));
+      lines.push(`<p class="training-status-sub">${escapeHtml(extras.filter(Boolean).join(" · "))}</p>`);
     }
     els.status.innerHTML = lines.join("");
     els.status.querySelector('[data-role="train-default"]')?.addEventListener("click", trainOnDefaultDataset);
@@ -536,7 +614,7 @@
       .filter((s) => history.some((h) => Number.isFinite(h[s.key])));
     const W = 640;
     const H = 250;
-    const pad = { l: 50, r: 16, t: 14, b: 36 };
+    const pad = { l: 50, r: 16, t: 26, b: 36 };
     const xs = history.map((h) => h[stepKey]);
     const x0 = xs[0];
     const x1 = Math.max(xMax || 0, xs[xs.length - 1], x0 + 1);
@@ -584,7 +662,7 @@
           <line class="lc-axis" x1="${pad.l}" x2="${W - pad.r}" y1="${H - pad.b}" y2="${H - pad.b}"/>
           ${xAxis}
           <text class="lc-axis-label" x="${(pad.l + W - pad.r) / 2}" y="${H - 4}" text-anchor="middle">${escapeHtml(xLabel)}</text>
-          <text class="lc-axis-label" x="10" y="${pad.t + 8}" text-anchor="start">RMSE</text>
+          <text class="lc-axis-label" x="10" y="12" text-anchor="start">RMSE</text>
           ${chosenMark}
           ${lines}
           <line class="lc-cross" x1="0" x2="0" y1="${pad.t}" y2="${H - pad.b}" visibility="hidden"/>
@@ -656,11 +734,11 @@
   // Results
   // -------------------------------------------------------------------------
 
-  function tile(label, before, after, { better = "lower", format = fmt } = {}) {
+  function tile(label, before, after, { better = "lower", format = fmt, wide = false } = {}) {
     const improved = before != null && after != null && (better === "lower" ? after < before : after > before);
     const worse = before != null && after != null && (better === "lower" ? after > before : after < before);
     return `
-      <div class="training-tile">
+      <div class="training-tile${wide ? " is-wide" : ""}">
         <span class="training-tile-label">${escapeHtml(label)}</span>
         <span class="training-tile-value">
           <span class="training-tile-before">${escapeHtml(format(before))}</span>
@@ -688,7 +766,7 @@
     const extraTiles = [
       tile(`R² · ${t(`common.training.split.${lastSplit}`)}`, m.base[lastSplit]?.r2, m.trained[lastSplit]?.r2, { better: "higher", format: (v) => fmt(v, 3) }),
       m.trained[lastSplit]?.detection
-        ? tile(t("common.training.balancedAccuracy"), m.base[lastSplit]?.detection?.balancedAccuracy, m.trained[lastSplit].detection.balancedAccuracy, { better: "higher", format: pct })
+        ? tile(t("common.training.balancedAccuracy"), m.base[lastSplit]?.detection?.balancedAccuracy, m.trained[lastSplit].detection.balancedAccuracy, { better: "higher", format: pct, wide: true })
         : "",
     ].join("");
     const applied = isApplied();
@@ -708,7 +786,7 @@
     els.results.hidden = false;
     els.results.innerHTML = `
       <div class="training-results-head">
-        <h4>${escapeHtml(t("common.training.resultsTitle"))}</h4>
+        <h4><span class="training-stage">3</span>${escapeHtml(t("common.training.resultsTitle"))}</h4>
         <p class="training-note">${facts}</p>
       </div>
       <div class="training-tiles">${splitTiles}${extraTiles}</div>
@@ -978,6 +1056,19 @@
       state.expectedSteps = stored.result.training.steps;
     }
     renderPanel();
+    // Size of the default dataset: shown in the row picker once known.
+    if (typeof root.trainingBackend.datasetInfo === "function") {
+      root.trainingBackend
+        .datasetInfo(controller)
+        .then((info) => {
+          if (info && Number.isFinite(info.total)) {
+            state.datasetTotal = info.total;
+            if (state.status === "running" || state.status === "starting") renderRowsPicker();
+            else renderPanel();
+          }
+        })
+        .catch(() => {});
+    }
     root.addEventListener("languageChanged", () => renderPanel());
     root.addEventListener("activeModelChanged", () => {
       renderResults();

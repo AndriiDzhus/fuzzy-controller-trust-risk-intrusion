@@ -1928,6 +1928,7 @@ function setupGraphExpand(redraw) {
     document.body.classList.remove("graph-expanded");
     if (placeholder?.classList.contains("graph-expand-placeholder")) placeholder.remove();
     if (canvas) restoreCanvasSize(canvas);
+    fitCompactCanvases();
     if (canvas) {
       clearCanvasXView(canvas);
       syncZoomResetButton(canvas);
@@ -1960,6 +1961,31 @@ function setupGraphExpand(redraw) {
     });
   };
 
+  // Phone width: a wide (800 px) canvas scaled to ~340 px makes its labels
+  // unreadable. Draw it at a narrower logical width instead, so the text
+  // keeps its size and the chart simply shows less horizontal room.
+  const COMPACT_MAX_VIEWPORT = 640;
+  const COMPACT_WIDTH = 440;
+  const fitCompactCanvases = () => {
+    const compact = window.matchMedia(`(max-width: ${COMPACT_MAX_VIEWPORT}px)`).matches;
+    let changed = false;
+    document.querySelectorAll(".graph-container:not(.is-expanded) canvas").forEach((canvas) => {
+      rememberCanvasSize(canvas);
+      const baseW = Number(canvas.dataset.baseWidth);
+      const baseH = Number(canvas.dataset.baseHeight);
+      if (!baseW || baseW <= COMPACT_WIDTH) return;
+      const width = compact ? COMPACT_WIDTH : baseW;
+      const height = compact ? Math.round(baseH * 1.15) : baseH;
+      if (canvas.width !== width || canvas.height !== height) {
+        canvas.width = width;
+        canvas.height = height;
+        changed = true;
+      }
+    });
+    return changed;
+  };
+  fitCompactCanvases();
+
   document.querySelectorAll(".graph-container").forEach((container) => {
     ensureGraphZoomUi(container, redraw);
     if (container.querySelector(".graph-expand-btn")) return;
@@ -1985,11 +2011,15 @@ function setupGraphExpand(redraw) {
       collapseGraph();
     });
     window.addEventListener("resize", () => {
+      const compactChanged = fitCompactCanvases();
       const container = document.querySelector(".graph-container.is-expanded");
       const canvas = container?.querySelector("canvas");
-      if (!canvas) return;
+      if (!canvas) {
+        if (compactChanged && typeof redraw === "function") redraw();
+        return;
+      }
       applyExpandSize(container, canvas);
-      if (fitExpandedCanvas(canvas) && typeof redraw === "function") {
+      if ((fitExpandedCanvas(canvas) || compactChanged) && typeof redraw === "function") {
         redraw();
       }
     });
@@ -2315,6 +2345,9 @@ function syncInputSpecs(config, meta) {
     applyInputSpecToControls(spec);
   });
   if (window.i18nHelper) window.i18nHelper.applyTranslations(document);
+  // applyTranslations rewrites the step hints with their raw text: restore
+  // the glossary tooltips ({tip:…}) and the output variable ({var}).
+  decoratePipelineMuHints(config);
   return trained;
 }
 

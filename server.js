@@ -15,7 +15,8 @@
  * model is then built from them (membership-functions accepts POST for that).
  *
  * Training (Security: ANFIS, Intrusion: genetic algorithm):
- *   GET  /api/controllers/:controller/dataset?rows=20|40|100|all   default dataset (.xlsx)
+ *   GET  /api/controllers/:controller/dataset?rows=N|all   default dataset (.xlsx); N ≥ size → all
+ *   GET  /api/controllers/:controller/dataset/info        {total, columns} of the default dataset
  *   POST /api/training/:controller/jobs?name=<file>&generations=…  raw file body (.xlsx / .csv)
  *   GET  /api/training/jobs/:id                                    snapshot
  *   GET  /api/training/jobs/:id/events                             server-sent events
@@ -155,6 +156,21 @@ function readDatasetFiles(controller) {
   return csv;
 }
 
+// Size and columns of the default dataset (for the row picker of the page).
+app.get("/api/controllers/:controller/dataset/info", (req, res) => {
+  try {
+    const csv = readDatasetFiles(req.params.controller);
+    if (!csv) {
+      res.status(404).json({ error: "No dataset for this controller" });
+      return;
+    }
+    const table = datasets.defaultDataset(req.params.controller, csv, null);
+    res.json({ controller: req.params.controller, total: table.total, columns: table.header });
+  } catch (error) {
+    sendServerError(res, error);
+  }
+});
+
 app.get("/api/controllers/:controller/dataset", async (req, res) => {
   try {
     const csv = readDatasetFiles(req.params.controller);
@@ -170,10 +186,12 @@ app.get("/api/controllers/:controller/dataset", async (req, res) => {
     }
     const table = datasets.defaultDataset(req.params.controller, csv, limit);
     const bytes = await xlsx.write([{ name: "Dataset", rows: [table.header, ...table.rows] }]);
-    const name = `${req.params.controller}-dataset-${limit === null ? "all" : limit}.xlsx`;
+    // table.limit is null when the request covered the whole dataset.
+    const name = `${req.params.controller}-dataset-${table.limit === null ? "all" : table.limit}.xlsx`;
     res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
     res.setHeader("Content-Disposition", `attachment; filename="${name}"`);
     res.setHeader("X-Row-Count", String(table.rows.length));
+    res.setHeader("X-Row-Total", String(table.total));
     res.send(Buffer.from(bytes));
   } catch (error) {
     sendServerError(res, error);

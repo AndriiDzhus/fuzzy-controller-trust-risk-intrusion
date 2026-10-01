@@ -230,8 +230,10 @@ function roundRobin(groups, limit) {
  * Rows of the default Intrusion dataset.
  * @param {{train: string, validation: string, test: string, mapping: string}} csv texts of
  *   data/intrusion/intrusion_*.csv and label_to_ip.csv
- * @param {number|null} limit number of rows or null for all
- * @returns {{header: string[], rows: any[][]}}
+ * @param {number|null} limit number of rows or null for all; a limit at or
+ *   above the dataset size gives all rows
+ * @returns {{header: string[], rows: any[][], total: number, limit: number|null}}
+ *   `limit` is the effective one (null when all rows are returned)
  */
 function defaultIntrusionDataset(csv, limit = null) {
   const mapping = {};
@@ -240,11 +242,18 @@ function defaultIntrusionDataset(csv, limit = null) {
   });
   const header = ["NP", "Rate", "We", "IP", "label", "category", "split"];
   const shares = { train: 0.7, validation: 0.15, test: 0.15 };
-  const rows = [];
+  const bySplit = {};
   Object.keys(shares).forEach((split) => {
-    const records = parseCsv(csv[split]).map((r) => [
+    bySplit[split] = parseCsv(csv[split]).map((r) => [
       cellNumber(r.NP), cellNumber(r.Rate), cellNumber(r.We), mapping[r.label] ?? null, r.label, r.category, split,
     ]);
+  });
+  const total = Object.values(bySplit).reduce((n, records) => n + records.length, 0);
+  // A limit at or above the dataset size means the whole dataset.
+  if (limit !== null && limit >= total) limit = null;
+  const rows = [];
+  Object.keys(shares).forEach((split) => {
+    const records = bySplit[split];
     const take = limit === null ? records.length : Math.max(1, Math.round(limit * shares[split]));
     const groups = {};
     records.forEach((row) => {
@@ -252,7 +261,7 @@ function defaultIntrusionDataset(csv, limit = null) {
     });
     rows.push(...roundRobin(Object.keys(groups).sort().map((k) => groups[k]), take));
   });
-  return { header, rows: limit === null ? rows : rows.slice(0, Math.max(limit, 1)) };
+  return { header, rows: limit === null ? rows : rows.slice(0, Math.max(limit, 1)), total, limit };
 }
 
 /**
@@ -268,7 +277,10 @@ function defaultSecurityDataset(csv, limit = null) {
     const source = expert !== null ? "expert" : proposed !== null ? "proposed" : "base";
     return [cellNumber(r.EC), cellNumber(r.TP), cellNumber(r.Lat), sr, r.split || "train", cellNumber(r.row_id), source];
   });
-  if (limit === null) return { header, rows: records };
+  const total = records.length;
+  // A limit at or above the dataset size means the whole dataset.
+  if (limit !== null && limit >= total) limit = null;
+  if (limit === null) return { header, rows: records, total, limit };
   const shares = { train: 0.7, test: 0.3 };
   const rows = [];
   Object.keys(shares).forEach((split) => {
@@ -278,7 +290,7 @@ function defaultSecurityDataset(csv, limit = null) {
     const stride = Math.max(1, Math.floor(ofSplit.length / take));
     for (let i = 0; i < ofSplit.length && rows.filter((r) => r[4] === split).length < take; i += stride) rows.push(ofSplit[i]);
   });
-  return { header, rows: rows.slice(0, Math.max(limit, 1)) };
+  return { header, rows: rows.slice(0, Math.max(limit, 1)), total, limit };
 }
 
 function defaultDataset(controller, csv, limit = null) {
