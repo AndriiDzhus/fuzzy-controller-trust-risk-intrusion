@@ -209,7 +209,10 @@ describe("ANFIS (Security)", () => {
     expect(result.metrics.trained.test.rmse).toBeLessThan(0.15 * result.metrics.base.test.rmse);
     expect(result.metrics.trained.train.notFired).toBe(0);
     // Learning curve: the best epoch is never worse than the first one.
-    expect(result.history[result.best.epoch - 1].trainRmse).toBeLessThanOrEqual(result.history[0].trainRmse);
+    expect(result.history[0].epoch).toBe(0);
+    expect(result.history[result.best.epoch].epoch).toBe(result.best.epoch);
+    expect(result.history[result.best.epoch].trainRmse).toBeLessThanOrEqual(result.history[1].trainRmse);
+    expect(result.history[1].trainRmse).toBeLessThanOrEqual(result.history[0].trainRmse);
 
     // The trained params build a working controller with the same rules.
     const model = securityController.buildModel(result.params, { variant: "trained" });

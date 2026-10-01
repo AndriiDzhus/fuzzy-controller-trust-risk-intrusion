@@ -105,6 +105,20 @@ describe("datasets", () => {
     expect(datasets.defaultDataset("intrusion", readCsvFiles("intrusion"), null).rows).toHaveLength(7200);
   });
 
+  test("a limit at or above the dataset size gives the whole dataset", () => {
+    const intrusion = datasets.defaultDataset("intrusion", readCsvFiles("intrusion"), 100000);
+    expect(intrusion.rows).toHaveLength(7200);
+    expect(intrusion.total).toBe(7200);
+    expect(intrusion.limit).toBeNull();
+    const security = datasets.defaultDataset("security", readCsvFiles("security"), 250);
+    expect(security.rows).toHaveLength(250);
+    expect(security.limit).toBeNull();
+    const part = datasets.defaultDataset("security", readCsvFiles("security"), 249);
+    expect(part.rows.length).toBeLessThanOrEqual(249);
+    expect(part.total).toBe(250);
+    expect(part.limit).toBe(249);
+  });
+
   test("default security dataset uses the expert SR when present, else the proposed one", () => {
     const table = datasets.defaultDataset("security", readCsvFiles("security"), 20);
     expect(table.header).toEqual(["EC", "TP", "Lat", "SR", "split", "row_id", "SR_source"]);

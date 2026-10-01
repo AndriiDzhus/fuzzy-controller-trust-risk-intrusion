@@ -16,7 +16,8 @@
  *        ∂w_k/∂μ  = product of the other memberships of rule k
  *        ∂μ/∂θ    = subgradient of the triangle at its break point
  *
- * Every epoch lowers the training RMSE (over the rows where some rule fires,
+ * The history starts with epoch 0 (the expert model) followed by one entry
+ * per epoch. Every epoch lowers the training RMSE (over the rows where some rule fires,
  * the error the gradient minimises): a step that does not is rejected and the
  * step halves. The returned model is the epoch with the lowest penalised
  * RMSE among the epochs that keep coverage: wherever the expert model fires a
@@ -276,7 +277,7 @@ function cloneState(state) {
  * entry), the result as the return value; trainAnfis drains it.
  */
 function* trainAnfisSteps({ spec, initial, train, test = [], coverage = [], options = {} }) {
-  const {
+  let {
     epochs = 200,
     stepSize: initialStep = 0.01,
     ridge = 1e-3,
@@ -350,6 +351,22 @@ function* trainAnfisSteps({ spec, initial, train, test = [], coverage = [], opti
     }
     return entry;
   };
+
+  // Epoch 0: the expert model before the first least-squares step, so the
+  // learning curve shows what that step gains.
+  const baseEntry = {
+    epoch: 0,
+    trainRmse: baseMetrics.train.rmse,
+    testRmse: baseMetrics.test ? baseMetrics.test.rmse : null,
+    stepSize: initialStep,
+    stopReason: null,
+  };
+  history.push(baseEntry);
+  if (yield baseEntry) {
+    // Stopped before the first epoch: keep the least-squares consequents.
+    record(1, "stopped");
+    epochs = 0;
+  }
 
   for (let epoch = 1; epoch <= epochs; epoch += 1) {
     const entry = record(epoch, epoch === epochs ? "epochs" : null);

@@ -129,7 +129,15 @@
     flex-wrap: wrap;
   }
 
+  /* Three compact columns instead of three stacked rows. */
   .nav-list {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 4px;
+  }
+
+  .nav-link {
+    padding: 7px 4px;
+    font-size: 0.78rem;
+    line-height: 1.2;
   }
 }
