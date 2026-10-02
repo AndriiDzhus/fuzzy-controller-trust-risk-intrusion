@@ -1,6 +1,23 @@
 document.addEventListener("DOMContentLoaded", async () => {
   await createFuzzyPage({
     controller: "intrusion",
+    // Trainable by the genetic algorithm (training-panel.js). A trained model
+    // reads Rate on the log scale lg(1 + pps), [0, 7]: the Rate input follows.
+    trainable: true,
+    trainedInputs: {
+      when: (meta) => meta.rateScale === "log10p1",
+      inputs: {
+        rate: {
+          min: 0,
+          max: 7,
+          step: 0.01,
+          digits: 2,
+          value: 2,
+          inputLabelKey: "intrusion.inputs.rateLog",
+          graph: { xMax: 7, axisLabels: { xKey: "intrusion.graphs.axes.rateLogX" } },
+        },
+      },
+    },
     inputs: [
       {
         key: "packets",
@@ -33,6 +50,9 @@ document.addEventListener("DOMContentLoaded", async () => {
         digits: 1,
       },
     ],
+    surface: {
+      outputTitleKey: "intrusion.membership.intrusion",
+    },
     output: {
       valueId: "intrusionValue",
       termId: "intrusionTerm",
