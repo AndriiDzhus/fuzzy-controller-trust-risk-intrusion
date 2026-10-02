@@ -56,8 +56,9 @@ public/
   i18n.json  i18n-helper.js       переклади uk / en
   term-colors.js  style.css  navigation.css
 scripts/
-  data/prepare_datasets.py        навчальні датасети з 6G IoT і CICIoT2023 -> data/
+  data/prepare_datasets.py        повні вибірки з 6G IoT і CICIoT2023 -> data/full/
   data/propose_security_labels.py запропоновані експертні мітки SR (матриця ризику)
+  data/make_app_datasets.py       малі датасети апки data/security.csv, data/intrusion.csv
   train-security.js               навчання ANFIS -> src/controllers/trained/security.json
   train-intrusion.js              оптимізація ГА -> src/controllers/trained/intrusion.json
   build-pages.js                  статична збірка для GitHub Pages (dist/)
@@ -65,7 +66,7 @@ scripts/
   mini-bundle.js                  запасний бандлер, коли esbuild не запускається на цій машині
   controllers-browser-entry.js    window.fuzzyControllers = src/controllers
 __tests__/                        Jest + supertest
-data/                             навчальні вибірки та експертна розмітка (data/README.md)
+data/                             security.csv, intrusion.csv — датасети апки; full/ — повні вибірки (data/README.md)
 docs/tasks/                       завдання та теоретичні розділи
 ```
 
@@ -131,12 +132,13 @@ module.exports = { system, variables, ranges, calculate, membershipFunctions };
 Докладно про дані та експертну розмітку — у [data/README.md](data/README.md).
 
 ```bash
-npm run data:prepare       # Python 3 + pandas: вибірки з вихідних датасетів -> data/
-npm run train:security     # ANFIS на data/security/security_labeling.csv (потрібен SR_expert)
-npm run train:intrusion    # генетичний алгоритм на data/intrusion/*.csv (≈ 3 хв)
+npm run data:prepare       # Python 3 + pandas: повні вибірки з вихідних датасетів -> data/full/
+npm run data:app           # малі датасети апки (200 / 240 рядків) -> data/*.csv
+npm run train:security     # ANFIS на data/security.csv   (--full: data/full/security/security_labeling.csv)
+npm run train:intrusion    # ГА на data/intrusion.csv      (--full: data/full/intrusion/*.csv, ≈ 3 хв)
 ```
 
-**Security, ANFIS** (розділ 3.4.4). База з 6 правил не змінюється (маска правил).
+**Security, ANFIS** (Adaptive Neuro-Fuzzy Inference System — адаптивна нейро-нечітка система виводу; розділ 3.4.4). База з 6 правил не змінюється (маска правил).
 У кожній епосі спершу 6 наслідків обчислюються методом найменших квадратів,
 C = (AᵀA)⁻¹Aᵀy, за нормованими вагами правил. Потім 18 точок зламу трикутників
 (L: c; M: a, b, c; H: a, b для кожного входу) зсуваються градієнтним спуском із
@@ -156,6 +158,13 @@ C = (AᵀA)⁻¹Aᵀy, за нормованими вагами правил. П
 покоління — найкращі N з батьків і нащадків. Вхід Rate навченої моделі
 задається в логарифмічній шкалі lg(1 + pps) ∈ [0, 7].
 
+Параметри за замовчуванням (`METHODS` у `src/training/session.js`; теорія задає їх
+символами, числа взято з MATLAB-експериментів дисертації): ANFIS — 100 епох (із
+зупинкою, коли похибка не спадає 25 епох поспіль); ГА — N₀ = 300, N = 200, 200
+поколінь, цільова RMSE 0 (вимкнено), seed 42; зупинка також після 60 поколінь без
+покращення. Решта констант (ймовірності кросоверу 0,9 і мутації 0,15 / 0,04, турнір
+із 3, крок градієнта) зафіксована в коді.
+
 ### Блок «Навчання моделі» на сторінці
 
 На сторінках Security та Intrusion перед кроком «Фазифікація» є акордеон
@@ -164,13 +173,14 @@ C = (AᵀA)⁻¹Aᵀy, за нормованими вагами правил. П
 Блок поділено на три кроки: **1 Дані → 2 Навчання → 3 Результат**; теорія і опис даних
 сховані в розкривному «Як працює навчання і які дані потрібні».
 
-1. **Дані** — датасет за замовчуванням як `.xlsx`: 20 / 40 / 100 / усі рядки або своя
-   кількість (поле N; число, більше за розмір датасету, дає всі рядки; мінімум 10).
-   Колонки: Intrusion — NP, Rate, We, IP + label, category, split; Security — EC, TP,
-   Lat, SR + split. Поруч — власний файл `.xlsx` / `.csv` з такими самими колонками;
+1. **Дані** — датасет за замовчуванням (`data/security.csv`, 200 рядків; `data/intrusion.csv`,
+   240 рядків) як `.xlsx`: весь файл або вказана кількість рядків (мінімум 10; частки
+   `split` зберігаються). Назва файла і посилання на нього показані й у кроці 2, поки
+   результату немає. Колонки: Intrusion — NP, Rate, We, IP + label, category, split;
+   Security — EC, TP, Lat, SR + split, row_id. Поруч — власний файл `.xlsx` / `.csv` з такими самими колонками;
    навчання стартує одразу після вибору. Колонка `split` необов'язкова (інакше поділ
-   70/15/15 або 70/30). Параметри алгоритму (покоління, популяція, seed; епохи) — у
-   розкривному блоці.
+   70/15/15 або 70/30). Параметри алгоритму (покоління, N, N₀, цільова RMSE, seed;
+   епохи) — у розкривному блоці; біля кожного поля значок «?» з поясненням.
 2. **Навчання** — у порожньому стані кнопка «Навчити на датасеті за замовчуванням» з
    вибраною кількістю рядків; під час навчання — плитки (покоління / епоха, RMSE кожної
    серії, F), прогрес, живий графік RMSE (ГА: найкраще / середнє по популяції /
@@ -187,8 +197,9 @@ C = (AᵀA)⁻¹Aᵀy, за нормованими вагами правил. П
 через server-sent events; у статичній збірці — у Web Worker прямо в браузері
 (`dist/training-worker.js`). Результати однакові (seed фіксовано).
 
-Скрипти `npm run train:*` навчають на повних датасетах з `data/` і зберігають результат
-у `src/controllers/trained/*.json` (доступний через API як `?model=trained`).
+Скрипти `npm run train:*` навчають на `data/*.csv` (з `--full` — на повних вибірках
+`data/full/`) і зберігають результат у `src/controllers/trained/*.json` (доступний
+через API як `?model=trained`).
 
 ## Запуск
 

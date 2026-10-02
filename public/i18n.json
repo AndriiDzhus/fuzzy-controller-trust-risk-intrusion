@@ -206,7 +206,41 @@
           "generations": "Покоління",
           "populationSize": "Популяція N",
           "initialPopulation": "Початкова популяція N₀",
+          "targetRmse": "Цільова RMSE",
           "seed": "Seed"
+        },
+        "optionHelp": {
+          "epochs": "Скільки епох гібридного навчання ANFIS виконати. В одній епосі: МНК підбирає 6 наслідків, потім градієнтний крок зсуває 18 точок зламу трикутників. Зупиняється раніше, якщо похибка не зменшується 25 епох поспіль. 100 — як у MATLAB-експерименті дисертації.",
+          "generations": "Максимальна кількість поколінь ГА (перший критерій зупинки з теорії). Зупиняється раніше, якщо найкраща RMSE не покращується 60 поколінь або досягнуто цільову RMSE.",
+          "populationSize": "N — робоча популяція: скільки хромосом переходить із покоління в покоління після відбору найкращих серед батьків і нащадків. За теорією N < N₀; 200 — як у MATLAB-експерименті дисертації.",
+          "initialPopulation": "N₀ — первинна популяція: випадкові хромосоми (частина — варіації експертної моделі), з яких за RMSE відбирають N найкращих. Має бути більшою за N.",
+          "targetRmse": "Прийнятний рівень RMSE на навчальній вибірці (другий критерій зупинки з теорії): досягнувши його, алгоритм зупиняється. 0 — критерій вимкнено.",
+          "seed": "Початкове число генератора випадкових чисел. Той самий seed і той самий датасет дають той самий результат, що важливо для відтворення експерименту."
+        },
+        "statHelp": {
+          "generation": "Номер поточного покоління ГА та задана межа. Одне покоління — це селекція, кросовер, мутація, валідація, оцінювання нащадків і відбір N найкращих.",
+          "epoch": "Номер поточної епохи ANFIS та задана межа. Епоха 0 — експертна модель до навчання; у кожній наступній спочатку МНК для наслідків, потім градієнтний крок для точок зламу.",
+          "bestRmse": "RMSE найкращої хромосоми популяції на навчальній вибірці — саме її мінімізує алгоритм. Має спадати або стояти на місці; ніколи не росте.",
+          "meanRmse": "Середня RMSE по всій робочій популяції. Наближається до найкращої, коли популяція «збігається» до одного розв'язку: далі покращень майже не буде.",
+          "validationRmse": "RMSE найкращої хромосоми на валідаційній вибірці, якої алгоритм не бачить. Якщо навчальна RMSE падає, а ця росте — модель перенавчається.",
+          "trainRmse": "RMSE поточної моделі на навчальній вибірці — на цих рядках підбираються параметри.",
+          "testRmse": "RMSE поточної моделі на тестовій вибірці, яка в навчанні не бере участі. Це чесна оцінка точності.",
+          "bestFitness": "Пристосованість найкращої хромосоми F = 1 / (1 + RMSE): від 0 (погано) до 1 (RMSE = 0). Чим більша, тим краща модель."
+        },
+        "tileHelp": {
+          "rmse": "Середньоквадратична похибка між відповіддю контролера і еталоном з датасету (в одиницях вихідної величини, 0–100): ліворуч — експертна модель, праворуч — навчена, на тих самих рядках. Менше — краще.",
+          "split": {
+            "train": "Навчальна вибірка: на цих рядках підбиралися параметри, тому похибка тут найменша.",
+            "validation": "Валідаційна вибірка: не брала участі в навчанні, відображалась на графіку для контролю перенавчання.",
+            "test": "Тестова вибірка: не брала участі в навчанні — головний показник точності."
+          },
+          "r2": "Коефіцієнт детермінації: яку частку розкиду еталонних значень пояснює модель. 1 — ідеально, 0 — не краще за середнє значення, від'ємний — гірше за середнє.",
+          "balancedAccuracy": "Якщо IP ≥ 50 вважати «атакою»: середнє між часткою правильно виявлених атак і часткою правильно розпізнаного нормального трафіку. 50 % — випадкове вгадування, 100 % — усе правильно."
+        },
+        "help": {
+          "rows": "Скільки рядків файла потрапить у .xlsx і в навчання за замовчуванням. Частки train / validation / test зберігаються, у Вторгненні — і баланс категорій.",
+          "upload": "Файл .xlsx або .csv з тими самими колонками, що й у датасеті за замовчуванням. Колонка split необов'язкова: без неї поділ робиться автоматично (seed 42).",
+          "options": "Параметри, які теорія дисертації називає як налаштовувані. Решта констант (ймовірності кросоверу й мутації, розмір турніру, крок градієнта) зафіксовані в коді за формулами роботи. Порожнє поле — значення за замовчуванням."
         },
         "runTitle": "Навчання",
         "idle": "Результату ще немає.",
@@ -278,18 +312,19 @@
           "noBackend": "Модуль навчання не завантажено."
         },
         "metaLabel": "Параметри:",
+        "defaultFile": "Навчання виконається на датасеті за замовчуванням",
+        "downloadAll": "завантажити файл",
         "trainDefaultBtn": "Навчити на датасеті за замовчуванням",
-        "trainDefaultHint": "Візьме {rows} з датасету за замовчуванням (крок 1) і одразу почне навчання. Або завантажте власний файл — навчання стартує відразу після вибору.",
+        "trainDefaultHint": "Візьме {rows} з цього файлу (кількість обирається в кроці 1) і одразу почне навчання. Або завантажте власний файл — навчання стартує відразу після вибору.",
         "clearConfirm": "Видалити результат навчання?",
         "clearYes": "Так, видалити",
         "clearNo": "Скасувати",
         "clearNoteApplied": "Застосовані до контролера параметри залишаться, поки не натиснете «Повернути експертні параметри».",
         "appliedNoResult": "До контролера застосовано навчені параметри попереднього результату.",
         "aboutTitle": "Як працює навчання і які дані потрібні",
-        "rowsCustom": "або",
-        "rowsCustomLabel": "Своя кількість рядків",
-        "rowsTotal": "У датасеті {total} рядків, мінімум для вивантаження — {min}. Число, більше за {total}, дасть увесь датасет.",
-        "rowsOverTotal": "Більше за розмір датасету ({total}) — буде вивантажено всі рядки."
+        "rowsAllBtn": "Весь датасет",
+        "rowsCustomLabel": "Кількість рядків",
+        "rowsTotal": "У датасеті {total} рядків, мінімум для вивантаження — {min}."
       }
     },
     "navigation": {
@@ -419,8 +454,8 @@
       },
       "training": {
         "badge": "ANFIS",
-        "hint": "ANFIS налаштовує за датасетом з еталонним індексом SR значення синглтонів-наслідків і точки зламу трикутних функцій належності. База з 6 правил не змінюється.",
-        "datasetNote": "Датасет за замовчуванням — 250 рядків 6G IoT Intelligent Management з експертною оцінкою SR (або запропонованою, якщо експертної ще немає) і поділом на навчальну (174) й тестову (76) вибірки.",
+        "hint": "ANFIS (Adaptive Neuro-Fuzzy Inference System — адаптивна нейро-нечітка система виводу) налаштовує за датасетом з еталонним індексом SR значення синглтонів-наслідків і точки зламу трикутних функцій належності. База з 6 правил не змінюється.",
+        "datasetNote": "Датасет за замовчуванням — security.csv: 200 рядків 6G IoT Intelligent Management Dataset з експертною оцінкою SR (або запропонованою, якщо експертної ще немає): 140 навчальних і 60 тестових.",
         "uploadNote": "Колонки EC, TP, Lat, SR; split (train/test) необов'язкова — інакше поділ 70/30.",
         "changesNote": "Трикутники входів задано точками зламу a, b, c; вихід — значення синглтонів.",
         "rulesTitle": "Правила після навчання",
@@ -497,8 +532,8 @@
       },
       "training": {
         "badge": "ГА",
-        "hint": "Генетичний алгоритм підлаштовує гаусові функції належності всіх величин і структуру 12 правил за датасетом з еталонною вірогідністю вторгнення IP.",
-        "datasetNote": "Датасет за замовчуванням — 7200 рядків CICIoT2023 (MERGED), збалансованих за 8 категоріями трафіку; IP задано за класом трафіку з label_to_ip.csv; додатково колонки label, category, split.",
+        "hint": "Генетичний алгоритм (ГА) підлаштовує гаусові функції належності всіх величин і структуру 12 правил за датасетом з еталонною вірогідністю вторгнення IP.",
+        "datasetNote": "Датасет за замовчуванням — intrusion.csv: 240 рядків CICIoT2023 (MERGED), по 30 на кожну з 8 категорій трафіку (160 train / 40 validation / 40 test); IP задано за класом трафіку (label); додатково колонки category і split.",
         "uploadNote": "Колонки NP, Rate, We, IP; split (train/validation/test) необов'язкова — інакше поділ 70/15/15.",
         "changesNote": "Гаусоїди задано центром c і шириною σ; Rate — у шкалі lg(1 + pps), 0–7 (експертні параметри перераховано в цю шкалу).",
         "rulesTitle": "Правила після навчання",
@@ -697,7 +732,41 @@
           "generations": "Generations",
           "populationSize": "Population N",
           "initialPopulation": "Initial population N₀",
+          "targetRmse": "Target RMSE",
           "seed": "Seed"
+        },
+        "optionHelp": {
+          "epochs": "How many epochs of ANFIS hybrid learning to run. In one epoch: least squares fits the 6 consequents, then a gradient step moves the 18 break points of the triangles. Stops earlier when the error has not decreased for 25 epochs. 100 as in the MATLAB experiment of the thesis.",
+          "generations": "Maximum number of GA generations (the first stop criterion of the theory). Stops earlier when the best RMSE has not improved for 60 generations or the target RMSE is reached.",
+          "populationSize": "N — the working population: how many chromosomes survive from one generation to the next after the best of parents and offspring are kept. The theory requires N < N₀; 200 as in the MATLAB experiment of the thesis.",
+          "initialPopulation": "N₀ — the initial population: random chromosomes (some are variations of the expert model), of which the N best by RMSE are kept. Must be larger than N.",
+          "targetRmse": "Acceptable RMSE on the training rows (the second stop criterion of the theory): the algorithm stops once it is reached. 0 disables the criterion.",
+          "seed": "Seed of the random number generator. The same seed and the same dataset give the same result, which matters for reproducing an experiment."
+        },
+        "statHelp": {
+          "generation": "The current GA generation and the limit. One generation is selection, crossover, mutation, validation, evaluation of the offspring and keeping the N best.",
+          "epoch": "The current ANFIS epoch and the limit. Epoch 0 is the expert model before training; every later epoch runs least squares for the consequents, then a gradient step for the break points.",
+          "bestRmse": "RMSE of the best chromosome of the population on the training rows — this is what the algorithm minimises. It decreases or stays; it never grows.",
+          "meanRmse": "Mean RMSE over the whole working population. It approaches the best one when the population converges to a single solution: little improvement is left then.",
+          "validationRmse": "RMSE of the best chromosome on the validation rows, which the algorithm never sees. Training RMSE falling while this one grows means overfitting.",
+          "trainRmse": "RMSE of the current model on the training rows — the rows the parameters are fitted to.",
+          "testRmse": "RMSE of the current model on the test rows, which take no part in training. This is the honest accuracy figure.",
+          "bestFitness": "Fitness of the best chromosome, F = 1 / (1 + RMSE): from 0 (poor) to 1 (RMSE = 0). Higher is better."
+        },
+        "tileHelp": {
+          "rmse": "Root-mean-square error between the controller output and the target of the dataset (in units of the output, 0–100): the expert model on the left, the trained one on the right, on the same rows. Lower is better.",
+          "split": {
+            "train": "Training rows: the parameters were fitted to them, so the error is smallest here.",
+            "validation": "Validation rows: not used for fitting, shown on the chart to watch for overfitting.",
+            "test": "Test rows: not used for fitting — the main accuracy figure."
+          },
+          "r2": "Coefficient of determination: the share of the spread of the targets the model explains. 1 is perfect, 0 is no better than the mean, negative is worse than the mean.",
+          "balancedAccuracy": "Treating IP ≥ 50 as an attack: the mean of the share of attacks detected and the share of normal traffic recognised. 50 % is guessing, 100 % is all correct."
+        },
+        "help": {
+          "rows": "How many rows of the file go into the .xlsx and into training on the default dataset. The train / validation / test shares are kept, and for Intrusion the balance of categories too.",
+          "upload": "An .xlsx or .csv file with the same columns as the default dataset. The split column is optional: without it the split is made automatically (seed 42).",
+          "options": "The parameters the thesis names as adjustable. The other constants (crossover and mutation probabilities, tournament size, gradient step) are fixed in the code by the formulas of the thesis. An empty field means the default value."
         },
         "runTitle": "Training",
         "idle": "No result yet.",
@@ -769,18 +838,19 @@
           "noBackend": "The training module is not loaded."
         },
         "metaLabel": "Parameters:",
+        "defaultFile": "Training will run on the default dataset",
+        "downloadAll": "download the file",
         "trainDefaultBtn": "Train on the default dataset",
-        "trainDefaultHint": "Takes {rows} of the default dataset (step 1) and starts training right away. Or upload your own file — training starts as soon as it is chosen.",
+        "trainDefaultHint": "Takes {rows} of this file (the number is chosen in step 1) and starts training right away. Or upload your own file — training starts as soon as it is chosen.",
         "clearConfirm": "Delete the training result?",
         "clearYes": "Yes, delete",
         "clearNo": "Cancel",
         "clearNoteApplied": "The parameters applied to the controller stay until you press “Return expert parameters”.",
         "appliedNoResult": "The trained parameters of a previous result are applied to the controller.",
         "aboutTitle": "How the training works and what data it needs",
-        "rowsCustom": "or",
-        "rowsCustomLabel": "Custom number of rows",
-        "rowsTotal": "The dataset has {total} rows; the minimum download is {min}. A number above {total} gives the whole dataset.",
-        "rowsOverTotal": "Above the dataset size ({total}): all rows will be downloaded."
+        "rowsAllBtn": "Whole dataset",
+        "rowsCustomLabel": "Number of rows",
+        "rowsTotal": "The dataset has {total} rows; the minimum download is {min}."
       }
     },
     "navigation": {
@@ -910,8 +980,8 @@
       },
       "training": {
         "badge": "ANFIS",
-        "hint": "ANFIS fits the singleton consequents and the break points of the triangular membership functions to a dataset with a reference SR index. The 6-rule base stays unchanged.",
-        "datasetNote": "The default dataset is 250 rows of 6G IoT Intelligent Management with the expert SR (or the proposed one when the expert value is missing) and a training (174) / test (76) split.",
+        "hint": "ANFIS (Adaptive Neuro-Fuzzy Inference System) fits the singleton consequents and the break points of the triangular membership functions to a dataset with a reference SR index. The 6-rule base stays unchanged.",
+        "datasetNote": "Default dataset: security.csv, 200 rows of the 6G IoT Intelligent Management Dataset with the expert SR (or the proposed one until the expert fills it in): 140 training and 60 test rows.",
         "uploadNote": "Columns EC, TP, Lat, SR; split (train/test) is optional — otherwise a 70/30 split.",
         "changesNote": "Input triangles are given by their break points a, b, c; the output by the singleton values.",
         "rulesTitle": "Rules after training",
@@ -988,8 +1058,8 @@
       },
       "training": {
         "badge": "GA",
-        "hint": "The genetic algorithm fits the Gaussian membership functions of all variables and the structure of the 12 rules to a dataset with a reference intrusion probability IP.",
-        "datasetNote": "The default dataset is 7200 rows of CICIoT2023 (MERGED), balanced over 8 traffic categories; IP is set per traffic class from label_to_ip.csv; plus the columns label, category, split.",
+        "hint": "The genetic algorithm (GA) fits the Gaussian membership functions of all variables and the structure of the 12 rules to a dataset with a reference intrusion probability IP.",
+        "datasetNote": "Default dataset: intrusion.csv, 240 rows of CICIoT2023 (MERGED), 30 per each of the 8 traffic categories (160 train / 40 validation / 40 test); IP is set by traffic class (label); the extra columns are category and split.",
         "uploadNote": "Columns NP, Rate, We, IP; split (train/validation/test) is optional — otherwise a 70/15/15 split.",
         "changesNote": "Gaussians are given by the centre c and width σ; Rate on the scale lg(1 + pps), 0–7 (the expert parameters are converted to it).",
         "rulesTitle": "Rules after training",

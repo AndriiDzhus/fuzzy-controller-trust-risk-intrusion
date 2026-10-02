@@ -36,6 +36,7 @@
         { key: "generations", min: 1, max: 2000, step: 1 },
         { key: "populationSize", min: 4, max: 500, step: 1 },
         { key: "initialPopulation", min: 4, max: 2000, step: 1 },
+        { key: "targetRmse", min: 0, max: 100, step: 0.1 },
         { key: "seed", min: 0, max: 1e9, step: 1 },
       ],
       series: [
@@ -50,7 +51,7 @@
       reportSplits: ["train", "validation", "test"],
     },
   };
-  const ROW_OPTIONS = [20, 40, 100, null];
+  const DEFAULT_ROWS = 20;
   const MIN_ROWS = 10; // the API refuses smaller downloads
   const STORAGE_KEY = "fuzzyTrainingResult";
 
@@ -64,6 +65,9 @@
       ? "—"
       : Number(value).toLocaleString(locale(), { minimumFractionDigits: digits, maximumFractionDigits: digits });
   const pct = (value) => (value === null || value === undefined ? "—" : `${fmt(100 * value, 1)} %`);
+  /** A "?" that shows `text` on hover / focus / tap (see .training-help in style.css). */
+  const help = (text) =>
+    `<span class="training-help" tabindex="0" role="note" aria-label="${escapeHtml(text)}" data-tip="${escapeHtml(text)}">?</span>`;
   const termLabelOf = (term, varKey) => (typeof root.termLabel === "function" ? root.termLabel(term, varKey) : term);
   const termColorOf = (term, siblings, varKey) =>
     typeof root.termColor === "function" ? root.termColor(term, siblings, varKey) : "#3498db";
@@ -83,8 +87,10 @@
     expectedSteps: null,
     result: null,
     error: null,
-    rows: ROW_OPTIONS[0], // rows of the default dataset: number or null (all)
+    rows: DEFAULT_ROWS, // rows of the default dataset: number, or null for the whole dataset
+    customRows: DEFAULT_ROWS, // last number typed, kept while "whole dataset" is chosen
     datasetTotal: null, // size of the default dataset, once known
+    datasetFile: null, // name of the default dataset file, once known
     els: {},
   };
 
@@ -134,16 +140,12 @@
     const { controller, method } = state;
     const page = pageKey(controller);
     const total = state.datasetTotal;
-    const chips = ROW_OPTIONS.map((n) => {
-      const value = n === null ? "all" : String(n);
-      const label = n === null ? (total ? `${t("common.training.rowsAll")} · ${total}` : t("common.training.rowsAll")) : String(n);
-      return `<button type="button" class="training-rows-chip" data-rows="${value}" aria-pressed="false">${escapeHtml(label)}</button>`;
-    }).join("");
+    const allLabel = total ? `${t("common.training.rowsAllBtn")} · ${total}` : t("common.training.rowsAllBtn");
     const optionFields = method.options
       .map(
         (opt) => `
           <label class="training-option">
-            <span>${escapeHtml(t(`common.training.options.${opt.key}`))}</span>
+            <span>${escapeHtml(t(`common.training.options.${opt.key}`))}${help(t(`common.training.optionHelp.${opt.key}`))}</span>
             <input type="number" data-option="${opt.key}" min="${opt.min}" max="${opt.max}" step="${opt.step}" />
           </label>`
       )
@@ -159,13 +161,14 @@
         <section class="training-card" data-stage="data">
           <h4><span class="training-stage">1</span>${escapeHtml(t("common.training.dataTitle"))}</h4>
           <div class="training-row">
-            <div class="training-row-label">${escapeHtml(t("common.training.defaultDataset"))}</div>
+            <div class="training-row-label">${escapeHtml(t("common.training.defaultDataset"))}${
+              state.datasetFile ? ` <span class="training-row-file">${escapeHtml(state.datasetFile)}</span>` : ""
+            }${help(t("common.training.help.rows"))}</div>
             <div class="training-rows" role="group" aria-label="${escapeHtml(t("common.training.rowsLabel"))}">
-              ${chips}
-              <label class="training-rows-custom">
-                <span>${escapeHtml(t("common.training.rowsCustom"))}</span>
-                <input type="number" inputmode="numeric" min="${MIN_ROWS}" step="1" data-role="rows-custom"
-                  placeholder="N" aria-label="${escapeHtml(t("common.training.rowsCustomLabel"))}" />
+              <button type="button" class="training-rows-chip" data-role="rows-all" aria-pressed="false">${escapeHtml(allLabel)}</button>
+              <label class="training-rows-custom" data-role="rows-custom-wrap">
+                <span>${escapeHtml(t("common.training.rowsCustomLabel"))}</span>
+                <input type="number" inputmode="numeric" min="${MIN_ROWS}" step="1" data-role="rows-custom" />
               </label>
             </div>
             <p class="training-note" data-role="rows-note"></p>
@@ -175,7 +178,7 @@
             </div>
           </div>
           <div class="training-row">
-            <div class="training-row-label">${escapeHtml(t("common.training.trainOn"))}</div>
+            <div class="training-row-label">${escapeHtml(t("common.training.trainOn"))}${help(t("common.training.help.upload"))}</div>
             <div class="training-dropzone" data-role="drop" tabindex="0">
               <input type="file" accept=".xlsx,.csv" data-role="file" hidden />
               <button type="button" class="docs-btn docs-btn-primary" data-role="choose">${escapeHtml(t("common.training.chooseFile"))}</button>
@@ -183,7 +186,7 @@
             </div>
             <p class="training-note">${escapeHtml(t(`${page}.training.uploadNote`))}</p>
             <details class="training-options">
-              <summary>${escapeHtml(t("common.training.optionsTitle"))}</summary>
+              <summary>${escapeHtml(t("common.training.optionsTitle"))}${help(t("common.training.help.options"))}</summary>
               <div class="training-option-grid">${optionFields}</div>
             </details>
             <p class="training-error" data-role="error" hidden></p>
@@ -203,10 +206,9 @@
     `;
     const q = (role) => state.els.panel.querySelector(`[data-role="${role}"]`);
     Object.assign(state.els, {
-      rowsCustom: q("rows-custom"), rowsNote: q("rows-note"), download: q("download"), drop: q("drop"), file: q("file"), choose: q("choose"),
+      rowsCustom: q("rows-custom"), rowsCustomWrap: q("rows-custom-wrap"), rowsAll: q("rows-all"), rowsNote: q("rows-note"), download: q("download"), drop: q("drop"), file: q("file"), choose: q("choose"),
       error: q("error"), status: q("status"), progress: q("progress"), chart: q("chart"), stop: q("stop"),
       results: q("results"), run: q("run"),
-      rowChips: [...state.els.panel.querySelectorAll(".training-rows-chip")],
     });
     // Option defaults.
     const defaults = { ...(root.fuzzyTraining?.session?.METHODS?.[controller]?.defaultOptions || {}), ...DEFAULT_OPTIONS[controller] };
@@ -221,34 +223,25 @@
     renderChip();
   }
 
-  /** Highlights the chip of the chosen row count, or shows the custom value. */
+  /** Shows which of the two options is chosen: the whole dataset or N rows. */
   function renderRowsPicker() {
     const { els, rows, datasetTotal } = state;
-    if (!els.rowChips) return;
-    const preset = ROW_OPTIONS.includes(rows);
-    els.rowChips.forEach((chip) => {
-      const value = chip.dataset.rows === "all" ? null : Number(chip.dataset.rows);
-      const active = preset && value === rows;
-      chip.classList.toggle("is-active", active);
-      chip.setAttribute("aria-pressed", active ? "true" : "false");
-    });
-    if (preset) {
-      if (document.activeElement !== els.rowsCustom) els.rowsCustom.value = "";
-      els.rowsCustom.classList.remove("is-active");
-    } else {
-      els.rowsCustom.classList.add("is-active");
-    }
-    let note = "";
-    if (!preset && datasetTotal !== null && rows >= datasetTotal) {
-      note = t("common.training.rowsOverTotal").replaceAll("{total}", String(datasetTotal));
-    } else if (datasetTotal !== null) {
-      note = t("common.training.rowsTotal").replaceAll("{total}", String(datasetTotal)).replaceAll("{min}", String(MIN_ROWS));
-    }
+    if (!els.rowsAll) return;
+    const all = rows === null;
+    els.rowsAll.classList.toggle("is-active", all);
+    els.rowsAll.setAttribute("aria-pressed", all ? "true" : "false");
+    els.rowsCustomWrap.classList.toggle("is-active", !all);
+    if (document.activeElement !== els.rowsCustom) els.rowsCustom.value = String(state.customRows);
+    const note =
+      datasetTotal !== null
+        ? t("common.training.rowsTotal").replaceAll("{total}", String(datasetTotal)).replaceAll("{min}", String(MIN_ROWS))
+        : "";
     els.rowsNote.textContent = note;
     els.rowsNote.hidden = !note;
   }
 
   function setRows(rows) {
+    if (rows !== null) state.customRows = rows;
     // Unchanged (e.g. the "change" event after "input"): do not rebuild the
     // empty state, or a click on its button would be lost.
     if (rows === state.rows) return;
@@ -257,9 +250,11 @@
     if (state.status === "idle") renderRun();
   }
 
+  // Same values as METHODS[*].defaultOptions in src/training/session.js
+  // (the API and the worker apply them when a field is left empty).
   const DEFAULT_OPTIONS = {
-    security: { epochs: 200 },
-    intrusion: { generations: 200, populationSize: 50, initialPopulation: 150, seed: 42 },
+    security: { epochs: 100 },
+    intrusion: { generations: 200, populationSize: 200, initialPopulation: 300, targetRmse: 0, seed: 42 },
   };
 
   function readOptions() {
@@ -273,10 +268,34 @@
 
   function bindPanel() {
     const { els } = state;
-    els.download.addEventListener("click", downloadDataset);
-    els.rowChips.forEach((chip) =>
-      chip.addEventListener("click", () => setRows(chip.dataset.rows === "all" ? null : Number(chip.dataset.rows)))
-    );
+    // "?" icons: show the tip on tap / focus without toggling the <details> or
+    // focusing the input of the label they sit in; keep the tip on screen.
+    els.panel.addEventListener("click", (event) => {
+      const icon = event.target.closest(".training-help");
+      if (!icon) return;
+      event.preventDefault();
+      if (document.activeElement === icon) icon.blur();
+      else icon.focus();
+    });
+    const placeTip = (event) => {
+      const icon = event.target.closest(".training-help");
+      if (!icon) return;
+      const rect = icon.getBoundingClientRect();
+      const width = Math.min(280, window.innerWidth * 0.8);
+      const x = Math.min(Math.max(rect.left + rect.width / 2, 8 + width / 2), window.innerWidth - 8 - width / 2);
+      // Above the icon, or below it when there is no room above.
+      const below = rect.top < 150;
+      icon.classList.toggle("is-below", below);
+      icon.style.setProperty("--tip-x", `${x}px`);
+      icon.style.setProperty("--tip-y", `${below ? rect.bottom + 7 : rect.top - 7}px`);
+      icon.style.setProperty("--tip-w", `${width}px`);
+    };
+    els.panel.addEventListener("mouseover", placeTip);
+    els.panel.addEventListener("focusin", placeTip);
+    els.download.addEventListener("click", () => downloadDataset());
+    els.rowsAll.addEventListener("click", () => setRows(null));
+    // Focusing the number (or its label) chooses "N rows".
+    els.rowsCustom.addEventListener("focus", () => setRows(state.customRows));
     const readCustom = () => {
       const value = Math.floor(Number(els.rowsCustom.value));
       if (els.rowsCustom.value === "" || !Number.isFinite(value)) return;
@@ -285,7 +304,8 @@
     els.rowsCustom.addEventListener("input", readCustom);
     els.rowsCustom.addEventListener("change", () => {
       readCustom();
-      if (els.rowsCustom.value !== "" && Number(els.rowsCustom.value) < MIN_ROWS) els.rowsCustom.value = String(MIN_ROWS);
+      // Empty or too small: show the value that is actually used.
+      els.rowsCustom.value = String(state.customRows);
     });
     els.choose.addEventListener("click", () => els.file.click());
     els.file.addEventListener("change", () => {
@@ -366,9 +386,9 @@
   // Dataset download
   // -------------------------------------------------------------------------
 
-  async function downloadDataset() {
+  /** Downloads the default dataset: the rows chosen in the picker, or all of them. */
+  async function downloadDataset(rows = selectedRows()) {
     const { els } = state;
-    const rows = selectedRows();
     els.download.disabled = true;
     showError(null);
     try {
@@ -525,8 +545,15 @@
     if (status === "idle") {
       lines.push(`<p class="training-status-main is-muted">${escapeHtml(t("common.training.idle"))}</p>`);
       const rowsText = rowsLabel();
+      const file = state.datasetFile || `${state.controller}.csv`;
+      const total = state.datasetTotal !== null ? ` (${state.datasetTotal} ${t("common.training.rowsUnit")})` : "";
       lines.push(`
         <div class="training-empty">
+          <p class="training-default-file">
+            ${escapeHtml(t("common.training.defaultFile"))}
+            <strong>${escapeHtml(file)}</strong>${escapeHtml(total)}
+            · <a href="#" data-role="download-all">${escapeHtml(t("common.training.downloadAll"))}</a>
+          </p>
           <button type="button" class="docs-btn docs-btn-primary" data-role="train-default">${escapeHtml(t("common.training.trainDefaultBtn"))}</button>
           <span class="training-note">${escapeHtml(t("common.training.trainDefaultHint").replace("{rows}", rowsText))}</span>
         </div>`);
@@ -547,13 +574,15 @@
       const step = last[method.stepKey];
       const inProgress = status === "running" || status === "starting";
       const total = inProgress && state.expectedSteps ? ` ${t("common.training.of")} ${state.expectedSteps}` : "";
-      const stat = (label, value) =>
-        `<div class="training-stat"><span class="training-stat-label">${escapeHtml(label)}</span><span class="training-stat-value">${escapeHtml(value)}</span></div>`;
-      const stats = [stat(stepLabel, `${step}${total}`)];
+      const stat = (label, value, tip) =>
+        `<div class="training-stat"><span class="training-stat-label">${escapeHtml(label)}${tip ? help(tip) : ""}</span><span class="training-stat-value">${escapeHtml(value)}</span></div>`;
+      const stats = [stat(stepLabel, `${step}${total}`, t(`common.training.statHelp.${method.stepKey}`))];
       method.series.forEach((series) => {
-        if (last[series.key] != null) stats.push(stat(`RMSE · ${t(series.shortKey || series.nameKey).toLowerCase()}`, fmt(last[series.key])));
+        if (last[series.key] != null) {
+          stats.push(stat(`RMSE · ${t(series.shortKey || series.nameKey).toLowerCase()}`, fmt(last[series.key]), t(`common.training.statHelp.${series.key}`)));
+        }
       });
-      if (method.key === "ga" && last.bestFitness != null) stats.push(stat("F = 1 / (1 + RMSE)", fmt(last.bestFitness, 4)));
+      if (method.key === "ga" && last.bestFitness != null) stats.push(stat("F = 1 / (1 + RMSE)", fmt(last.bestFitness, 4), t("common.training.statHelp.bestFitness")));
       lines.push(`<div class="training-live">${stats.join("")}</div>`);
       const extras = [];
       if (status === "done" || status === "stopped") {
@@ -564,6 +593,10 @@
     }
     els.status.innerHTML = lines.join("");
     els.status.querySelector('[data-role="train-default"]')?.addEventListener("click", trainOnDefaultDataset);
+    els.status.querySelector('[data-role="download-all"]')?.addEventListener("click", (event) => {
+      event.preventDefault();
+      downloadDataset(null);
+    });
     els.status.querySelector('[data-role="revert-idle"]')?.addEventListener("click", async () => {
       await revertToExpert();
       renderRun();
@@ -734,12 +767,12 @@
   // Results
   // -------------------------------------------------------------------------
 
-  function tile(label, before, after, { better = "lower", format = fmt, wide = false } = {}) {
+  function tile(label, before, after, { better = "lower", format = fmt, wide = false, tip = "" } = {}) {
     const improved = before != null && after != null && (better === "lower" ? after < before : after > before);
     const worse = before != null && after != null && (better === "lower" ? after > before : after < before);
     return `
       <div class="training-tile${wide ? " is-wide" : ""}">
-        <span class="training-tile-label">${escapeHtml(label)}</span>
+        <span class="training-tile-label">${escapeHtml(label)}${tip ? help(tip) : ""}</span>
         <span class="training-tile-value">
           <span class="training-tile-before">${escapeHtml(format(before))}</span>
           <span class="training-tile-arrow">→</span>
@@ -760,13 +793,26 @@
     const m = tr.metrics;
     const splitTiles = method.reportSplits
       .filter((split) => m.trained[split])
-      .map((split) => tile(`RMSE · ${t(`common.training.split.${split}`)}`, m.base[split]?.rmse, m.trained[split].rmse))
+      .map((split) =>
+        tile(`RMSE · ${t(`common.training.split.${split}`)}`, m.base[split]?.rmse, m.trained[split].rmse, {
+          tip: `${t(`common.training.tileHelp.rmse`)} ${t(`common.training.tileHelp.split.${split}`)}`,
+        })
+      )
       .join("");
     const lastSplit = method.reportSplits.filter((split) => m.trained[split]).pop();
     const extraTiles = [
-      tile(`R² · ${t(`common.training.split.${lastSplit}`)}`, m.base[lastSplit]?.r2, m.trained[lastSplit]?.r2, { better: "higher", format: (v) => fmt(v, 3) }),
+      tile(`R² · ${t(`common.training.split.${lastSplit}`)}`, m.base[lastSplit]?.r2, m.trained[lastSplit]?.r2, {
+        better: "higher",
+        format: (v) => fmt(v, 3),
+        tip: t("common.training.tileHelp.r2"),
+      }),
       m.trained[lastSplit]?.detection
-        ? tile(t("common.training.balancedAccuracy"), m.base[lastSplit]?.detection?.balancedAccuracy, m.trained[lastSplit].detection.balancedAccuracy, { better: "higher", format: pct, wide: true })
+        ? tile(t("common.training.balancedAccuracy"), m.base[lastSplit]?.detection?.balancedAccuracy, m.trained[lastSplit].detection.balancedAccuracy, {
+            better: "higher",
+            format: pct,
+            wide: true,
+            tip: t("common.training.tileHelp.balancedAccuracy"),
+          })
         : "",
     ].join("");
     const applied = isApplied();
@@ -1063,6 +1109,7 @@
         .then((info) => {
           if (info && Number.isFinite(info.total)) {
             state.datasetTotal = info.total;
+            state.datasetFile = info.file || null;
             if (state.status === "running" || state.status === "starting") renderRowsPicker();
             else renderPanel();
           }
