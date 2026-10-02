@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Proposes expert security-risk values SR for data/security/security_labeling.csv
+Proposes expert security-risk values SR for data/full/security/security_labeling.csv
 by a documented risk matrix, as a starting point for the expert.
 
     python3 scripts/data/propose_security_labels.py            # adds / updates SR_proposed
@@ -71,7 +71,7 @@ def risk(ec, tp, lat):
 def main():
     root = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
     parser = argparse.ArgumentParser()
-    parser.add_argument("--file", default=os.path.join(root, "data/security/security_labeling.csv"))
+    parser.add_argument("--file", default=os.path.join(root, "data/full/security/security_labeling.csv"))
     parser.add_argument("--fill", action="store_true", help="copy SR_proposed into empty SR_expert cells")
     args = parser.parse_args()
 

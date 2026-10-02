@@ -84,7 +84,10 @@ const METHODS = {
     method: "ga",
     stepName: "generation",
     describe: "Genetic algorithm: tournament selection, arithmetic + two-point crossover, Gaussian + index mutation",
-    defaultOptions: { initialPopulation: 150, populationSize: 50, generations: 200, seed: 42 },
+    // Theory (4.3.5): N0 random chromosomes, the N < N0 best of them form the
+    // working population; stop after the given generations or at an acceptable
+    // RMSE (targetRmse, 0 = off). N = 200 as in the MATLAB tuning of the thesis.
+    defaultOptions: { initialPopulation: 300, populationSize: 200, generations: 200, targetRmse: 0, seed: 42 },
     module: intrusion,
     toX: intrusionTrainedX,
     toBaseInputs: intrusionBaseInputs,
@@ -112,7 +115,8 @@ const METHODS = {
     method: "anfis",
     stepName: "epoch",
     describe: "ANFIS hybrid: least squares (consequents) + gradient descent (premises)",
-    defaultOptions: { epochs: 200 },
+    // 100 epochs as in the MATLAB anfis run of the thesis (fig. 3.10).
+    defaultOptions: { epochs: 100 },
     module: security,
     toX: securityX,
     toBaseInputs: (raw) => {
@@ -125,6 +129,9 @@ const METHODS = {
     finalParams: (result) => result.params,
     spec: () => ({ inputs: security.INPUTS, rules: security.rules }),
     splits: ["train", "test"],
+    // Coverage: every input row of the dataset (train and test) plus a grid
+    // over the box they span, unless the caller passes its own points.
+    coverage: (splits) => securityCoverage([...splits.train, ...(splits.test || [])].map((s) => s.x)),
     steps: ({ spec, initial, bySplit, options, coverage }) =>
       trainAnfisSteps({ spec, initial, train: bySplit.train, test: bySplit.test || [], coverage: coverage || [], options }),
   },
@@ -360,7 +367,8 @@ function buildModelFromParams(controller, params, meta = { variant: "custom" }) 
  * @param {object} args.bySplit prepared samples per split (datasets.prepareDataset)
  * @param {object} [args.options] method options (generations, epochs, ...)
  * @param {string} [args.datasetName]
- * @param {number[][]} [args.coverage] ANFIS coverage inputs (see anfis.js)
+ * @param {number[][]} [args.coverage] ANFIS coverage inputs (see anfis.js); by
+ *   default the method derives them from the dataset itself
  * @param {(entry: object, info: {step: number}) => void} [args.onProgress]
  * @param {() => boolean} [args.shouldStop] polled after every step
  * @param {() => Promise<void>} [args.yieldEach] awaited after every step, so an
@@ -388,6 +396,8 @@ async function runTraining({
     samples[name] = splits[name].length;
   });
   if (!splits.train.length) throw new Error("the training split is empty");
+
+  if (!coverage.length && method.coverage) coverage = method.coverage(splits);
 
   const started = Date.now();
   const steps = method.steps({ spec, initial, bySplit: splits, options: opts, coverage });
@@ -455,7 +465,7 @@ async function runTraining({
 
 /**
  * Inputs where the trained Security model must keep a fired rule: the rows
- * given (the 6G dataset) and a 12×12×12 grid over the box they span.
+ * given (the dataset inputs) and a 12×12×12 grid over the box they span.
  */
 function securityCoverage(rows = [], n = 12) {
   const lo = rows.length ? [0, 1, 2].map((i) => Math.min(...rows.map((r) => r[i]))) : [0.01, 10, 1];

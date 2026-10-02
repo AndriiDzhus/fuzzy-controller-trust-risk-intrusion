@@ -60,9 +60,10 @@ fs.rmSync(distDir, { recursive: true, force: true });
 copyDir(publicDir, distDir);
 copyDir(path.join(rootDir, "node_modules/katex/dist"), path.join(distDir, "vendor/katex"));
 // Default training datasets, fetched by training-backend.js in the static build.
-["data/intrusion", "data/security"].forEach((dir) => {
-  if (fs.existsSync(path.join(rootDir, dir))) copyDir(path.join(rootDir, dir), path.join(distDir, dir));
-});
+fs.mkdirSync(path.join(distDir, "data"), { recursive: true });
+fs.readdirSync(path.join(rootDir, "data"))
+  .filter((name) => name.endsWith(".csv"))
+  .forEach((name) => fs.copyFileSync(path.join(rootDir, "data", name), path.join(distDir, "data", name)));
 
 // Bundles src/controllers for the browser as window.fuzzyControllers.
 bundleScript(path.join(rootDir, "scripts/controllers-browser-entry.js"), bundlePath);
