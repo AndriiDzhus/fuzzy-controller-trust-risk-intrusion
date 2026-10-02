@@ -35,7 +35,8 @@ CICIoT2023), рівномірно по діапазону Rate, усі 34 кла
 ## Повні вибірки: `full/`
 
 Їх створює `scripts/data/prepare_datasets.py` з вихідних файлів (у репозиторій
-вони не входять):
+вони не входять). Формат той самий, що й у малих файлах: один файл на контролер
+зі стовпцем `split`.
 
 ```bash
 npm run data:prepare
@@ -51,7 +52,6 @@ python3 scripts/data/prepare_datasets.py --datasets <папка DATASETS>
 
 | Файл | Що містить |
 |---|---|
-| `security_6g.csv` | усі 1000 рядків 6G IoT Intelligent Management Dataset: `row_id, EC, TP, Lat` |
 | `security_labeling.csv` | 250 рядків для експертної розмітки (див. нижче) |
 
 Колонки `security_labeling.csv`:
@@ -121,13 +121,12 @@ npm run train:security -- --full
 
 | Файл | Що містить |
 |---|---|
-| `intrusion_train.csv` | 4000 рядків із `train.csv`: 500 на кожну з 8 категорій |
-| `intrusion_validation.csv` | 1600 рядків із `validation.csv`: 200 на категорію |
-| `intrusion_test.csv` | 1600 рядків із `test.csv`: 200 на категорію |
+| `intrusion.csv` | 7200 рядків: `split = train` — 4000 із `train.csv` (500 на кожну з 8 категорій), `validation` — 1600 із `validation.csv`, `test` — 1600 із `test.csv` (по 200 на категорію) |
 | `label_to_ip.csv` | **заповнює експерт**: еталонне IP для кожного з 34 класів трафіку |
 
-Колонки вибірок: `NP` (= Number), `Rate` (= Rate, пакетів/с, без змін), `We`
-(= Weight), `label` (клас трафіку), `category` (одна з 7 категорій атак або Benign).
+Колонки: `NP` (= Number), `Rate` (= Rate, пакетів/с, без змін), `We`
+(= Weight), `label` (клас трафіку), `category` (одна з 7 категорій атак або Benign),
+`split` (роль рядка).
 Усередині категорії рядки розподілено рівномірно між класами. Логарифм
 `lg(1 + Rate)` застосовує скрипт навчання, а не цей файл.
 

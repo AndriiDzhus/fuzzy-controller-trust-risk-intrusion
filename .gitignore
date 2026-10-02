@@ -78,7 +78,6 @@ typings/
 
 # GitHub Pages build output
 dist/
-public/controllers-bundle.js
 
 # OS generated files
 .DS_Store
