@@ -205,7 +205,7 @@ describe("E2E smoke: navigation and i18n", () => {
     expect(res.body.uk.common.pipeline.rules).toBe("Оцінка правил");
     expect(res.body.uk.common.pipeline.rulesHintMamdani).toContain("{tip:min}");
     expect(res.body.uk.common.pipeline.fuzzificationHint).toContain("μ(x)");
-    expect(res.body.uk.common.pipeline.fuzzificationHint).toContain("лінгвістичних термів");
+    expect(res.body.uk.common.pipeline.fuzzificationHint).toContain("ступені належності");
     expect(res.body.en.common.pipeline.fuzzificationHint).toContain("μ(x)");
     expect(res.body.uk.common.tooltip.muX).toContain("{vars}");
     expect(res.body.en.common.tooltip.muOut).toContain("{var}");
@@ -217,7 +217,7 @@ describe("E2E smoke: navigation and i18n", () => {
     expect(res.body.uk.common.pipeline.accumulationHintMamdani).toContain("{tip:max}");
     expect(res.body.uk.common.pipeline.accumulationHintMamdani).not.toContain("{tip:cog}");
     expect(res.body.uk.common.pipeline.defuzzificationHintCog).toContain("{tip:cog}");
-    expect(res.body.uk.common.pipeline.defuzzificationHintCog).toContain("не висота зрізу");
+    expect(res.body.uk.common.pipeline.defuzzificationHintCog).toContain("(не α)");
     expect(res.body.uk.common.glossary.min.label).toBe("min");
     expect(res.body.uk.common.tooltip.clippedMu).toBeTruthy();
     expect(res.body.uk.common.pipeline.defuzzificationHintCog).toBe(

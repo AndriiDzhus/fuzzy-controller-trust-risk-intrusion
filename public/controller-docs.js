@@ -647,6 +647,7 @@ function siblingTermsForColumn(spec, colIndex) {
 }
 
 function renderRules(spec, pageKey) {
+  const interpretation = spec.interpretationHtml ?? renderRulesInterpretation(pageKey);
   const { columns, rows } = spec.rules;
   const head = [
     `<th>${docsEscape(docsText("common.docs.rule"))}</th>`,
@@ -698,7 +699,7 @@ function renderRules(spec, pageKey) {
         <tbody>${body}</tbody>
       </table>
     </div>
-    ${renderRulesInterpretation(pageKey)}
+    ${interpretation}
   `;
 }
 
@@ -741,8 +742,128 @@ function ensureDocsModal() {
   return modal;
 }
 
+// ---------------------------------------------------------------------------
+// Trained model: the same layout, with the parameters found by training
+// (meta.params of the membership-function data, see model-variant.js).
+// ---------------------------------------------------------------------------
+
+function docsNumber(value, span) {
+  const digits = span < 1 ? 4 : span <= 20 ? 3 : 2;
+  return String(Number(Number(value).toFixed(digits)));
+}
+
+/** Pieces of a trained triangle / shoulder in the notation of the docs. */
+function trainedPieces(symbol, termName, cfg, [min, max]) {
+  const span = max - min;
+  const n = (v) => docsNumber(v, span);
+  const p = cfg.params;
+  if (termName === L) {
+    const c = p[2];
+    return [
+      [`(${n(c)} − ${symbol}) / ${n(c - min)}`, `${n(min)} ≤ ${symbol} ≤ ${n(c)}`],
+      ["0", `${symbol} > ${n(c)}`],
+    ];
+  }
+  if (termName === M) {
+    const [a, b, c] = p;
+    const rising =
+      a <= min ? [`${symbol} / ${n(b)}`, `${n(min)} ≤ ${symbol} ≤ ${n(b)}`] : [`(${symbol} − ${n(a)}) / ${n(b - a)}`, `${n(a)} ≤ ${symbol} ≤ ${n(b)}`];
+    return [
+      ...(a > min ? [["0", `${symbol} < ${n(a)}`]] : []),
+      rising,
+      [`(${n(c)} − ${symbol}) / ${n(c - b)}`, `${n(b)} < ${symbol} ≤ ${n(c)}`],
+      ...(c < max ? [["0", `${symbol} > ${n(c)}`]] : []),
+    ];
+  }
+  const [a, b] = p;
+  if (b >= max) {
+    return [
+      ["0", `${symbol} < ${n(a)}`],
+      [`(${symbol} − ${n(a)}) / ${n(max - a)}`, `${n(a)} ≤ ${symbol} ≤ ${n(max)}`],
+    ];
+  }
+  return [
+    ["0", `${symbol} < ${n(a)}`],
+    [`(${symbol} − ${n(a)}) / ${n(b - a)}`, `${n(a)} ≤ ${symbol} < ${n(b)}`],
+    ["1", `${n(b)} ≤ ${symbol} ≤ ${n(max)}`],
+  ];
+}
+
+function trainedGaussian(cfg, span) {
+  const [sigma, center] = cfg.params;
+  return { center, denom: docsNumber(2 * sigma * sigma, span), centerLabel: docsNumber(center, span) };
+}
+
+function trainingInterpretation(controller) {
+  const pageKey = { security: "security", intrusion: "intrusion" }[controller];
+  return `
+    <section class="docs-rules-interpretation">
+      <h3>${docsEscape(docsText(`${pageKey}.training.rulesTitle`))}</h3>
+      <p>${docsEscape(docsText(`${pageKey}.training.rulesDescription`))}</p>
+    </section>
+  `;
+}
+
+/**
+ * Docs spec of a trained model: copy of the base spec with the trained
+ * membership functions, singletons and rules.
+ * @param {string} controller security | intrusion
+ * @param {object} params meta.params of the trained model
+ */
+function buildTrainedDocs(controller, params) {
+  const base = controllerDocs[controller];
+  if (!base || !params) return base;
+  const spec = JSON.parse(JSON.stringify(base));
+
+  if (controller === "security") {
+    spec.inputs.forEach((variable) => {
+      const terms = params.inputs[variable.symbol];
+      variable.terms.forEach((term) => {
+        term.pieces = trainedPieces(variable.symbol, term.term, terms[term.term], variable.domain);
+      });
+    });
+    spec.output.terms.forEach((term) => {
+      term.singleton = Number(Number(params.consequents[term.term]).toFixed(2));
+    });
+    spec.output.domainValues = spec.output.terms.map((term) => term.singleton);
+  }
+
+  if (controller === "intrusion") {
+    spec.inputs.forEach((variable) => {
+      const key = { NP: "packets", Rate: "rate", We: "weight" }[variable.symbol];
+      const range = params.ranges?.[key];
+      if (range) variable.domain = [range.min, range.max];
+      if (variable.symbol === "Rate" && params.rateScale === "log10p1") {
+        variable.titleKey = "intrusion.membership.rateLog";
+        variable.unitKey = "intrusion.docs.units.rateLog";
+        variable.noteKey = "intrusion.docs.notes.rateLog";
+      }
+      const span = variable.domain[1] - variable.domain[0];
+      variable.terms.forEach((term) => {
+        term.gaussian = trainedGaussian(params.inputs[variable.symbol][term.term], span);
+      });
+    });
+    spec.output.terms.forEach((term) => {
+      term.gaussian = trainedGaussian(params.output[term.term], 100);
+    });
+    spec.rules.rows = params.rules.map(([conditions, out]) => [...conditions, out]);
+    const rateColumn = spec.rules.columns.find((col) => col.key === "Rate");
+    if (rateColumn && params.rateScale === "log10p1") rateColumn.titleKey = "intrusion.membership.rateLog";
+  }
+
+  spec.interpretationHtml = trainingInterpretation(controller);
+  return spec;
+}
+
+/** Docs of the model shown on the page (base or trained). */
+function currentDocsSpec(controller) {
+  const meta = window.fuzzyPageState?.mfData?.meta;
+  const trained = Boolean(window.fuzzyPage?.hasActiveModel?.()) && meta?.variant && meta.variant !== "base";
+  return trained && meta.params ? buildTrainedDocs(controller, meta.params) : controllerDocs[controller];
+}
+
 function openDocsModal(controller, kind) {
-  const spec = controllerDocs[controller];
+  const spec = currentDocsSpec(controller);
   if (!spec) return;
 
   const modal = ensureDocsModal();
@@ -779,10 +900,12 @@ function setupDocsModals(controller) {
 
   window.addEventListener("languageChanged", () => {
     const modal = document.getElementById("docsModal");
-    if (!modal || modal.hidden) return;
+    if (!modal || modal.hidden || modal.dataset.kind === "training") return;
     openDocsModal(controller, modal.dataset.kind || "formulas");
   });
 }
 
 window.setupDocsModals = setupDocsModals;
 window.controllerDocs = controllerDocs;
+window.buildTrainedDocs = buildTrainedDocs;
+window.ensureDocsModal = ensureDocsModal;

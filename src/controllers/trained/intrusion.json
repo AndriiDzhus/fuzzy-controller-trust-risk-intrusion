@@ -1,0 +1,2011 @@
+{
+  "status": "trained",
+  "params": {
+    "rateScale": "log10p1",
+    "ranges": {
+      "packets": {
+        "min": 0,
+        "max": 15
+      },
+      "rate": {
+        "min": 0,
+        "max": 7
+      },
+      "weight": {
+        "min": 0,
+        "max": 250
+      }
+    },
+    "inputs": {
+      "NP": {
+        "low": {
+          "type": "gauss",
+          "params": [
+            2.8469,
+            3.8388
+          ]
+        },
+        "medium": {
+          "type": "gauss",
+          "params": [
+            3.7429,
+            5.4031
+          ]
+        },
+        "high": {
+          "type": "gauss",
+          "params": [
+            2.4558,
+            10.417
+          ]
+        }
+      },
+      "Rate": {
+        "low": {
+          "type": "gauss",
+          "params": [
+            1.5679,
+            1.061
+          ]
+        },
+        "medium": {
+          "type": "gauss",
+          "params": [
+            1.3442,
+            3.2231
+          ]
+        },
+        "high": {
+          "type": "gauss",
+          "params": [
+            0.9422,
+            3.9317
+          ]
+        }
+      },
+      "We": {
+        "low": {
+          "type": "gauss",
+          "params": [
+            14.4701,
+            57.1864
+          ]
+        },
+        "medium": {
+          "type": "gauss",
+          "params": [
+            23.1532,
+            107.7823
+          ]
+        },
+        "high": {
+          "type": "gauss",
+          "params": [
+            11.9764,
+            245.508
+          ]
+        }
+      }
+    },
+    "output": {
+      "none": {
+        "type": "gauss",
+        "params": [
+          21.8143,
+          0.9429
+        ]
+      },
+      "low": {
+        "type": "gauss",
+        "params": [
+          26.8783,
+          49.8057
+        ]
+      },
+      "medium": {
+        "type": "gauss",
+        "params": [
+          15.1268,
+          62.4939
+        ]
+      },
+      "high": {
+        "type": "gauss",
+        "params": [
+          4.6579,
+          99.947
+        ]
+      }
+    },
+    "rules": [
+      [
+        [
+          "medium",
+          "high",
+          "low"
+        ],
+        "none"
+      ],
+      [
+        [
+          "low",
+          "high",
+          "low"
+        ],
+        "medium"
+      ],
+      [
+        [
+          "high",
+          "medium",
+          "high"
+        ],
+        "none"
+      ],
+      [
+        [
+          "medium",
+          "low",
+          "low"
+        ],
+        "high"
+      ],
+      [
+        [
+          "high",
+          "low",
+          "high"
+        ],
+        "high"
+      ],
+      [
+        [
+          "low",
+          "medium",
+          "low"
+        ],
+        "none"
+      ],
+      [
+        [
+          "low",
+          "high",
+          "high"
+        ],
+        "none"
+      ],
+      [
+        [
+          "high",
+          "high",
+          "high"
+        ],
+        "low"
+      ],
+      [
+        [
+          "low",
+          "low",
+          "medium"
+        ],
+        "high"
+      ],
+      [
+        [
+          "medium",
+          "high",
+          "medium"
+        ],
+        "high"
+      ],
+      [
+        [
+          "medium",
+          "low",
+          "high"
+        ],
+        "none"
+      ],
+      [
+        [
+          "high",
+          "low",
+          "medium"
+        ],
+        "high"
+      ]
+    ]
+  },
+  "training": {
+    "method": "Genetic algorithm: tournament selection, arithmetic + two-point crossover, Gaussian + index mutation",
+    "createdAt": "2026-09-30T14:38:08.111Z",
+    "datasets": {
+      "train": "data/intrusion/intrusion_train.csv",
+      "validation": "data/intrusion/intrusion_validation.csv",
+      "test": "data/intrusion/intrusion_test.csv",
+      "target": "data/intrusion/label_to_ip.csv"
+    },
+    "targetByLabel": {
+      "BenignTraffic": 0,
+      "DictionaryBruteForce": 60,
+      "DDoS-ACK_Fragmentation": 100,
+      "DDoS-HTTP_Flood": 100,
+      "DDoS-ICMP_Flood": 100,
+      "DDoS-ICMP_Fragmentation": 100,
+      "DDoS-PSHACK_Flood": 100,
+      "DDoS-RSTFINFlood": 100,
+      "DDoS-SYN_Flood": 100,
+      "DDoS-SlowLoris": 100,
+      "DDoS-SynonymousIP_Flood": 100,
+      "DDoS-TCP_Flood": 100,
+      "DDoS-UDP_Flood": 100,
+      "DDoS-UDP_Fragmentation": 100,
+      "DoS-HTTP_Flood": 100,
+      "DoS-SYN_Flood": 100,
+      "DoS-TCP_Flood": 100,
+      "DoS-UDP_Flood": 100,
+      "Mirai-greeth_flood": 100,
+      "Mirai-greip_flood": 100,
+      "Mirai-udpplain": 100,
+      "Recon-HostDiscovery": 30,
+      "Recon-OSScan": 30,
+      "Recon-PingSweep": 30,
+      "Recon-PortScan": 30,
+      "VulnerabilityScan": 30,
+      "DNS_Spoofing": 60,
+      "MITM-ArpSpoofing": 60,
+      "Backdoor_Malware": 100,
+      "BrowserHijacking": 60,
+      "CommandInjection": 60,
+      "SqlInjection": 60,
+      "Uploading_Attack": 60,
+      "XSS": 60
+    },
+    "categoryByLabel": {
+      "BenignTraffic": "Benign",
+      "DictionaryBruteForce": "BruteForce",
+      "DDoS-ACK_Fragmentation": "DDoS",
+      "DDoS-HTTP_Flood": "DDoS",
+      "DDoS-ICMP_Flood": "DDoS",
+      "DDoS-ICMP_Fragmentation": "DDoS",
+      "DDoS-PSHACK_Flood": "DDoS",
+      "DDoS-RSTFINFlood": "DDoS",
+      "DDoS-SYN_Flood": "DDoS",
+      "DDoS-SlowLoris": "DDoS",
+      "DDoS-SynonymousIP_Flood": "DDoS",
+      "DDoS-TCP_Flood": "DDoS",
+      "DDoS-UDP_Flood": "DDoS",
+      "DDoS-UDP_Fragmentation": "DDoS",
+      "DoS-HTTP_Flood": "DoS",
+      "DoS-SYN_Flood": "DoS",
+      "DoS-TCP_Flood": "DoS",
+      "DoS-UDP_Flood": "DoS",
+      "Mirai-greeth_flood": "Mirai",
+      "Mirai-greip_flood": "Mirai",
+      "Mirai-udpplain": "Mirai",
+      "Recon-HostDiscovery": "Recon",
+      "Recon-OSScan": "Recon",
+      "Recon-PingSweep": "Recon",
+      "Recon-PortScan": "Recon",
+      "VulnerabilityScan": "Recon",
+      "DNS_Spoofing": "Spoofing",
+      "MITM-ArpSpoofing": "Spoofing",
+      "Backdoor_Malware": "Web",
+      "BrowserHijacking": "Web",
+      "CommandInjection": "Web",
+      "SqlInjection": "Web",
+      "Uploading_Attack": "Web",
+      "XSS": "Web"
+    },
+    "samples": {
+      "train": 4000,
+      "validation": 1600,
+      "test": 1600
+    },
+    "chromosomeLength": 74,
+    "options": {
+      "initialPopulation": 150,
+      "populationSize": 50,
+      "generations": 200,
+      "seed": 42,
+      "generationsRun": 200
+    },
+    "fitness": {
+      "expert": 0.018539,
+      "best": 0.042891
+    },
+    "metrics": {
+      "base": {
+        "train": {
+          "n": 4000,
+          "rmse": 53.8954,
+          "mae": 42.4982,
+          "r2": -1.4727,
+          "termAccuracy": 0.2798,
+          "detection": {
+            "threshold": 50,
+            "accuracy": 0.5693,
+            "balancedAccuracy": 0.3253,
+            "precision": 0.8199,
+            "recall": 0.6506,
+            "f1": 0.7255,
+            "tp": 2277,
+            "fp": 500,
+            "tn": 0,
+            "fn": 1223
+          },
+          "meanIPByCategory": {
+            "Benign": {
+              "n": 500,
+              "meanIP": 65.9
+            },
+            "BruteForce": {
+              "n": 500,
+              "meanIP": 64.2
+            },
+            "DDoS": {
+              "n": 500,
+              "meanIP": 24.21
+            },
+            "DoS": {
+              "n": 500,
+              "meanIP": 24.61
+            },
+            "Mirai": {
+              "n": 500,
+              "meanIP": 32.41
+            },
+            "Recon": {
+              "n": 500,
+              "meanIP": 55.99
+            },
+            "Spoofing": {
+              "n": 500,
+              "meanIP": 70.41
+            },
+            "Web": {
+              "n": 500,
+              "meanIP": 65.45
+            }
+          }
+        },
+        "validation": {
+          "n": 1600,
+          "rmse": 54.1518,
+          "mae": 42.6842,
+          "r2": -1.4966,
+          "termAccuracy": 0.2769,
+          "detection": {
+            "threshold": 50,
+            "accuracy": 0.5675,
+            "balancedAccuracy": 0.3243,
+            "precision": 0.8195,
+            "recall": 0.6486,
+            "f1": 0.7241,
+            "tp": 908,
+            "fp": 200,
+            "tn": 0,
+            "fn": 492
+          },
+          "meanIPByCategory": {
+            "Benign": {
+              "n": 200,
+              "meanIP": 66.03
+            },
+            "BruteForce": {
+              "n": 200,
+              "meanIP": 64.37
+            },
+            "DDoS": {
+              "n": 200,
+              "meanIP": 23.58
+            },
+            "DoS": {
+              "n": 200,
+              "meanIP": 23.03
+            },
+            "Mirai": {
+              "n": 200,
+              "meanIP": 32.74
+            },
+            "Recon": {
+              "n": 200,
+              "meanIP": 54.17
+            },
+            "Spoofing": {
+              "n": 200,
+              "meanIP": 70.9
+            },
+            "Web": {
+              "n": 200,
+              "meanIP": 64.99
+            }
+          }
+        },
+        "test": {
+          "n": 1600,
+          "rmse": 53.3623,
+          "mae": 42.1095,
+          "r2": -1.4243,
+          "termAccuracy": 0.2731,
+          "detection": {
+            "threshold": 50,
+            "accuracy": 0.5806,
+            "balancedAccuracy": 0.3318,
+            "precision": 0.8229,
+            "recall": 0.6636,
+            "f1": 0.7347,
+            "tp": 929,
+            "fp": 200,
+            "tn": 0,
+            "fn": 471
+          },
+          "meanIPByCategory": {
+            "Benign": {
+              "n": 200,
+              "meanIP": 65.75
+            },
+            "BruteForce": {
+              "n": 200,
+              "meanIP": 64.8
+            },
+            "DDoS": {
+              "n": 200,
+              "meanIP": 25.4
+            },
+            "DoS": {
+              "n": 200,
+              "meanIP": 25.91
+            },
+            "Mirai": {
+              "n": 200,
+              "meanIP": 33.62
+            },
+            "Recon": {
+              "n": 200,
+              "meanIP": 54.84
+            },
+            "Spoofing": {
+              "n": 200,
+              "meanIP": 70.27
+            },
+            "Web": {
+              "n": 200,
+              "meanIP": 65.76
+            }
+          }
+        }
+      },
+      "expertLog": {
+        "train": {
+          "n": 4000,
+          "rmse": 52.8922,
+          "mae": 41.011,
+          "r2": -1.3815,
+          "termAccuracy": 0.3298,
+          "detection": {
+            "threshold": 50,
+            "accuracy": 0.543,
+            "balancedAccuracy": 0.3163,
+            "precision": 0.8145,
+            "recall": 0.6186,
+            "f1": 0.7032,
+            "tp": 2165,
+            "fp": 493,
+            "tn": 7,
+            "fn": 1335
+          },
+          "meanIPByCategory": {
+            "Benign": {
+              "n": 500,
+              "meanIP": 61.76
+            },
+            "BruteForce": {
+              "n": 500,
+              "meanIP": 61.25
+            },
+            "DDoS": {
+              "n": 500,
+              "meanIP": 22.9
+            },
+            "DoS": {
+              "n": 500,
+              "meanIP": 24.86
+            },
+            "Mirai": {
+              "n": 500,
+              "meanIP": 30.31
+            },
+            "Recon": {
+              "n": 500,
+              "meanIP": 52.83
+            },
+            "Spoofing": {
+              "n": 500,
+              "meanIP": 65.54
+            },
+            "Web": {
+              "n": 500,
+              "meanIP": 62.21
+            }
+          }
+        },
+        "validation": {
+          "n": 1600,
+          "rmse": 53.1614,
+          "mae": 41.2501,
+          "r2": -1.4061,
+          "termAccuracy": 0.3188,
+          "detection": {
+            "threshold": 50,
+            "accuracy": 0.5381,
+            "balancedAccuracy": 0.3096,
+            "precision": 0.8121,
+            "recall": 0.6143,
+            "f1": 0.6995,
+            "tp": 860,
+            "fp": 199,
+            "tn": 1,
+            "fn": 540
+          },
+          "meanIPByCategory": {
+            "Benign": {
+              "n": 200,
+              "meanIP": 61.56
+            },
+            "BruteForce": {
+              "n": 200,
+              "meanIP": 61.19
+            },
+            "DDoS": {
+              "n": 200,
+              "meanIP": 22.05
+            },
+            "DoS": {
+              "n": 200,
+              "meanIP": 23.8
+            },
+            "Mirai": {
+              "n": 200,
+              "meanIP": 30.47
+            },
+            "Recon": {
+              "n": 200,
+              "meanIP": 51.7
+            },
+            "Spoofing": {
+              "n": 200,
+              "meanIP": 66.41
+            },
+            "Web": {
+              "n": 200,
+              "meanIP": 61.93
+            }
+          }
+        },
+        "test": {
+          "n": 1600,
+          "rmse": 52.4033,
+          "mae": 40.7001,
+          "r2": -1.338,
+          "termAccuracy": 0.3225,
+          "detection": {
+            "threshold": 50,
+            "accuracy": 0.5481,
+            "balancedAccuracy": 0.3196,
+            "precision": 0.8161,
+            "recall": 0.6243,
+            "f1": 0.7074,
+            "tp": 874,
+            "fp": 197,
+            "tn": 3,
+            "fn": 526
+          },
+          "meanIPByCategory": {
+            "Benign": {
+              "n": 200,
+              "meanIP": 61.47
+            },
+            "BruteForce": {
+              "n": 200,
+              "meanIP": 61.48
+            },
+            "DDoS": {
+              "n": 200,
+              "meanIP": 23.98
+            },
+            "DoS": {
+              "n": 200,
+              "meanIP": 25.14
+            },
+            "Mirai": {
+              "n": 200,
+              "meanIP": 32.04
+            },
+            "Recon": {
+              "n": 200,
+              "meanIP": 52.01
+            },
+            "Spoofing": {
+              "n": 200,
+              "meanIP": 65.85
+            },
+            "Web": {
+              "n": 200,
+              "meanIP": 62.23
+            }
+          }
+        }
+      },
+      "trained": {
+        "train": {
+          "n": 4000,
+          "rmse": 22.3168,
+          "mae": 16.2401,
+          "r2": 0.576,
+          "termAccuracy": 0.4875,
+          "detection": {
+            "threshold": 50,
+            "accuracy": 0.613,
+            "balancedAccuracy": 0.7711,
+            "precision": 0.9954,
+            "recall": 0.5603,
+            "f1": 0.717,
+            "tp": 1961,
+            "fp": 9,
+            "tn": 491,
+            "fn": 1539
+          },
+          "meanIPByCategory": {
+            "Benign": {
+              "n": 500,
+              "meanIP": 40.13
+            },
+            "BruteForce": {
+              "n": 500,
+              "meanIP": 43.93
+            },
+            "DDoS": {
+              "n": 500,
+              "meanIP": 95.18
+            },
+            "DoS": {
+              "n": 500,
+              "meanIP": 95.17
+            },
+            "Mirai": {
+              "n": 500,
+              "meanIP": 95.18
+            },
+            "Recon": {
+              "n": 500,
+              "meanIP": 52.85
+            },
+            "Spoofing": {
+              "n": 500,
+              "meanIP": 44.52
+            },
+            "Web": {
+              "n": 500,
+              "meanIP": 46.11
+            }
+          }
+        },
+        "validation": {
+          "n": 1600,
+          "rmse": 22.7138,
+          "mae": 16.605,
+          "r2": 0.5608,
+          "termAccuracy": 0.4888,
+          "detection": {
+            "threshold": 50,
+            "accuracy": 0.5994,
+            "balancedAccuracy": 0.7454,
+            "precision": 0.9847,
+            "recall": 0.5507,
+            "f1": 0.7064,
+            "tp": 771,
+            "fp": 12,
+            "tn": 188,
+            "fn": 629
+          },
+          "meanIPByCategory": {
+            "Benign": {
+              "n": 200,
+              "meanIP": 40.37
+            },
+            "BruteForce": {
+              "n": 200,
+              "meanIP": 43.69
+            },
+            "DDoS": {
+              "n": 200,
+              "meanIP": 95.18
+            },
+            "DoS": {
+              "n": 200,
+              "meanIP": 95.18
+            },
+            "Mirai": {
+              "n": 200,
+              "meanIP": 95.18
+            },
+            "Recon": {
+              "n": 200,
+              "meanIP": 53.12
+            },
+            "Spoofing": {
+              "n": 200,
+              "meanIP": 43.87
+            },
+            "Web": {
+              "n": 200,
+              "meanIP": 44.6
+            }
+          }
+        },
+        "test": {
+          "n": 1600,
+          "rmse": 22.4371,
+          "mae": 16.4164,
+          "r2": 0.5714,
+          "termAccuracy": 0.49,
+          "detection": {
+            "threshold": 50,
+            "accuracy": 0.62,
+            "balancedAccuracy": 0.7721,
+            "precision": 0.9938,
+            "recall": 0.5693,
+            "f1": 0.7239,
+            "tp": 797,
+            "fp": 5,
+            "tn": 195,
+            "fn": 603
+          },
+          "meanIPByCategory": {
+            "Benign": {
+              "n": 200,
+              "meanIP": 40.23
+            },
+            "BruteForce": {
+              "n": 200,
+              "meanIP": 43.91
+            },
+            "DDoS": {
+              "n": 200,
+              "meanIP": 95.18
+            },
+            "DoS": {
+              "n": 200,
+              "meanIP": 95.18
+            },
+            "Mirai": {
+              "n": 200,
+              "meanIP": 95.16
+            },
+            "Recon": {
+              "n": 200,
+              "meanIP": 53.94
+            },
+            "Spoofing": {
+              "n": 200,
+              "meanIP": 44.11
+            },
+            "Web": {
+              "n": 200,
+              "meanIP": 46.39
+            }
+          }
+        }
+      }
+    },
+    "history": [
+      {
+        "generation": 0,
+        "bestRmse": 29.9023,
+        "meanRmse": 34.6656,
+        "validationRmse": 29.9466
+      },
+      {
+        "generation": 1,
+        "bestRmse": 29.1472,
+        "meanRmse": 32.8632,
+        "validationRmse": 28.9808
+      },
+      {
+        "generation": 2,
+        "bestRmse": 26.2931,
+        "meanRmse": 31.216,
+        "validationRmse": 26.1387
+      },
+      {
+        "generation": 3,
+        "bestRmse": 26.2931,
+        "meanRmse": 30.1381,
+        "validationRmse": 26.1387
+      },
+      {
+        "generation": 4,
+        "bestRmse": 26.2931,
+        "meanRmse": 29.2026,
+        "validationRmse": 26.1387
+      },
+      {
+        "generation": 5,
+        "bestRmse": 25.3208,
+        "meanRmse": 28.4088,
+        "validationRmse": 25.1342
+      },
+      {
+        "generation": 6,
+        "bestRmse": 24.5872,
+        "meanRmse": 27.3582,
+        "validationRmse": 24.6536
+      },
+      {
+        "generation": 7,
+        "bestRmse": 24.2262,
+        "meanRmse": 26.3009,
+        "validationRmse": 23.9891
+      },
+      {
+        "generation": 8,
+        "bestRmse": 23.9846,
+        "meanRmse": 25.4898,
+        "validationRmse": 24.012
+      },
+      {
+        "generation": 9,
+        "bestRmse": 23.7589,
+        "meanRmse": 24.9145,
+        "validationRmse": 23.6599
+      },
+      {
+        "generation": 10,
+        "bestRmse": 23.5643,
+        "meanRmse": 24.5899,
+        "validationRmse": 23.5917
+      },
+      {
+        "generation": 11,
+        "bestRmse": 23.5643,
+        "meanRmse": 24.3461,
+        "validationRmse": 23.5917
+      },
+      {
+        "generation": 12,
+        "bestRmse": 23.1722,
+        "meanRmse": 24.1322,
+        "validationRmse": 23.1857
+      },
+      {
+        "generation": 13,
+        "bestRmse": 23.1722,
+        "meanRmse": 23.9651,
+        "validationRmse": 23.1857
+      },
+      {
+        "generation": 14,
+        "bestRmse": 23.1481,
+        "meanRmse": 23.7991,
+        "validationRmse": 23.1234
+      },
+      {
+        "generation": 15,
+        "bestRmse": 23.1481,
+        "meanRmse": 23.6755,
+        "validationRmse": 23.1234
+      },
+      {
+        "generation": 16,
+        "bestRmse": 23.1408,
+        "meanRmse": 23.5638,
+        "validationRmse": 23.1416
+      },
+      {
+        "generation": 17,
+        "bestRmse": 23.1355,
+        "meanRmse": 23.449,
+        "validationRmse": 23.1073
+      },
+      {
+        "generation": 18,
+        "bestRmse": 23.0619,
+        "meanRmse": 23.3513,
+        "validationRmse": 23.0693
+      },
+      {
+        "generation": 19,
+        "bestRmse": 23.0619,
+        "meanRmse": 23.288,
+        "validationRmse": 23.0693
+      },
+      {
+        "generation": 20,
+        "bestRmse": 23.0619,
+        "meanRmse": 23.2196,
+        "validationRmse": 23.0693
+      },
+      {
+        "generation": 21,
+        "bestRmse": 22.9198,
+        "meanRmse": 23.1668,
+        "validationRmse": 23.0448
+      },
+      {
+        "generation": 22,
+        "bestRmse": 22.9198,
+        "meanRmse": 23.1346,
+        "validationRmse": 23.0448
+      },
+      {
+        "generation": 23,
+        "bestRmse": 22.9198,
+        "meanRmse": 23.1266,
+        "validationRmse": 23.0448
+      },
+      {
+        "generation": 24,
+        "bestRmse": 22.9198,
+        "meanRmse": 23.1161,
+        "validationRmse": 23.0448
+      },
+      {
+        "generation": 25,
+        "bestRmse": 22.8938,
+        "meanRmse": 23.094,
+        "validationRmse": 22.9993
+      },
+      {
+        "generation": 26,
+        "bestRmse": 22.8938,
+        "meanRmse": 23.085,
+        "validationRmse": 22.9993
+      },
+      {
+        "generation": 27,
+        "bestRmse": 22.8938,
+        "meanRmse": 23.0606,
+        "validationRmse": 22.9993
+      },
+      {
+        "generation": 28,
+        "bestRmse": 22.7922,
+        "meanRmse": 23.0358,
+        "validationRmse": 23.133
+      },
+      {
+        "generation": 29,
+        "bestRmse": 22.7922,
+        "meanRmse": 23.0115,
+        "validationRmse": 23.133
+      },
+      {
+        "generation": 30,
+        "bestRmse": 22.7922,
+        "meanRmse": 22.9862,
+        "validationRmse": 23.133
+      },
+      {
+        "generation": 31,
+        "bestRmse": 22.7922,
+        "meanRmse": 22.9588,
+        "validationRmse": 23.133
+      },
+      {
+        "generation": 32,
+        "bestRmse": 22.7646,
+        "meanRmse": 22.9313,
+        "validationRmse": 22.9685
+      },
+      {
+        "generation": 33,
+        "bestRmse": 22.6822,
+        "meanRmse": 22.9041,
+        "validationRmse": 22.9256
+      },
+      {
+        "generation": 34,
+        "bestRmse": 22.6822,
+        "meanRmse": 22.8765,
+        "validationRmse": 22.9256
+      },
+      {
+        "generation": 35,
+        "bestRmse": 22.6822,
+        "meanRmse": 22.8481,
+        "validationRmse": 22.9256
+      },
+      {
+        "generation": 36,
+        "bestRmse": 22.6822,
+        "meanRmse": 22.8393,
+        "validationRmse": 22.9256
+      },
+      {
+        "generation": 37,
+        "bestRmse": 22.6822,
+        "meanRmse": 22.8228,
+        "validationRmse": 22.9256
+      },
+      {
+        "generation": 38,
+        "bestRmse": 22.6822,
+        "meanRmse": 22.807,
+        "validationRmse": 22.9256
+      },
+      {
+        "generation": 39,
+        "bestRmse": 22.6716,
+        "meanRmse": 22.7945,
+        "validationRmse": 22.8807
+      },
+      {
+        "generation": 40,
+        "bestRmse": 22.6716,
+        "meanRmse": 22.7767,
+        "validationRmse": 22.8807
+      },
+      {
+        "generation": 41,
+        "bestRmse": 22.6498,
+        "meanRmse": 22.7568,
+        "validationRmse": 22.8466
+      },
+      {
+        "generation": 42,
+        "bestRmse": 22.6498,
+        "meanRmse": 22.7481,
+        "validationRmse": 22.8466
+      },
+      {
+        "generation": 43,
+        "bestRmse": 22.6498,
+        "meanRmse": 22.7427,
+        "validationRmse": 22.8466
+      },
+      {
+        "generation": 44,
+        "bestRmse": 22.6467,
+        "meanRmse": 22.7337,
+        "validationRmse": 22.8514
+      },
+      {
+        "generation": 45,
+        "bestRmse": 22.6467,
+        "meanRmse": 22.73,
+        "validationRmse": 22.8514
+      },
+      {
+        "generation": 46,
+        "bestRmse": 22.6467,
+        "meanRmse": 22.718,
+        "validationRmse": 22.8514
+      },
+      {
+        "generation": 47,
+        "bestRmse": 22.6467,
+        "meanRmse": 22.7026,
+        "validationRmse": 22.8514
+      },
+      {
+        "generation": 48,
+        "bestRmse": 22.6467,
+        "meanRmse": 22.698,
+        "validationRmse": 22.8514
+      },
+      {
+        "generation": 49,
+        "bestRmse": 22.6467,
+        "meanRmse": 22.6904,
+        "validationRmse": 22.8514
+      },
+      {
+        "generation": 50,
+        "bestRmse": 22.6409,
+        "meanRmse": 22.6789,
+        "validationRmse": 22.8612
+      },
+      {
+        "generation": 51,
+        "bestRmse": 22.6409,
+        "meanRmse": 22.6756,
+        "validationRmse": 22.8612
+      },
+      {
+        "generation": 52,
+        "bestRmse": 22.6199,
+        "meanRmse": 22.6703,
+        "validationRmse": 22.7939
+      },
+      {
+        "generation": 53,
+        "bestRmse": 22.6199,
+        "meanRmse": 22.6669,
+        "validationRmse": 22.7939
+      },
+      {
+        "generation": 54,
+        "bestRmse": 22.6199,
+        "meanRmse": 22.665,
+        "validationRmse": 22.7939
+      },
+      {
+        "generation": 55,
+        "bestRmse": 22.6199,
+        "meanRmse": 22.6634,
+        "validationRmse": 22.7939
+      },
+      {
+        "generation": 56,
+        "bestRmse": 22.6199,
+        "meanRmse": 22.6568,
+        "validationRmse": 22.7939
+      },
+      {
+        "generation": 57,
+        "bestRmse": 22.6053,
+        "meanRmse": 22.6501,
+        "validationRmse": 22.8088
+      },
+      {
+        "generation": 58,
+        "bestRmse": 22.6053,
+        "meanRmse": 22.6478,
+        "validationRmse": 22.8088
+      },
+      {
+        "generation": 59,
+        "bestRmse": 22.6053,
+        "meanRmse": 22.645,
+        "validationRmse": 22.8088
+      },
+      {
+        "generation": 60,
+        "bestRmse": 22.6053,
+        "meanRmse": 22.6433,
+        "validationRmse": 22.8088
+      },
+      {
+        "generation": 61,
+        "bestRmse": 22.5744,
+        "meanRmse": 22.6398,
+        "validationRmse": 22.8468
+      },
+      {
+        "generation": 62,
+        "bestRmse": 22.5744,
+        "meanRmse": 22.634,
+        "validationRmse": 22.8468
+      },
+      {
+        "generation": 63,
+        "bestRmse": 22.5744,
+        "meanRmse": 22.6328,
+        "validationRmse": 22.8468
+      },
+      {
+        "generation": 64,
+        "bestRmse": 22.5438,
+        "meanRmse": 22.6282,
+        "validationRmse": 22.8366
+      },
+      {
+        "generation": 65,
+        "bestRmse": 22.5438,
+        "meanRmse": 22.6202,
+        "validationRmse": 22.8366
+      },
+      {
+        "generation": 66,
+        "bestRmse": 22.5352,
+        "meanRmse": 22.6148,
+        "validationRmse": 22.7646
+      },
+      {
+        "generation": 67,
+        "bestRmse": 22.5352,
+        "meanRmse": 22.6087,
+        "validationRmse": 22.7646
+      },
+      {
+        "generation": 68,
+        "bestRmse": 22.5352,
+        "meanRmse": 22.6067,
+        "validationRmse": 22.7646
+      },
+      {
+        "generation": 69,
+        "bestRmse": 22.5352,
+        "meanRmse": 22.6029,
+        "validationRmse": 22.7646
+      },
+      {
+        "generation": 70,
+        "bestRmse": 22.5174,
+        "meanRmse": 22.5978,
+        "validationRmse": 22.8102
+      },
+      {
+        "generation": 71,
+        "bestRmse": 22.5174,
+        "meanRmse": 22.596,
+        "validationRmse": 22.8102
+      },
+      {
+        "generation": 72,
+        "bestRmse": 22.5174,
+        "meanRmse": 22.5927,
+        "validationRmse": 22.8102
+      },
+      {
+        "generation": 73,
+        "bestRmse": 22.5174,
+        "meanRmse": 22.5879,
+        "validationRmse": 22.8102
+      },
+      {
+        "generation": 74,
+        "bestRmse": 22.5165,
+        "meanRmse": 22.5827,
+        "validationRmse": 22.7763
+      },
+      {
+        "generation": 75,
+        "bestRmse": 22.5112,
+        "meanRmse": 22.5768,
+        "validationRmse": 22.7716
+      },
+      {
+        "generation": 76,
+        "bestRmse": 22.5112,
+        "meanRmse": 22.5735,
+        "validationRmse": 22.7716
+      },
+      {
+        "generation": 77,
+        "bestRmse": 22.5034,
+        "meanRmse": 22.5634,
+        "validationRmse": 22.8431
+      },
+      {
+        "generation": 78,
+        "bestRmse": 22.4844,
+        "meanRmse": 22.5527,
+        "validationRmse": 22.8047
+      },
+      {
+        "generation": 79,
+        "bestRmse": 22.4504,
+        "meanRmse": 22.5412,
+        "validationRmse": 22.7579
+      },
+      {
+        "generation": 80,
+        "bestRmse": 22.4504,
+        "meanRmse": 22.5332,
+        "validationRmse": 22.7579
+      },
+      {
+        "generation": 81,
+        "bestRmse": 22.4504,
+        "meanRmse": 22.5261,
+        "validationRmse": 22.7579
+      },
+      {
+        "generation": 82,
+        "bestRmse": 22.4504,
+        "meanRmse": 22.5144,
+        "validationRmse": 22.7579
+      },
+      {
+        "generation": 83,
+        "bestRmse": 22.4504,
+        "meanRmse": 22.5102,
+        "validationRmse": 22.7579
+      },
+      {
+        "generation": 84,
+        "bestRmse": 22.4504,
+        "meanRmse": 22.5052,
+        "validationRmse": 22.7579
+      },
+      {
+        "generation": 85,
+        "bestRmse": 22.4504,
+        "meanRmse": 22.5009,
+        "validationRmse": 22.7579
+      },
+      {
+        "generation": 86,
+        "bestRmse": 22.4504,
+        "meanRmse": 22.4965,
+        "validationRmse": 22.7579
+      },
+      {
+        "generation": 87,
+        "bestRmse": 22.4504,
+        "meanRmse": 22.495,
+        "validationRmse": 22.7579
+      },
+      {
+        "generation": 88,
+        "bestRmse": 22.4504,
+        "meanRmse": 22.4919,
+        "validationRmse": 22.7579
+      },
+      {
+        "generation": 89,
+        "bestRmse": 22.4362,
+        "meanRmse": 22.4869,
+        "validationRmse": 22.7419
+      },
+      {
+        "generation": 90,
+        "bestRmse": 22.4301,
+        "meanRmse": 22.4824,
+        "validationRmse": 22.7395
+      },
+      {
+        "generation": 91,
+        "bestRmse": 22.425,
+        "meanRmse": 22.4759,
+        "validationRmse": 22.7543
+      },
+      {
+        "generation": 92,
+        "bestRmse": 22.425,
+        "meanRmse": 22.4731,
+        "validationRmse": 22.7543
+      },
+      {
+        "generation": 93,
+        "bestRmse": 22.425,
+        "meanRmse": 22.4686,
+        "validationRmse": 22.7543
+      },
+      {
+        "generation": 94,
+        "bestRmse": 22.4216,
+        "meanRmse": 22.4637,
+        "validationRmse": 22.756
+      },
+      {
+        "generation": 95,
+        "bestRmse": 22.4216,
+        "meanRmse": 22.4637,
+        "validationRmse": 22.756
+      },
+      {
+        "generation": 96,
+        "bestRmse": 22.4216,
+        "meanRmse": 22.4633,
+        "validationRmse": 22.756
+      },
+      {
+        "generation": 97,
+        "bestRmse": 22.4188,
+        "meanRmse": 22.4601,
+        "validationRmse": 22.7725
+      },
+      {
+        "generation": 98,
+        "bestRmse": 22.4188,
+        "meanRmse": 22.458,
+        "validationRmse": 22.7725
+      },
+      {
+        "generation": 99,
+        "bestRmse": 22.4188,
+        "meanRmse": 22.4558,
+        "validationRmse": 22.7725
+      },
+      {
+        "generation": 100,
+        "bestRmse": 22.4188,
+        "meanRmse": 22.4543,
+        "validationRmse": 22.7725
+      },
+      {
+        "generation": 101,
+        "bestRmse": 22.4106,
+        "meanRmse": 22.4527,
+        "validationRmse": 22.8451
+      },
+      {
+        "generation": 102,
+        "bestRmse": 22.3957,
+        "meanRmse": 22.449,
+        "validationRmse": 22.7292
+      },
+      {
+        "generation": 103,
+        "bestRmse": 22.3957,
+        "meanRmse": 22.4484,
+        "validationRmse": 22.7292
+      },
+      {
+        "generation": 104,
+        "bestRmse": 22.3957,
+        "meanRmse": 22.4475,
+        "validationRmse": 22.7292
+      },
+      {
+        "generation": 105,
+        "bestRmse": 22.3847,
+        "meanRmse": 22.4434,
+        "validationRmse": 22.8141
+      },
+      {
+        "generation": 106,
+        "bestRmse": 22.3847,
+        "meanRmse": 22.4416,
+        "validationRmse": 22.8141
+      },
+      {
+        "generation": 107,
+        "bestRmse": 22.3777,
+        "meanRmse": 22.4376,
+        "validationRmse": 22.7487
+      },
+      {
+        "generation": 108,
+        "bestRmse": 22.3564,
+        "meanRmse": 22.4291,
+        "validationRmse": 22.74
+      },
+      {
+        "generation": 109,
+        "bestRmse": 22.3564,
+        "meanRmse": 22.4207,
+        "validationRmse": 22.74
+      },
+      {
+        "generation": 110,
+        "bestRmse": 22.3462,
+        "meanRmse": 22.4146,
+        "validationRmse": 22.7626
+      },
+      {
+        "generation": 111,
+        "bestRmse": 22.3462,
+        "meanRmse": 22.4113,
+        "validationRmse": 22.7626
+      },
+      {
+        "generation": 112,
+        "bestRmse": 22.3462,
+        "meanRmse": 22.4023,
+        "validationRmse": 22.7626
+      },
+      {
+        "generation": 113,
+        "bestRmse": 22.3462,
+        "meanRmse": 22.399,
+        "validationRmse": 22.7626
+      },
+      {
+        "generation": 114,
+        "bestRmse": 22.3432,
+        "meanRmse": 22.392,
+        "validationRmse": 22.7669
+      },
+      {
+        "generation": 115,
+        "bestRmse": 22.3432,
+        "meanRmse": 22.386,
+        "validationRmse": 22.7669
+      },
+      {
+        "generation": 116,
+        "bestRmse": 22.3432,
+        "meanRmse": 22.3812,
+        "validationRmse": 22.7669
+      },
+      {
+        "generation": 117,
+        "bestRmse": 22.3432,
+        "meanRmse": 22.3776,
+        "validationRmse": 22.7669
+      },
+      {
+        "generation": 118,
+        "bestRmse": 22.3362,
+        "meanRmse": 22.3729,
+        "validationRmse": 22.8087
+      },
+      {
+        "generation": 119,
+        "bestRmse": 22.3362,
+        "meanRmse": 22.3701,
+        "validationRmse": 22.8087
+      },
+      {
+        "generation": 120,
+        "bestRmse": 22.3362,
+        "meanRmse": 22.3668,
+        "validationRmse": 22.8087
+      },
+      {
+        "generation": 121,
+        "bestRmse": 22.3362,
+        "meanRmse": 22.3636,
+        "validationRmse": 22.8087
+      },
+      {
+        "generation": 122,
+        "bestRmse": 22.3362,
+        "meanRmse": 22.3593,
+        "validationRmse": 22.8087
+      },
+      {
+        "generation": 123,
+        "bestRmse": 22.3362,
+        "meanRmse": 22.3575,
+        "validationRmse": 22.8087
+      },
+      {
+        "generation": 124,
+        "bestRmse": 22.3264,
+        "meanRmse": 22.3531,
+        "validationRmse": 22.7813
+      },
+      {
+        "generation": 125,
+        "bestRmse": 22.3264,
+        "meanRmse": 22.3504,
+        "validationRmse": 22.7813
+      },
+      {
+        "generation": 126,
+        "bestRmse": 22.3249,
+        "meanRmse": 22.3468,
+        "validationRmse": 22.7673
+      },
+      {
+        "generation": 127,
+        "bestRmse": 22.3249,
+        "meanRmse": 22.344,
+        "validationRmse": 22.7673
+      },
+      {
+        "generation": 128,
+        "bestRmse": 22.3249,
+        "meanRmse": 22.3427,
+        "validationRmse": 22.7673
+      },
+      {
+        "generation": 129,
+        "bestRmse": 22.3249,
+        "meanRmse": 22.3406,
+        "validationRmse": 22.7673
+      },
+      {
+        "generation": 130,
+        "bestRmse": 22.3249,
+        "meanRmse": 22.3392,
+        "validationRmse": 22.7673
+      },
+      {
+        "generation": 131,
+        "bestRmse": 22.3249,
+        "meanRmse": 22.3385,
+        "validationRmse": 22.7673
+      },
+      {
+        "generation": 132,
+        "bestRmse": 22.3249,
+        "meanRmse": 22.337,
+        "validationRmse": 22.7673
+      },
+      {
+        "generation": 133,
+        "bestRmse": 22.3249,
+        "meanRmse": 22.3354,
+        "validationRmse": 22.7673
+      },
+      {
+        "generation": 134,
+        "bestRmse": 22.3249,
+        "meanRmse": 22.3341,
+        "validationRmse": 22.7673
+      },
+      {
+        "generation": 135,
+        "bestRmse": 22.321,
+        "meanRmse": 22.3323,
+        "validationRmse": 22.7907
+      },
+      {
+        "generation": 136,
+        "bestRmse": 22.321,
+        "meanRmse": 22.331,
+        "validationRmse": 22.7907
+      },
+      {
+        "generation": 137,
+        "bestRmse": 22.321,
+        "meanRmse": 22.3306,
+        "validationRmse": 22.7907
+      },
+      {
+        "generation": 138,
+        "bestRmse": 22.321,
+        "meanRmse": 22.33,
+        "validationRmse": 22.7907
+      },
+      {
+        "generation": 139,
+        "bestRmse": 22.321,
+        "meanRmse": 22.3295,
+        "validationRmse": 22.7907
+      },
+      {
+        "generation": 140,
+        "bestRmse": 22.321,
+        "meanRmse": 22.3288,
+        "validationRmse": 22.7907
+      },
+      {
+        "generation": 141,
+        "bestRmse": 22.321,
+        "meanRmse": 22.3284,
+        "validationRmse": 22.7907
+      },
+      {
+        "generation": 142,
+        "bestRmse": 22.3208,
+        "meanRmse": 22.3274,
+        "validationRmse": 22.7598
+      },
+      {
+        "generation": 143,
+        "bestRmse": 22.3206,
+        "meanRmse": 22.3263,
+        "validationRmse": 22.789
+      },
+      {
+        "generation": 144,
+        "bestRmse": 22.3206,
+        "meanRmse": 22.3261,
+        "validationRmse": 22.789
+      },
+      {
+        "generation": 145,
+        "bestRmse": 22.3206,
+        "meanRmse": 22.3257,
+        "validationRmse": 22.789
+      },
+      {
+        "generation": 146,
+        "bestRmse": 22.3206,
+        "meanRmse": 22.3253,
+        "validationRmse": 22.789
+      },
+      {
+        "generation": 147,
+        "bestRmse": 22.3206,
+        "meanRmse": 22.3251,
+        "validationRmse": 22.789
+      },
+      {
+        "generation": 148,
+        "bestRmse": 22.3206,
+        "meanRmse": 22.3248,
+        "validationRmse": 22.789
+      },
+      {
+        "generation": 149,
+        "bestRmse": 22.3206,
+        "meanRmse": 22.3245,
+        "validationRmse": 22.789
+      },
+      {
+        "generation": 150,
+        "bestRmse": 22.3206,
+        "meanRmse": 22.3242,
+        "validationRmse": 22.789
+      },
+      {
+        "generation": 151,
+        "bestRmse": 22.3198,
+        "meanRmse": 22.3237,
+        "validationRmse": 22.7955
+      },
+      {
+        "generation": 152,
+        "bestRmse": 22.3198,
+        "meanRmse": 22.3234,
+        "validationRmse": 22.7955
+      },
+      {
+        "generation": 153,
+        "bestRmse": 22.319,
+        "meanRmse": 22.323,
+        "validationRmse": 22.7934
+      },
+      {
+        "generation": 154,
+        "bestRmse": 22.319,
+        "meanRmse": 22.3225,
+        "validationRmse": 22.7934
+      },
+      {
+        "generation": 155,
+        "bestRmse": 22.319,
+        "meanRmse": 22.3223,
+        "validationRmse": 22.7934
+      },
+      {
+        "generation": 156,
+        "bestRmse": 22.319,
+        "meanRmse": 22.322,
+        "validationRmse": 22.7934
+      },
+      {
+        "generation": 157,
+        "bestRmse": 22.319,
+        "meanRmse": 22.3218,
+        "validationRmse": 22.7934
+      },
+      {
+        "generation": 158,
+        "bestRmse": 22.319,
+        "meanRmse": 22.3215,
+        "validationRmse": 22.7934
+      },
+      {
+        "generation": 159,
+        "bestRmse": 22.319,
+        "meanRmse": 22.3213,
+        "validationRmse": 22.7934
+      },
+      {
+        "generation": 160,
+        "bestRmse": 22.319,
+        "meanRmse": 22.3212,
+        "validationRmse": 22.7934
+      },
+      {
+        "generation": 161,
+        "bestRmse": 22.3185,
+        "meanRmse": 22.3211,
+        "validationRmse": 22.7689
+      },
+      {
+        "generation": 162,
+        "bestRmse": 22.3185,
+        "meanRmse": 22.321,
+        "validationRmse": 22.7689
+      },
+      {
+        "generation": 163,
+        "bestRmse": 22.3185,
+        "meanRmse": 22.3209,
+        "validationRmse": 22.7689
+      },
+      {
+        "generation": 164,
+        "bestRmse": 22.3185,
+        "meanRmse": 22.3209,
+        "validationRmse": 22.7689
+      },
+      {
+        "generation": 165,
+        "bestRmse": 22.3185,
+        "meanRmse": 22.3209,
+        "validationRmse": 22.7689
+      },
+      {
+        "generation": 166,
+        "bestRmse": 22.3185,
+        "meanRmse": 22.3209,
+        "validationRmse": 22.7689
+      },
+      {
+        "generation": 167,
+        "bestRmse": 22.3185,
+        "meanRmse": 22.3207,
+        "validationRmse": 22.7689
+      },
+      {
+        "generation": 168,
+        "bestRmse": 22.3185,
+        "meanRmse": 22.3206,
+        "validationRmse": 22.7689
+      },
+      {
+        "generation": 169,
+        "bestRmse": 22.3185,
+        "meanRmse": 22.3206,
+        "validationRmse": 22.7689
+      },
+      {
+        "generation": 170,
+        "bestRmse": 22.3185,
+        "meanRmse": 22.3205,
+        "validationRmse": 22.7689
+      },
+      {
+        "generation": 171,
+        "bestRmse": 22.3178,
+        "meanRmse": 22.3204,
+        "validationRmse": 22.7842
+      },
+      {
+        "generation": 172,
+        "bestRmse": 22.3178,
+        "meanRmse": 22.3204,
+        "validationRmse": 22.7842
+      },
+      {
+        "generation": 173,
+        "bestRmse": 22.3178,
+        "meanRmse": 22.3203,
+        "validationRmse": 22.7842
+      },
+      {
+        "generation": 174,
+        "bestRmse": 22.3178,
+        "meanRmse": 22.3202,
+        "validationRmse": 22.7842
+      },
+      {
+        "generation": 175,
+        "bestRmse": 22.3178,
+        "meanRmse": 22.3201,
+        "validationRmse": 22.7842
+      },
+      {
+        "generation": 176,
+        "bestRmse": 22.3161,
+        "meanRmse": 22.3199,
+        "validationRmse": 22.7867
+      },
+      {
+        "generation": 177,
+        "bestRmse": 22.3161,
+        "meanRmse": 22.3198,
+        "validationRmse": 22.7867
+      },
+      {
+        "generation": 178,
+        "bestRmse": 22.3161,
+        "meanRmse": 22.3196,
+        "validationRmse": 22.7867
+      },
+      {
+        "generation": 179,
+        "bestRmse": 22.3161,
+        "meanRmse": 22.3194,
+        "validationRmse": 22.7867
+      },
+      {
+        "generation": 180,
+        "bestRmse": 22.3161,
+        "meanRmse": 22.3194,
+        "validationRmse": 22.7867
+      },
+      {
+        "generation": 181,
+        "bestRmse": 22.3161,
+        "meanRmse": 22.3194,
+        "validationRmse": 22.7867
+      },
+      {
+        "generation": 182,
+        "bestRmse": 22.3161,
+        "meanRmse": 22.3194,
+        "validationRmse": 22.7867
+      },
+      {
+        "generation": 183,
+        "bestRmse": 22.3161,
+        "meanRmse": 22.3193,
+        "validationRmse": 22.7867
+      },
+      {
+        "generation": 184,
+        "bestRmse": 22.3161,
+        "meanRmse": 22.3193,
+        "validationRmse": 22.7867
+      },
+      {
+        "generation": 185,
+        "bestRmse": 22.3161,
+        "meanRmse": 22.3191,
+        "validationRmse": 22.7867
+      },
+      {
+        "generation": 186,
+        "bestRmse": 22.3161,
+        "meanRmse": 22.3191,
+        "validationRmse": 22.7867
+      },
+      {
+        "generation": 187,
+        "bestRmse": 22.3159,
+        "meanRmse": 22.3189,
+        "validationRmse": 22.7892
+      },
+      {
+        "generation": 188,
+        "bestRmse": 22.3159,
+        "meanRmse": 22.3189,
+        "validationRmse": 22.7892
+      },
+      {
+        "generation": 189,
+        "bestRmse": 22.3159,
+        "meanRmse": 22.3187,
+        "validationRmse": 22.7892
+      },
+      {
+        "generation": 190,
+        "bestRmse": 22.3159,
+        "meanRmse": 22.3187,
+        "validationRmse": 22.7892
+      },
+      {
+        "generation": 191,
+        "bestRmse": 22.3159,
+        "meanRmse": 22.3187,
+        "validationRmse": 22.7892
+      },
+      {
+        "generation": 192,
+        "bestRmse": 22.3159,
+        "meanRmse": 22.3187,
+        "validationRmse": 22.7892
+      },
+      {
+        "generation": 193,
+        "bestRmse": 22.3159,
+        "meanRmse": 22.3185,
+        "validationRmse": 22.7892
+      },
+      {
+        "generation": 194,
+        "bestRmse": 22.3159,
+        "meanRmse": 22.3184,
+        "validationRmse": 22.7892
+      },
+      {
+        "generation": 195,
+        "bestRmse": 22.3159,
+        "meanRmse": 22.3183,
+        "validationRmse": 22.7892
+      },
+      {
+        "generation": 196,
+        "bestRmse": 22.3159,
+        "meanRmse": 22.3182,
+        "validationRmse": 22.7892
+      },
+      {
+        "generation": 197,
+        "bestRmse": 22.3159,
+        "meanRmse": 22.3182,
+        "validationRmse": 22.7892
+      },
+      {
+        "generation": 198,
+        "bestRmse": 22.3149,
+        "meanRmse": 22.318,
+        "validationRmse": 22.7142
+      },
+      {
+        "generation": 199,
+        "bestRmse": 22.3149,
+        "meanRmse": 22.3179,
+        "validationRmse": 22.7142
+      },
+      {
+        "generation": 200,
+        "bestRmse": 22.3149,
+        "meanRmse": 22.3178,
+        "validationRmse": 22.7142
+      }
+    ]
+  }
+}

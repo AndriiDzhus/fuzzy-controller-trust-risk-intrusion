@@ -1,6 +1,8 @@
 document.addEventListener("DOMContentLoaded", async () => {
   await createFuzzyPage({
     controller: "security",
+    // Trainable by ANFIS (training-panel.js).
+    trainable: true,
     inputs: [
       {
         key: "energy",
@@ -33,6 +35,9 @@ document.addEventListener("DOMContentLoaded", async () => {
         digits: 1,
       },
     ],
+    surface: {
+      outputTitleKey: "security.membership.risk",
+    },
     output: {
       valueId: "riskValue",
       termId: "riskTerm",
