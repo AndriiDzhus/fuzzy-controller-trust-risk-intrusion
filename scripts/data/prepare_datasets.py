@@ -12,11 +12,9 @@ Source files (inside --datasets):
     CICIOT23/test/test.csv
 
 Output (inside --out, default data/full/):
-    security/security_6g.csv             all 1000 rows: EC, TP, Lat
     security/security_labeling.csv       250 rows for the expert: SR_expert to fill
-    intrusion/intrusion_train.csv        NP, Rate, We, label, category
-    intrusion/intrusion_validation.csv
-    intrusion/intrusion_test.csv
+    intrusion/intrusion.csv              NP, Rate, We, label, category, split
+                                         (4000 train / 1600 validation / 1600 test)
     intrusion/label_to_ip.csv            label -> IP_target, draft for the expert
 
 The script is deterministic (fixed seed). An existing security_labeling.csv
@@ -99,10 +97,6 @@ def build_security(datasets_dir, out_dir, force):
     df.insert(0, "row_id", raw.index + 1)  # 1-based row number in the source file
 
     os.makedirs(out_dir, exist_ok=True)
-    full_path = os.path.join(out_dir, "security_6g.csv")
-    df.to_csv(full_path, index=False, float_format="%.6f")
-    print(f"security: {len(df)} rows -> {full_path}")
-
     labeling_path = os.path.join(out_dir, "security_labeling.csv")
     if os.path.exists(labeling_path) and not force:
         print(f"security: {labeling_path} exists, kept (use --force to rebuild)")
@@ -215,13 +209,16 @@ def build_intrusion(datasets_dir, out_dir, force):
     base = os.path.join(datasets_dir, "CICIOT23")
     os.makedirs(out_dir, exist_ok=True)
     rng = np.random.default_rng(SEED)
+    samples = []
     for split, per_category in PER_CATEGORY.items():
         path = os.path.join(base, split, f"{split}.csv")
         sample = sample_split(path, per_category, rng)
-        target = os.path.join(out_dir, f"intrusion_{split}.csv")
-        sample.to_csv(target, index=False, float_format="%.6f")
-        print(f"intrusion: {len(sample)} rows -> {target}")
-        print(f"           by category {sample['category'].value_counts().sort_index().to_dict()}")
+        sample["split"] = split
+        samples.append(sample)
+        print(f"intrusion: {split}: {len(sample)} rows, by category {sample['category'].value_counts().sort_index().to_dict()}")
+    target = os.path.join(out_dir, "intrusion.csv")
+    pd.concat(samples).to_csv(target, index=False, float_format="%.6f")
+    print(f"intrusion: {sum(len(s) for s in samples)} rows -> {target}")
 
     mapping_path = os.path.join(out_dir, "label_to_ip.csv")
     if os.path.exists(mapping_path) and not force:

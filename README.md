@@ -135,7 +135,7 @@ module.exports = { system, variables, ranges, calculate, membershipFunctions };
 npm run data:prepare       # Python 3 + pandas: повні вибірки з вихідних датасетів -> data/full/
 npm run data:app           # малі датасети апки (200 / 240 рядків) -> data/*.csv
 npm run train:security     # ANFIS на data/security.csv   (--full: data/full/security/security_labeling.csv)
-npm run train:intrusion    # ГА на data/intrusion.csv      (--full: data/full/intrusion/*.csv, ≈ 3 хв)
+npm run train:intrusion    # ГА на data/intrusion.csv      (--full: data/full/intrusion/intrusion.csv, ≈ 3 хв)
 ```
 
 **Security, ANFIS** (Adaptive Neuro-Fuzzy Inference System — адаптивна нейро-нечітка система виводу; розділ 3.4.4). База з 6 правил не змінюється (маска правил).

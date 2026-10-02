@@ -15,10 +15,10 @@ data/security.csv   EC, TP, Lat, SR, split, row_id
     rules of the controller fire on the training rows.
 
 data/intrusion.csv  NP, Rate, We, IP, label, category, split
-    30 rows per category of CICIoT2023 (8 categories, 240 rows): 20 from
-    intrusion_train.csv, 5 from intrusion_validation.csv, 5 from
-    intrusion_test.csv, spread over the whole range of Rate within the
-    category. IP comes from data/full/intrusion/label_to_ip.csv.
+    30 rows per category of CICIoT2023 (8 categories, 240 rows): 20 train,
+    5 validation and 5 test rows of data/full/intrusion/intrusion.csv, spread
+    over the whole range of Rate within the category. IP comes from
+    data/full/intrusion/label_to_ip.csv.
 """
 import argparse
 import csv
@@ -95,12 +95,13 @@ def intrusion(per_category):
     rest = per_category - per_split["train"]
     per_split["validation"] = rest // 2
     per_split["test"] = rest - per_split["validation"]
+    all_rows = read(os.path.join(FULL, "intrusion", "intrusion.csv"))
     out = []
     for split, n in per_split.items():
-        rows = read(os.path.join(FULL, "intrusion", f"intrusion_{split}.csv"))
         by_cat = defaultdict(list)
-        for r in rows:
-            by_cat[r["category"]].append(r)
+        for r in all_rows:
+            if r["split"] == split:
+                by_cat[r["category"]].append(r)
         for cat in sorted(by_cat):
             group = sorted(by_cat[cat], key=lambda r: (float(r["Rate"]), r["label"]))
             for r in spread(group, n):

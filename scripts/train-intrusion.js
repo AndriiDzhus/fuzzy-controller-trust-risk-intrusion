@@ -7,12 +7,11 @@
  *                                    [--target-rmse 0] [--seed 42] [--dry-run]
  *
  * Data: data/intrusion.csv (the dataset the app ships; NP, Rate, We, IP,
- * label, category, split). With --full, the big CICIoT2023 samples built by
+ * label, category, split). With --full, the big CICIoT2023 sample built by
  * scripts/data/prepare_datasets.py:
- *   data/full/intrusion/intrusion_train.csv        fitness is computed here
- *   data/full/intrusion/intrusion_validation.csv   watched during the evolution
- *   data/full/intrusion/intrusion_test.csv         final check only
- *   data/full/intrusion/label_to_ip.csv            expert target IP for every label
+ *   data/full/intrusion/intrusion.csv      NP, Rate, We, label, category, split
+ *                                          (train: fitness; validation: watched; test: final check)
+ *   data/full/intrusion/label_to_ip.csv    expert target IP for every label
  *
  * Inputs: NP = Number, Rate = lg(1 + Rate) (log scale), We = Weight.
  * Writes src/controllers/trained/intrusion.json, which the app loads as the
@@ -73,17 +72,19 @@ function loadMapping() {
   return mapping;
 }
 
-function loadSplit(name, mapping) {
-  const file = path.join(dataDir, `intrusion_${name}.csv`);
-  return readCsv(file).map((row) => {
+/** data/full/intrusion/intrusion.csv: IP comes from label_to_ip.csv. */
+function loadFull(mapping) {
+  const bySplit = { train: [], validation: [], test: [] };
+  readCsv(path.join(dataDir, "intrusion.csv")).forEach((row) => {
     if (!mapping[row.label]) throw new Error(`label ${row.label} is missing in label_to_ip.csv`);
-    return {
+    (bySplit[row.split] || bySplit.train).push({
       label: row.label,
       category: row.category,
       raw: { NP: cellNumber(row.NP), Rate: cellNumber(row.Rate), We: cellNumber(row.We) },
       y: mapping[row.label].ip,
-    };
+    });
   });
+  return bySplit;
 }
 
 /** data/intrusion.csv: IP is in the file; the mapping is derived from it. */
@@ -120,11 +121,11 @@ function main() {
   let bySplit;
   if (args.full) {
     mapping = loadMapping();
-    bySplit = { train: loadSplit("train", mapping), validation: loadSplit("validation", mapping), test: loadSplit("test", mapping) };
+    bySplit = loadFull(mapping);
   } else {
     ({ mapping, bySplit } = loadApp());
   }
-  const datasetName = args.full ? "data/full/intrusion/intrusion_*.csv" : "data/intrusion.csv";
+  const datasetName = args.full ? "data/full/intrusion/intrusion.csv" : "data/intrusion.csv";
   console.log(`data: ${datasetName}: train ${bySplit.train.length}, validation ${bySplit.validation.length}, test ${bySplit.test.length}`);
   console.log(`chromosome: ${CHROMOSOME_LENGTH} genes; population N0 = ${args.initialPopulation}, N = ${args.population}`);
 
@@ -187,12 +188,7 @@ function report(result, args, mapping) {
     training: {
       ...training,
       datasets: args.full
-        ? {
-            train: "data/full/intrusion/intrusion_train.csv",
-            validation: "data/full/intrusion/intrusion_validation.csv",
-            test: "data/full/intrusion/intrusion_test.csv",
-            target: "data/full/intrusion/label_to_ip.csv",
-          }
+        ? { all: "data/full/intrusion/intrusion.csv", target: "data/full/intrusion/label_to_ip.csv" }
         : { all: "data/intrusion.csv" },
       targetByLabel: Object.fromEntries(Object.entries(mapping).map(([label, v]) => [label, v.ip])),
       categoryByLabel: Object.fromEntries(Object.entries(mapping).map(([label, v]) => [label, v.category])),
