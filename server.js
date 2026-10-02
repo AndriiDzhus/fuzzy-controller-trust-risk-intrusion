@@ -16,7 +16,7 @@
  *
  * Training (Security: ANFIS, Intrusion: genetic algorithm):
  *   GET  /api/controllers/:controller/dataset?rows=N|all   default dataset (.xlsx); N ≥ size → all
- *   GET  /api/controllers/:controller/dataset/info        {total, columns} of the default dataset
+ *   GET  /api/controllers/:controller/dataset/info        {file, total, columns} of the default dataset
  *   POST /api/training/:controller/jobs?name=<file>&generations=…  raw file body (.xlsx / .csv)
  *   GET  /api/training/jobs/:id                                    snapshot
  *   GET  /api/training/jobs/:id/events                             server-sent events
@@ -165,7 +165,12 @@ app.get("/api/controllers/:controller/dataset/info", (req, res) => {
       return;
     }
     const table = datasets.defaultDataset(req.params.controller, csv, null);
-    res.json({ controller: req.params.controller, total: table.total, columns: table.header });
+    res.json({
+      controller: req.params.controller,
+      file: datasets.defaultDatasetName(req.params.controller),
+      total: table.total,
+      columns: table.header,
+    });
   } catch (error) {
     sendServerError(res, error);
   }
@@ -210,7 +215,7 @@ app.post(
         return;
       }
       const { name: _name, ...options } = req.query;
-      const started = await jobs.startJob({ controller: req.params.controller, file: { name, bytes }, options, root: __dirname });
+      const started = await jobs.startJob({ controller: req.params.controller, file: { name, bytes }, options });
       if (!started.ok) {
         res.status(started.status).json({ error: started.error, details: started.details || null });
         return;

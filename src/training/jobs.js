@@ -3,23 +3,15 @@
  * memory and streamed to subscribers (server-sent events in server.js).
  */
 const path = require("path");
-const fs = require("fs");
 const { Worker } = require("worker_threads");
 const { prepareDataset, tableFromFile, MIN_TRAIN_ROWS } = require("./datasets");
-const { methodOf, securityCoverage } = require("./session");
+const { methodOf } = require("./session");
 
 const MAX_RUNNING = 2;
 const KEEP_FINISHED_MS = 30 * 60 * 1000;
 
 const jobs = new Map();
 let counter = 0;
-
-function securityCoverageRows(root) {
-  const file = path.join(root, "data/security/security_6g.csv");
-  if (!fs.existsSync(file)) return [];
-  const { readCsv, cellNumber } = require("./utils");
-  return readCsv(file).map((r) => [cellNumber(r.EC), cellNumber(r.TP), cellNumber(r.Lat)]);
-}
 
 function runningCount() {
   return [...jobs.values()].filter((job) => job.status === "running").length;
@@ -42,10 +34,10 @@ function publicJob(job) {
 
 /**
  * Parses the uploaded file, prepares the dataset and starts the job.
- * @param {object} args {controller, file: {name, bytes}, options, root}
+ * @param {object} args {controller, file: {name, bytes}, options}
  * @returns {Promise<{ok: true, job} | {ok: false, status: number, error: string, details?}>}
  */
-async function startJob({ controller, file, options = {}, root }) {
+async function startJob({ controller, file, options = {} }) {
   let method;
   try {
     method = methodOf(controller);
@@ -108,7 +100,6 @@ async function startJob({ controller, file, options = {}, root }) {
       bySplit,
       options: cleanOptions,
       datasetName: file.name,
-      coverage: controller === "security" ? securityCoverage(securityCoverageRows(root)) : [],
     },
   });
   job.worker.on("message", (message) => {

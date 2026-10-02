@@ -2,7 +2,7 @@
  * Web Worker of the static build: trains a controller in the browser.
  * Bundled by scripts/build-pages.js into dist/training-worker.js.
  *
- * Messages in:  { type: "start", controller, file: {name, bytes}, options, coverage }
+ * Messages in:  { type: "start", controller, file: {name, bytes}, options }
  *               { type: "stop" }
  * Messages out: { type: "started", dataset, options }
  *               { type: "progress", entry, step }
@@ -20,7 +20,7 @@ self.onmessage = async (event) => {
     return;
   }
   if (message.type !== "start") return;
-  const { controller, file, options = {}, coverage = [] } = message;
+  const { controller, file, options = {} } = message;
   try {
     const method = methodOf(controller);
     const table = await datasets.tableFromFile({ name: file.name, bytes: new Uint8Array(file.bytes) });
@@ -49,7 +49,6 @@ self.onmessage = async (event) => {
       bySplit: prepared.bySplit,
       options: cleanOptions,
       datasetName: file.name,
-      coverage,
       onProgress: (entry, info) => self.postMessage({ type: "progress", entry, step: info.step }),
       shouldStop: () => stopRequested,
       // Let the stop message through between steps.

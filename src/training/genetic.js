@@ -358,8 +358,8 @@ function gridOf([min, max], step) {
  */
 function* evolveSteps({ spec, initial, train, validation = [], options = {} }) {
   const {
-    initialPopulation = 150, // N0
-    populationSize = 50, // N < N0
+    initialPopulation = 300, // N0
+    populationSize = 200, // N < N0
     generations = 200,
     crossoverRate = 0.9,
     mutationReal = 0.15,

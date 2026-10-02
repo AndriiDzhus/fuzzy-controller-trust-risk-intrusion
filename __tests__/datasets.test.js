@@ -102,32 +102,54 @@ describe("datasets", () => {
     expect(bySplit).toEqual({ train: 28, validation: 6, test: 6 });
     const categories = new Set(table.rows.map((row) => row[5]));
     expect(categories.size).toBe(8);
-    expect(datasets.defaultDataset("intrusion", readCsvFiles("intrusion"), null).rows).toHaveLength(7200);
+    const all = datasets.defaultDataset("intrusion", readCsvFiles("intrusion"), null);
+    expect(all.rows).toHaveLength(240);
+    const perSplit = {};
+    all.rows.forEach((row) => {
+      perSplit[row[6]] = (perSplit[row[6]] || 0) + 1;
+    });
+    expect(perSplit).toEqual({ train: 160, validation: 40, test: 40 });
+    expect(new Set(all.rows.map((row) => row[4])).size).toBe(34); // every label of CICIoT2023
   });
 
   test("a limit at or above the dataset size gives the whole dataset", () => {
     const intrusion = datasets.defaultDataset("intrusion", readCsvFiles("intrusion"), 100000);
-    expect(intrusion.rows).toHaveLength(7200);
-    expect(intrusion.total).toBe(7200);
+    expect(intrusion.rows).toHaveLength(240);
+    expect(intrusion.total).toBe(240);
     expect(intrusion.limit).toBeNull();
-    const security = datasets.defaultDataset("security", readCsvFiles("security"), 250);
-    expect(security.rows).toHaveLength(250);
+    const security = datasets.defaultDataset("security", readCsvFiles("security"), 200);
+    expect(security.rows).toHaveLength(200);
     expect(security.limit).toBeNull();
-    const part = datasets.defaultDataset("security", readCsvFiles("security"), 249);
-    expect(part.rows.length).toBeLessThanOrEqual(249);
-    expect(part.total).toBe(250);
-    expect(part.limit).toBe(249);
+    const part = datasets.defaultDataset("security", readCsvFiles("security"), 199);
+    expect(part.rows.length).toBeLessThanOrEqual(199);
+    expect(part.total).toBe(200);
+    expect(part.limit).toBe(199);
+    expect(datasets.defaultDatasetName("security")).toBe("security.csv");
+    expect(datasets.defaultDatasetName("trust")).toBeNull();
   });
 
-  test("default security dataset uses the expert SR when present, else the proposed one", () => {
-    const table = datasets.defaultDataset("security", readCsvFiles("security"), 20);
-    expect(table.header).toEqual(["EC", "TP", "Lat", "SR", "split", "row_id", "SR_source"]);
-    expect(table.rows).toHaveLength(20);
-    table.rows.forEach((row) => {
+  test("default security dataset: 140 train / 60 test, SR within [0, 100], all six rules fire", () => {
+    const all = datasets.defaultDataset("security", readCsvFiles("security"), null);
+    expect(all.header).toEqual(["EC", "TP", "Lat", "SR", "split", "row_id"]);
+    expect(all.rows.filter((row) => row[4] === "train")).toHaveLength(140);
+    expect(all.rows.filter((row) => row[4] === "test")).toHaveLength(60);
+    all.rows.forEach((row) => {
       expect(row[3]).toBeGreaterThanOrEqual(0);
       expect(row[3]).toBeLessThanOrEqual(100);
-      expect(["expert", "proposed", "base"]).toContain(row[6]);
     });
+    const security = require("../src/controllers/securityController");
+    const fired = new Set();
+    all.rows
+      .filter((row) => row[4] === "train")
+      .forEach(([energy, strength, response]) => {
+        security.calculate({ energy, strength, response }).ruleEvaluations.forEach((rule, i) => {
+          if (rule.alpha > 0) fired.add(i);
+        });
+      });
+    expect(fired.size).toBe(6);
+    const part = datasets.defaultDataset("security", readCsvFiles("security"), 20);
+    expect(part.rows).toHaveLength(20);
+    expect(part.rows.filter((row) => row[4] === "train")).toHaveLength(14);
   });
 
   test("a downloaded xlsx dataset can be uploaded back (file sniffing by content)", async () => {

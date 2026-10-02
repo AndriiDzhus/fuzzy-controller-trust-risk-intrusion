@@ -211,8 +211,20 @@ async function tableFromFile(file) {
 }
 
 // ---------------------------------------------------------------------------
-// Default datasets (from data/*.csv of the repository)
+// Default datasets (data/<controller>.csv of the repository)
 // ---------------------------------------------------------------------------
+
+/** The default dataset of each controller, relative to the repository root. */
+const DEFAULT_DATASET_FILES = {
+  intrusion: { data: "data/intrusion.csv" },
+  security: { data: "data/security.csv" },
+};
+
+/** Name of the default dataset file, e.g. "intrusion.csv". */
+function defaultDatasetName(controller) {
+  const files = DEFAULT_DATASET_FILES[controller];
+  return files ? files.data.split("/").pop() : null;
+}
 
 /** Round-robin over groups, keeping the order inside a group. */
 function roundRobin(groups, limit) {
@@ -226,91 +238,54 @@ function roundRobin(groups, limit) {
   return out;
 }
 
+/** n rows evenly spread over a list (all of them when n >= length). */
+function spread(rows, n) {
+  if (n >= rows.length) return rows.slice();
+  if (n <= 0) return [];
+  if (n === 1) return [rows[Math.floor(rows.length / 2)]];
+  return Array.from({ length: n }, (_, i) => rows[Math.round((i * (rows.length - 1)) / (n - 1))]);
+}
+
 /**
- * Rows of the default Intrusion dataset.
- * @param {{train: string, validation: string, test: string, mapping: string}} csv texts of
- *   data/intrusion/intrusion_*.csv and label_to_ip.csv
- * @param {number|null} limit number of rows or null for all; a limit at or
+ * Rows of the default dataset: the file as it is, or `limit` rows of it with
+ * the shares of the splits kept (70/15/15, 70/30) and, inside a split, spread
+ * over the categories (Intrusion) or the rows (Security).
+ *
+ * @param {string} controller
+ * @param {{data: string}} csv text of the file in DEFAULT_DATASET_FILES
+ * @param {number|null} limit number of rows, or null for all; a limit at or
  *   above the dataset size gives all rows
  * @returns {{header: string[], rows: any[][], total: number, limit: number|null}}
  *   `limit` is the effective one (null when all rows are returned)
  */
-function defaultIntrusionDataset(csv, limit = null) {
-  const mapping = {};
-  parseCsv(csv.mapping).forEach((r) => {
-    mapping[r.label] = cellNumber(r.IP_target);
-  });
-  const header = ["NP", "Rate", "We", "IP", "label", "category", "split"];
-  const shares = { train: 0.7, validation: 0.15, test: 0.15 };
-  const bySplit = {};
-  Object.keys(shares).forEach((split) => {
-    bySplit[split] = parseCsv(csv[split]).map((r) => [
-      cellNumber(r.NP), cellNumber(r.Rate), cellNumber(r.We), mapping[r.label] ?? null, r.label, r.category, split,
-    ]);
-  });
-  const total = Object.values(bySplit).reduce((n, records) => n + records.length, 0);
-  // A limit at or above the dataset size means the whole dataset.
-  if (limit !== null && limit >= total) limit = null;
-  const rows = [];
-  Object.keys(shares).forEach((split) => {
-    const records = bySplit[split];
-    const take = limit === null ? records.length : Math.max(1, Math.round(limit * shares[split]));
-    const groups = {};
-    records.forEach((row) => {
-      (groups[row[5]] = groups[row[5]] || []).push(row);
-    });
-    rows.push(...roundRobin(Object.keys(groups).sort().map((k) => groups[k]), take));
-  });
-  return { header, rows: limit === null ? rows : rows.slice(0, Math.max(limit, 1)), total, limit };
-}
-
-/**
- * Rows of the default Security dataset from data/security/security_labeling.csv:
- * SR is the expert value when present, else the proposed one.
- */
-function defaultSecurityDataset(csv, limit = null) {
-  const header = ["EC", "TP", "Lat", "SR", "split", "row_id", "SR_source"];
-  const records = parseCsv(csv.labeling).map((r) => {
-    const expert = cellNumber(r.SR_expert);
-    const proposed = cellNumber(r.SR_proposed);
-    const sr = expert !== null ? expert : proposed !== null ? proposed : cellNumber(r.SR_base);
-    const source = expert !== null ? "expert" : proposed !== null ? "proposed" : "base";
-    return [cellNumber(r.EC), cellNumber(r.TP), cellNumber(r.Lat), sr, r.split || "train", cellNumber(r.row_id), source];
-  });
+function defaultDataset(controller, csv, limit = null) {
+  if (!DEFAULT_DATASET_FILES[controller]) throw new Error(`no default dataset for "${controller}"`);
+  const { header, records } = tableFromCsv(csv.data);
+  const toRow = (r) => header.map((h) => (["label", "category", "split"].includes(h) ? r[h] : cellNumber(r[h])));
   const total = records.length;
   // A limit at or above the dataset size means the whole dataset.
   if (limit !== null && limit >= total) limit = null;
-  if (limit === null) return { header, rows: records, total, limit };
-  const shares = { train: 0.7, test: 0.3 };
+  if (limit === null) return { header, rows: records.map(toRow), total, limit };
+
+  const shares = SCHEMAS[controller].splits;
   const rows = [];
   Object.keys(shares).forEach((split) => {
-    const ofSplit = records.filter((r) => r[4] === split);
+    const ofSplit = records.filter((r) => (r.split || "train") === split);
     const take = Math.max(1, Math.round(limit * shares[split]));
-    // Spread over the dominant rules (they come in row order, so just stride).
-    const stride = Math.max(1, Math.floor(ofSplit.length / take));
-    for (let i = 0; i < ofSplit.length && rows.filter((r) => r[4] === split).length < take; i += stride) rows.push(ofSplit[i]);
+    const groups = {};
+    ofSplit.forEach((r) => {
+      const key = r.category || "";
+      (groups[key] = groups[key] || []).push(r);
+    });
+    const keys = Object.keys(groups).sort();
+    const picked =
+      keys.length > 1
+        ? roundRobin(keys.map((k) => spread(groups[k], Math.ceil(take / keys.length))), take)
+        : spread(ofSplit, take);
+    rows.push(...picked.map(toRow));
   });
   return { header, rows: rows.slice(0, Math.max(limit, 1)), total, limit };
 }
-
-function defaultDataset(controller, csv, limit = null) {
-  if (controller === "intrusion") return defaultIntrusionDataset(csv, limit);
-  if (controller === "security") return defaultSecurityDataset(csv, limit);
-  throw new Error(`no default dataset for "${controller}"`);
-}
-
-/** Files of the default dataset, relative to the repository root. */
-const DEFAULT_DATASET_FILES = {
-  intrusion: {
-    train: "data/intrusion/intrusion_train.csv",
-    validation: "data/intrusion/intrusion_validation.csv",
-    test: "data/intrusion/intrusion_test.csv",
-    mapping: "data/intrusion/label_to_ip.csv",
-  },
-  security: {
-    labeling: "data/security/security_labeling.csv",
-  },
-};
 
 const DATASET_ROW_OPTIONS = [20, 40, 100, null];
 
@@ -319,6 +294,7 @@ module.exports = {
   MIN_TRAIN_ROWS,
   DEFAULT_DATASET_FILES,
   DATASET_ROW_OPTIONS,
+  defaultDatasetName,
   normalizeHeader,
   matchColumns,
   parseTable,

@@ -11,7 +11,7 @@ Source files (inside --datasets):
     CICIOT23/validation/validation.csv   (46 features + label)
     CICIOT23/test/test.csv
 
-Output (inside --out, default data/):
+Output (inside --out, default data/full/):
     security/security_6g.csv             all 1000 rows: EC, TP, Lat
     security/security_labeling.csv       250 rows for the expert: SR_expert to fill
     intrusion/intrusion_train.csv        NP, Rate, We, label, category
@@ -21,7 +21,8 @@ Output (inside --out, default data/):
 
 The script is deterministic (fixed seed). An existing security_labeling.csv
 or label_to_ip.csv is never overwritten, so expert work is not lost; pass
---force to rebuild them.
+--force to rebuild them. The small datasets the app ships (data/*.csv) are
+built from these by scripts/data/make_app_datasets.py.
 """
 import argparse
 import os
@@ -241,7 +242,7 @@ def main():
     root = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--datasets", required=True, help="folder with the source datasets")
-    parser.add_argument("--out", default=os.path.join(root, "data"), help="output folder (default: data/)")
+    parser.add_argument("--out", default=os.path.join(root, "data", "full"), help="output folder (default: data/full/)")
     parser.add_argument("--only", choices=["security", "intrusion"], help="build one controller only")
     parser.add_argument("--force", action="store_true", help="rebuild the expert files too")
     args = parser.parse_args()

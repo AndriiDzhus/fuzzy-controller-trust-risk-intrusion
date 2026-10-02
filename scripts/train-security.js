@@ -3,41 +3,46 @@
  * ANFIS training of the Security controller.
  *
  *   npm run train:security
- *   node scripts/train-security.js [--data <csv>] [--target SR_expert] [--epochs 200] [--dry-run]
+ *   node scripts/train-security.js [--full] [--data <csv>] [--target SR] [--epochs 100] [--dry-run]
  *
- * Reads data/security/security_labeling.csv: EC, TP, Lat, the expert target
- * SR_expert and the train / test split. Rows with an empty target are skipped.
- * Writes src/controllers/trained/security.json (the trained parameters, metrics
- * and learning curve), which the app loads as the "trained" variant.
+ * Reads data/security.csv (the dataset the app ships): EC, TP, Lat, the target
+ * SR and the train / test split. --full reads the labelling workbench
+ * data/full/security/security_labeling.csv instead, with --target SR_expert.
+ * Rows with an empty target are skipped. Writes
+ * src/controllers/trained/security.json (the trained parameters, metrics and
+ * learning curve), which the app loads as the "trained" variant.
  *
  * --target SR_base trains on the output of the base model itself; it only
  * checks the pipeline (the error is ~0 from the start) and is never saved.
  */
 const fs = require("fs");
 const path = require("path");
-const { runTraining, securityCoverage } = require("../src/training/session");
+const { runTraining, METHODS } = require("../src/training/session");
 const { readCsv, cellNumber } = require("../src/training/utils");
 
 const root = path.join(__dirname, "..");
 
 function parseArgs(argv) {
   const args = {
-    data: path.join(root, "data/security/security_labeling.csv"),
-    target: "SR_expert",
-    epochs: 200,
+    data: path.join(root, "data/security.csv"),
+    target: "SR",
+    epochs: METHODS.security.defaultOptions.epochs,
     out: path.join(root, "src/controllers/trained/security.json"),
     dryRun: false,
   };
   for (let i = 0; i < argv.length; i += 1) {
     const flag = argv[i];
-    if (flag === "--data") args.data = path.resolve(argv[++i]);
+    if (flag === "--full") {
+      args.data = path.join(root, "data/full/security/security_labeling.csv");
+      args.target = "SR_expert";
+    } else if (flag === "--data") args.data = path.resolve(argv[++i]);
     else if (flag === "--target") args.target = argv[++i];
     else if (flag === "--epochs") args.epochs = Number(argv[++i]);
     else if (flag === "--out") args.out = path.resolve(argv[++i]);
     else if (flag === "--dry-run") args.dryRun = true;
     else throw new Error(`unknown argument ${flag}`);
   }
-  if (args.target !== "SR_expert") args.dryRun = true;
+  if (args.target === "SR_base") args.dryRun = true;
   return args;
 }
 
@@ -60,15 +65,6 @@ function loadSamples(file, target) {
     });
   });
   return { ...samples, total: rows.length, skipped };
-}
-
-/** Coverage inputs: all 1000 rows of the 6G dataset plus a grid (no targets). */
-function coveragePoints() {
-  const file = path.join(root, "data/security/security_6g.csv");
-  const rows = fs.existsSync(file)
-    ? readCsv(file).map((r) => [cellNumber(r.EC), cellNumber(r.TP), cellNumber(r.Lat)])
-    : [];
-  return securityCoverage(rows);
 }
 
 function fmt(metrics) {
@@ -94,7 +90,6 @@ function main() {
     controller: "security",
     bySplit: { train, test },
     options: { epochs: args.epochs },
-    coverage: coveragePoints(),
     datasetName: path.relative(root, args.data),
   })
     .then((result) => report(result, args))

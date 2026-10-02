@@ -278,7 +278,7 @@ function cloneState(state) {
  */
 function* trainAnfisSteps({ spec, initial, train, test = [], coverage = [], options = {} }) {
   let {
-    epochs = 200,
+    epochs = 100,
     stepSize: initialStep = 0.01,
     ridge = 1e-3,
     tolerance = 1e-4,

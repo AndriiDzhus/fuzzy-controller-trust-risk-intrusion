@@ -4,12 +4,12 @@
  *
  *   remote  the Express server: dataset from the API, training as a job
  *           in a worker thread, progress by server-sent events
- *   local   the static build (GitHub Pages): dataset built in the page from
- *           data/*.csv, training in a Web Worker (training-worker.js)
+ *   local   the static build (GitHub Pages): dataset read in the page from
+ *           data/<controller>.csv, training in a Web Worker (training-worker.js)
  *
  * The mode follows window.fuzzyControllers, exactly like the calculations.
  *
- *   trainingBackend.datasetInfo(controller)            -> {total, columns}
+ *   trainingBackend.datasetInfo(controller)            -> {file, total, columns}
  *   trainingBackend.downloadDataset(controller, rows)  -> {blob, filename, rows, total}
  *   trainingBackend.startTraining({controller, file, options, onProgress, onDone, onError}) -> {stop}
  */
@@ -124,7 +124,8 @@
 
     async datasetInfo(controller) {
       const table = await this.defaultTable(controller, null);
-      return { controller, total: table.total, columns: table.header };
+      const { datasets } = root.fuzzyTraining;
+      return { controller, file: datasets.defaultDatasetName(controller), total: table.total, columns: table.header };
     },
 
     async downloadDataset(controller, rows) {
@@ -141,18 +142,6 @@
 
     async startTraining({ controller, file, options, onProgress, onDone, onError }) {
       const bytes = await readFileBytes(file);
-      let coverage = [];
-      if (controller === "security") {
-        try {
-          const { parseCsv, cellNumber } = root.fuzzyTraining.utils;
-          const rows = parseCsv(await fetchText("data/security/security_6g.csv")).map((r) => [
-            cellNumber(r.EC), cellNumber(r.TP), cellNumber(r.Lat),
-          ]);
-          coverage = root.fuzzyTraining.session.securityCoverage(rows);
-        } catch {
-          coverage = root.fuzzyTraining.session.securityCoverage([]);
-        }
-      }
       const worker = new Worker("training-worker.js");
       return new Promise((resolve, reject) => {
         let started = false;
@@ -183,7 +172,7 @@
           if (started) onError(error);
           else reject(error);
         };
-        worker.postMessage({ type: "start", controller, file: { name: file.name, bytes }, options, coverage }, [bytes.buffer]);
+        worker.postMessage({ type: "start", controller, file: { name: file.name, bytes }, options }, [bytes.buffer]);
       });
     },
   };

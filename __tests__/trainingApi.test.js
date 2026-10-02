@@ -40,12 +40,13 @@ describe("dataset download", () => {
   test("reports the dataset size and gives all rows above it", async () => {
     const info = await request(app).get("/api/controllers/security/dataset/info");
     expect(info.status).toBe(200);
-    expect(info.body.total).toBe(250);
+    expect(info.body.total).toBe(200);
+    expect(info.body.file).toBe("security.csv");
     expect(info.body.columns[0]).toBe("EC");
     const response = await binary(request(app).get("/api/controllers/security/dataset?rows=9999"));
     expect(response.status).toBe(200);
-    expect(response.headers["x-row-count"]).toBe("250");
-    expect(response.headers["x-row-total"]).toBe("250");
+    expect(response.headers["x-row-count"]).toBe("200");
+    expect(response.headers["x-row-total"]).toBe("200");
     expect(response.headers["content-disposition"]).toContain("security-dataset-all.xlsx");
     expect((await request(app).get("/api/controllers/trust/dataset/info")).status).toBe(404);
   });
