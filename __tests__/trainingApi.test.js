@@ -13,8 +13,8 @@ const binary = (req) =>
     res.on("end", () => callback(null, Buffer.concat(chunks)));
   });
 
-async function datasetBytes(controller, rows) {
-  const response = await binary(request(app).get(`/api/controllers/${controller}/dataset?rows=${rows}`));
+async function datasetBytes(controller, size) {
+  const response = await binary(request(app).get(`/api/controllers/${controller}/dataset?size=${size}`));
   expect(response.status).toBe(200);
   return response.body;
 }
@@ -30,44 +30,51 @@ async function waitForJob(id, timeoutMs = 20000) {
 }
 
 describe("dataset download", () => {
-  test("returns an xlsx with the requested rows", async () => {
+  test("returns an xlsx with the dataset of the requested size", async () => {
     const bytes = await datasetBytes("intrusion", 20);
     const sheets = await xlsx.read(new Uint8Array(bytes));
     expect(sheets[0].rows[0]).toEqual(["NP", "Rate", "We", "IP"]);
     expect(sheets[0].rows).toHaveLength(21);
   });
 
-  test("reports the dataset size and gives all rows above it", async () => {
+  test("reports the four sizes, the preselected one and the file names", async () => {
     const info = await request(app).get("/api/controllers/security/dataset/info");
     expect(info.status).toBe(200);
-    expect(info.body.total).toBe(200);
-    expect(info.body.file).toBe("security.csv");
+    expect(info.body.sizes).toEqual([20, 50, 100, 500]);
+    expect(info.body.defaultSize).toBe(50);
+    expect(info.body.files["100"]).toBe("security-100.csv");
     expect(info.body.columns).toEqual(["EC", "TP", "Lat", "SR"]);
-    expect(info.body.columns[0]).toBe("EC");
-    const response = await binary(request(app).get("/api/controllers/security/dataset?rows=9999"));
-    expect(response.status).toBe(200);
-    expect(response.headers["x-row-count"]).toBe("200");
-    expect(response.headers["x-row-total"]).toBe("200");
-    expect(response.headers["content-disposition"]).toContain("security-dataset-all.xlsx");
+    const intrusion = await request(app).get("/api/controllers/intrusion/dataset/info");
+    expect(intrusion.body.defaultSize).toBe(100);
+    for (const size of [20, 50, 100, 500]) {
+      const response = await binary(request(app).get(`/api/controllers/security/dataset?size=${size}`));
+      expect(response.status).toBe(200);
+      expect(response.headers["x-row-count"]).toBe(String(size));
+      expect(response.headers["content-disposition"]).toContain(`security-${size}.xlsx`);
+    }
+    // No size → the preselected one.
+    const preselected = await binary(request(app).get("/api/controllers/intrusion/dataset"));
+    expect(preselected.headers["x-row-count"]).toBe("100");
     expect((await request(app).get("/api/controllers/trust/dataset/info")).status).toBe(404);
   });
 
-  test("validates the rows parameter and the controller", async () => {
-    expect((await request(app).get("/api/controllers/intrusion/dataset?rows=3")).status).toBe(400);
+  test("validates the size parameter and the controller", async () => {
+    expect((await request(app).get("/api/controllers/intrusion/dataset?size=3")).status).toBe(400);
+    expect((await request(app).get("/api/controllers/intrusion/dataset?size=all")).status).toBe(400);
     expect((await request(app).get("/api/controllers/trust/dataset")).status).toBe(404);
   });
 });
 
 describe("training jobs", () => {
   test("trains from an uploaded xlsx, streams progress and returns the result", async () => {
-    const bytes = await datasetBytes("intrusion", 40);
+    const bytes = await datasetBytes("intrusion", 50);
     const created = await request(app)
       .post("/api/training/intrusion/jobs?name=ds.xlsx&generations=5&initialPopulation=16&populationSize=8")
       .set("Content-Type", "application/octet-stream")
       .send(bytes);
     expect(created.status).toBe(201);
     expect(created.body.status).toBe("running");
-    expect(created.body.dataset.counts).toEqual({ train: 28, validation: 6, test: 6 });
+    expect(created.body.dataset.counts).toEqual({ train: 35, validation: 8, test: 7 });
     expect(created.body.options.generations).toBe(5);
 
     const job = await waitForJob(created.body.id);
@@ -95,7 +102,7 @@ describe("training jobs", () => {
   });
 
   test("can be stopped", async () => {
-    const bytes = await datasetBytes("intrusion", 40);
+    const bytes = await datasetBytes("intrusion", 50);
     const created = await request(app)
       .post("/api/training/intrusion/jobs?name=ds.xlsx&generations=4000&initialPopulation=16&populationSize=8&stagnation=100000")
       .set("Content-Type", "application/octet-stream")
