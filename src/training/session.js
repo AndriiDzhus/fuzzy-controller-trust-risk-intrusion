@@ -23,46 +23,12 @@ const { evolveSteps, CHROMOSOME_LENGTH } = require("./genetic");
 const { trainAnfisSteps } = require("./anfis");
 const { regressionMetrics, round } = require("./utils");
 
-// ---------------------------------------------------------------------------
-// Intrusion: Rate scale of the trained model. The theory works in pps (linear,
-// the universe of the expert model, 0–3000). With real CICIoT2023 traffic the
-// option logRate = 1 trains on lg(1 + pps) instead: 95 % of the rows have
-// Rate < 150 pps and the linear Gaussians see all of them as "small".
-// ---------------------------------------------------------------------------
-
-const TRAINED_INTRUSION_RANGES = {
-  packets: { min: 0, max: 15 },
-  rate: { min: 0, max: intrusion.LOG_RATE_MAX },
-  weight: { min: 0, max: 250 },
-};
 const clamp = (v, { min, max }) => Math.min(max, Math.max(min, v));
 
-/**
- * A Gaussian (c, σ) in pps becomes (lg(1 + c), σ / ((1 + c) ln 10)) on the log
- * scale: the same centre and the same local slope around it.
- */
-function expertIntrusionInLogScale() {
-  const base = intrusion.BASE_PARAMS;
-  const rate = {};
-  Object.entries(base.inputs.Rate).forEach(([term, { params: [sigma, center] }]) => {
-    const c = intrusion.toLogRate(center);
-    const s = Math.max(0.05, sigma / ((1 + center) * Math.LN10));
-    rate[term] = { type: "gauss", params: [round(s, 4), round(c, 4)] };
-  });
-  return { ...base, rateScale: "log10p1", ranges: TRAINED_INTRUSION_RANGES, inputs: { ...base.inputs, Rate: rate } };
-}
-
-const useLogRate = (opts) => Number(opts && opts.logRate) === 1;
-const intrusionRanges = (opts) => (useLogRate(opts) ? TRAINED_INTRUSION_RANGES : intrusion.BASE_PARAMS.ranges);
-
-/** Inputs of the trained Intrusion model for a raw sample (log or linear Rate). */
-function intrusionTrainedX(raw, opts) {
-  const ranges = intrusionRanges(opts);
-  return [
-    clamp(raw.NP, ranges.packets),
-    clamp(useLogRate(opts) ? intrusion.toLogRate(raw.Rate) : raw.Rate, ranges.rate),
-    clamp(raw.We, ranges.weight),
-  ];
+/** Inputs of the Intrusion model for a raw sample (inside its universe). */
+function intrusionX(raw) {
+  const { ranges } = intrusion;
+  return [clamp(raw.NP, ranges.packets), clamp(raw.Rate, ranges.rate), clamp(raw.We, ranges.weight)];
 }
 
 /** Inputs of the base Intrusion model (pps limited to its universe). */
@@ -94,23 +60,20 @@ const METHODS = {
     // Theory (4.3.5): N0 random chromosomes, the N < N0 best of them form the
     // working population; stop after the given generations or at an acceptable
     // RMSE (targetRmse, 0 = off). N = 200 as in the MATLAB tuning of the thesis.
-    // logRate: 0 — Rate in pps as in the theory; 1 — lg(1 + pps) (real traffic).
-    defaultOptions: { initialPopulation: 300, populationSize: 200, generations: 200, targetRmse: 0, seed: 42, logRate: 0 },
+    // N = 100 and 150 generations keep a run on 500 rows within ~30 s in the
+    // browser (the MATLAB tuning of the thesis used 200 and ran to 625).
+    defaultOptions: { initialPopulation: 150, populationSize: 100, generations: 150, targetRmse: 0, seed: 42 },
     module: intrusion,
-    toX: intrusionTrainedX,
+    toX: intrusionX,
     toBaseInputs: intrusionBaseInputs,
     toTrainedInputs: (x) => ({ packets: x[0], rate: x[1], weight: x[2] }),
     baseParams: () => intrusion.BASE_PARAMS,
-    initialParams: (opts) => (useLogRate(opts) ? expertIntrusionInLogScale() : intrusion.BASE_PARAMS),
-    finalParams: (result, opts) => ({
-      rateScale: useLogRate(opts) ? "log10p1" : "linear",
-      ranges: intrusionRanges(opts),
-      ...result.params,
-    }),
-    spec: (opts) => ({
+    initialParams: () => intrusion.BASE_PARAMS,
+    finalParams: (result) => ({ rateScale: "linear", ranges: intrusion.BASE_PARAMS.ranges, ...result.params }),
+    spec: () => ({
       inputs: [
         { symbol: "NP", range: [0, 15] },
-        { symbol: "Rate", range: [0, intrusionRanges(opts).rate.max] },
+        { symbol: "Rate", range: [0, intrusion.ranges.rate.max] },
         { symbol: "We", range: [0, 250] },
       ],
       inputTerms: intrusion.INPUT_TERMS,
@@ -460,6 +423,8 @@ async function runTraining({
   if (method.method === "ga") {
     training.chromosomeLength = CHROMOSOME_LENGTH;
     training.fitness = { expert: round(raw.expert.fitness, 6), best: round(raw.best.fitness, 6) };
+    // The generation whose best chromosome is returned (lowest validation RMSE).
+    training.bestGeneration = raw.best.generation;
   } else {
     training.bestEpoch = raw.best.epoch;
   }
@@ -469,8 +434,6 @@ async function runTraining({
     method: method.method,
     params,
     training,
-    // For Intrusion the comparison is made in the units of the trained model:
-    // with logRate the expert model is converted to the log scale first.
     changes: paramsDiff(controller, method.initialParams(opts), params),
   };
 }
@@ -491,9 +454,7 @@ function securityCoverage(rows = [], n = 12) {
 module.exports = {
   METHODS,
   securityCoverage,
-  TRAINED_INTRUSION_RANGES,
-  expertIntrusionInLogScale,
-  intrusionTrainedX,
+  intrusionX,
   intrusionBaseInputs,
   modelMetrics,
   targetTerm,

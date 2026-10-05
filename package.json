@@ -7,7 +7,6 @@
     "start": "node server.js",
     "dev": "nodemon server.js",
     "build:pages": "node scripts/build-pages.js",
-    "data:prepare": "python3 scripts/data/prepare_datasets.py --datasets ../../Dicertation/DATASETS",
     "data:app": "node scripts/data/make-app-datasets.js",
     "train:security": "node scripts/train-security.js",
     "train:intrusion": "node scripts/train-intrusion.js",

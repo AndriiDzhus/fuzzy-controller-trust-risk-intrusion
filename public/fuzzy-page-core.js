@@ -244,7 +244,9 @@ function hasActiveModel() {
 // Inputs are remembered per controller and model: the trained Intrusion
 // model reads Rate on the log scale, so values must not mix.
 function inputsStorageKey(controller) {
-  return activeModel.params ? `${controller}:trained` : controller;
+  // One set of input values per controller: switching between the expert and
+  // the trained model keeps the inputs where they are.
+  return controller;
 }
 
 function persistControllerInputs(controller, values) {
@@ -2294,17 +2296,18 @@ function applyInputSpecToControls(spec) {
 }
 
 /**
- * Values of the inputs after a model switch: the values remembered for this
- * model, else the default of the trained spec, else the current value
- * limited to the new range.
+ * Values of the inputs after a model switch: the current values, limited to
+ * the ranges of the new model, so that "apply" and "revert" do not move the
+ * sliders; a value the page does not have yet comes from the remembered
+ * values, else the default of the spec, else the middle of the range.
  */
 function resetInputsToSpecs(config, applyInputValue) {
   const stored = readPersistedInputs()[inputsStorageKey(config.controller)] || {};
   config.inputs.forEach((spec) => {
     const { min, max } = inputSpecMeta(spec);
+    const current = clampInputValue(pageInputValues[spec.key], spec);
     const remembered = clampInputValue(stored[spec.key], spec);
-    const fallback = clampInputValue(pageInputValues[spec.key], spec);
-    const value = remembered ?? (Number.isFinite(spec.value) ? spec.value : fallback ?? (min + max) / 2);
+    const value = current ?? remembered ?? (Number.isFinite(spec.value) ? spec.value : (min + max) / 2);
     applyInputValue(spec, value);
   });
 }
