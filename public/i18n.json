@@ -455,7 +455,7 @@
       "training": {
         "badge": "ANFIS",
         "hint": "ANFIS (Adaptive Neuro-Fuzzy Inference System — адаптивна нейро-нечітка система виводу) налаштовує за датасетом з еталонним індексом SR значення синглтонів-наслідків і точки зламу трикутних функцій належності. База з 6 правил не змінюється.",
-        "datasetNote": "Датасет за замовчуванням — security.csv: 200 рядків 6G IoT Intelligent Management Dataset з експертною оцінкою SR (або запропонованою, якщо експертної ще немає): 140 навчальних і 60 тестових.",
+        "datasetNote": "Датасет за замовчуванням — security.csv: 200 рядків 6G IoT Intelligent Management Dataset (140 навчальних, 60 тестових). Еталонний SR — вихід експертного контролера, округлений до цілого, як у MATLAB-експерименті дисертації (рис. 3.10–3.14): похибка навчання лишається на рівні шуму округлення. Варіант з експертними оцінками SR будує npm run data:app -- --target expert.",
         "uploadNote": "Колонки EC, TP, Lat, SR; split (train/test) необов'язкова — інакше поділ 70/30.",
         "changesNote": "Трикутники входів задано точками зламу a, b, c; вихід — значення синглтонів.",
         "rulesTitle": "Правила після навчання",
@@ -533,13 +533,14 @@
       "training": {
         "badge": "ГА",
         "hint": "Генетичний алгоритм (ГА) підлаштовує гаусові функції належності всіх величин і структуру 12 правил за датасетом з еталонною вірогідністю вторгнення IP.",
-        "datasetNote": "Датасет за замовчуванням — intrusion.csv: 240 рядків CICIoT2023 (MERGED), по 30 на кожну з 8 категорій трафіку (160 train / 40 validation / 40 test); IP задано за класом трафіку (label); додатково колонки category і split.",
+        "datasetNote": "Датасет за замовчуванням — intrusion.csv: 240 рядків CICIoT2023 (MERGED), по 30 на кожну з 8 категорій трафіку (160 train / 40 validation / 40 test). Еталонне IP — вихід експертного контролера, округлений до 0,1, як у MATLAB-експерименті дисертації (рис. 4.10–4.12); варіант з експертними IP за класами будує npm run data:app -- --target expert.",
         "uploadNote": "Колонки NP, Rate, We, IP; split (train/validation/test) необов'язкова — інакше поділ 70/15/15.",
-        "changesNote": "Гаусоїди задано центром c і шириною σ; Rate — у шкалі lg(1 + pps), 0–7 (експертні параметри перераховано в цю шкалу).",
+        "changesNote": "Гаусоїди задано центром c і шириною σ.",
+        "changesNoteLog": "Гаусоїди задано центром c і шириною σ; Rate — у шкалі lg(1 + pps), 0–7 (експертні параметри перераховано в цю шкалу).",
         "rulesTitle": "Правила після навчання",
         "rulesDescription": "Структуру всіх 12 правил (терми передумов і наслідку) сформовано генетичним алгоритмом за мінімумом RMSE на навчальній вибірці.",
         "metaChip": "навчені (ГА)",
-        "about": "Хромосома — 74 гени: 18 параметрів вхідних гаусоїд (c, σ), 8 параметрів вихідних і 48 індексів термів 12 правил. Пристосованість F = 1 / (1 + RMSE) на навчальній вибірці. Оператори: турнірна селекція, арифметичний кросовер для дійсних генів і двоточковий для правил, гаусова мутація параметрів та випадкова заміна індексу терму, валідація (σ > 0, центри в універсумі, порядок термів). Графік показує найкраще і середнє RMSE популяції та RMSE валідаційної вибірки по поколіннях. У навченій моделі Rate задається в логарифмічній шкалі lg(1 + pps), 0–7.",
+        "about": "Хромосома — 74 гени: 18 параметрів вхідних гаусоїд (c, σ), 8 параметрів вихідних і 48 індексів термів 12 правил. Пристосованість F = 1 / (1 + RMSE) на навчальній вибірці. Оператори: турнірна селекція, арифметичний кросовер для дійсних генів і двоточковий для правил, гаусова мутація параметрів та випадкова заміна індексу терму, валідація (σ > 0, центри в універсумі, порядок термів). Графік показує найкраще і середнє RMSE популяції та RMSE валідаційної вибірки по поколіннях. Rate береться в пакетах/с, як у теорії; для реального трафіку з великим розкидом можна увімкнути шкалу lg(1 + pps) у параметрах алгоритму.",
         "columnsNote": "Колонки: NP, Rate (pps), We, IP (0–100), split."
       }
     }
@@ -981,7 +982,7 @@
       "training": {
         "badge": "ANFIS",
         "hint": "ANFIS (Adaptive Neuro-Fuzzy Inference System) fits the singleton consequents and the break points of the triangular membership functions to a dataset with a reference SR index. The 6-rule base stays unchanged.",
-        "datasetNote": "Default dataset: security.csv, 200 rows of the 6G IoT Intelligent Management Dataset with the expert SR (or the proposed one until the expert fills it in): 140 training and 60 test rows.",
+        "datasetNote": "Default dataset: security.csv, 200 rows of the 6G IoT Intelligent Management Dataset (140 training, 60 test). The target SR is the output of the expert controller rounded to an integer, as in the MATLAB experiment of the thesis (fig. 3.10–3.14): the training error stays at the rounding noise. The variant with expert SR values is built by npm run data:app -- --target expert.",
         "uploadNote": "Columns EC, TP, Lat, SR; split (train/test) is optional — otherwise a 70/30 split.",
         "changesNote": "Input triangles are given by their break points a, b, c; the output by the singleton values.",
         "rulesTitle": "Rules after training",
@@ -1059,13 +1060,14 @@
       "training": {
         "badge": "GA",
         "hint": "The genetic algorithm (GA) fits the Gaussian membership functions of all variables and the structure of the 12 rules to a dataset with a reference intrusion probability IP.",
-        "datasetNote": "Default dataset: intrusion.csv, 240 rows of CICIoT2023 (MERGED), 30 per each of the 8 traffic categories (160 train / 40 validation / 40 test); IP is set by traffic class (label); the extra columns are category and split.",
+        "datasetNote": "Default dataset: intrusion.csv, 240 rows of CICIoT2023 (MERGED), 30 per each of the 8 traffic categories (160 train / 40 validation / 40 test). The target IP is the output of the expert controller rounded to 0.1, as in the MATLAB experiment of the thesis (fig. 4.10–4.12); the variant with expert IP per class is built by npm run data:app -- --target expert.",
         "uploadNote": "Columns NP, Rate, We, IP; split (train/validation/test) is optional — otherwise a 70/15/15 split.",
-        "changesNote": "Gaussians are given by the centre c and width σ; Rate on the scale lg(1 + pps), 0–7 (the expert parameters are converted to it).",
+        "changesNote": "Gaussians are given by the centre c and width σ.",
+        "changesNoteLog": "Gaussians are given by the centre c and width σ; Rate on the scale lg(1 + pps), 0–7 (the expert parameters are converted to it).",
         "rulesTitle": "Rules after training",
         "rulesDescription": "The structure of all 12 rules (premise and consequent terms) was formed by the genetic algorithm at the minimum RMSE on the training set.",
         "metaChip": "trained (GA)",
-        "about": "The chromosome has 74 genes: 18 parameters of the input Gaussians (c, σ), 8 of the output ones and 48 term indices of the 12 rules. Fitness F = 1 / (1 + RMSE) on the training set. Operators: tournament selection, arithmetic crossover for the real genes and two-point crossover for the rules, Gaussian mutation of the parameters and random re-assignment of a term index, validation (σ > 0, centres inside the universe, ordered terms). The chart shows the best and mean RMSE of the population and the RMSE of the validation set per generation. The trained model reads Rate on the log scale lg(1 + pps), 0–7.",
+        "about": "The chromosome has 74 genes: 18 parameters of the input Gaussians (c, σ), 8 of the output ones and 48 term indices of the 12 rules. Fitness F = 1 / (1 + RMSE) on the training set. Operators: tournament selection, arithmetic crossover for the real genes and two-point crossover for the rules, Gaussian mutation of the parameters and random re-assignment of a term index, validation (σ > 0, centres inside the universe, ordered terms). The chart shows the best and mean RMSE of the population and the RMSE of the validation set per generation. Rate is taken in packets/s as in the theory; for real traffic with a wide spread the lg(1 + pps) scale can be switched on in the algorithm settings.",
         "columnsNote": "Columns: NP, Rate (pps), We, IP (0–100), split."
       }
     }

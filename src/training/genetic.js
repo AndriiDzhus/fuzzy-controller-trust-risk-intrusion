@@ -22,9 +22,10 @@
  *               minCenterGap · span apart, no two rules with the same premise
  *   survivors   the best N of parents and offspring (elitist)
  *
- * The centre of gravity is computed as a sum on a uniform grid (eq. 4.10);
- * the grid step here (0.5) is coarser than in the app (0.2) for speed, the
- * final metrics are computed by the app model itself.
+ * The centre of gravity is computed as a sum on a uniform grid with step 0.2
+ * (eq. 4.10), exactly as the controller does, so the expert chromosome scores
+ * the same RMSE as the expert model; the final metrics are computed by the app
+ * model itself.
  */
 const { createRandom, regressionMetrics } = require("./utils");
 
@@ -125,23 +126,46 @@ function geneRanges(spec) {
  *    controller behaves the same, only the names follow the order
  *  - no two rules share the same premise (a duplicate gets a new random one)
  */
-function validate(ch, spec, rnd) {
-  const blocks = [
+function geneBlocks(spec) {
+  return [
     ...spec.inputs.map(({ range }, i) => ({ start: i * T_IN * 2, n: T_IN, range, ruleSlot: i })),
     { start: IN_GENES, n: T_OUT, range: spec.outputRange, ruleSlot: 3 },
   ];
-  blocks.forEach(({ start, n, range: [min, max], ruleSlot }) => {
+}
+
+/**
+ * Validation limits per variable: the minimal distance between neighbouring
+ * centres (minCenterGap of the span) and the minimal σ (sigmaMin of the span),
+ * both capped by the expert model's own values, so the expert chromosome
+ * passes validation unchanged (e.g. Rate 15 / 150 / 1500 pps with σ = 20 on
+ * a 3000 pps universe).
+ */
+function validationLimits(spec, expertChromosome) {
+  return geneBlocks(spec).map(({ start, n, range: [min, max] }) => {
     const span = max - min;
+    let gap = (spec.minCenterGap || 0) * span;
+    let sigmaMin = spec.sigmaMin * span;
+    const centres = Array.from({ length: n }, (_, t) => expertChromosome.real[start + 2 * t]).sort((a, b) => a - b);
+    for (let t = 1; t < n; t += 1) gap = Math.min(gap, centres[t] - centres[t - 1]);
+    for (let t = 0; t < n; t += 1) sigmaMin = Math.min(sigmaMin, Math.abs(expertChromosome.real[start + 2 * t + 1]));
+    return { gap: Math.max(0, gap), sigmaMin: Math.max(1e-9, sigmaMin) };
+  });
+}
+
+function validate(ch, spec, rnd, limits = null) {
+  geneBlocks(spec).forEach(({ start, n, range: [min, max], ruleSlot }, blockIndex) => {
+    const span = max - min;
+    const sigmaMin = limits ? limits[blockIndex].sigmaMin : spec.sigmaMin * span;
     const terms = [];
     for (let t = 0; t < n; t += 1) {
       const c = Math.min(max, Math.max(min, ch.real[start + 2 * t]));
-      const s = Math.min(0.6 * span, Math.max(spec.sigmaMin * span, Math.abs(ch.real[start + 2 * t + 1])));
+      const s = Math.min(0.6 * span, Math.max(sigmaMin, Math.abs(ch.real[start + 2 * t + 1])));
       terms.push({ c, s, old: t });
     }
     terms.sort((a, b) => a.c - b.c || a.old - b.old);
     // Neighbouring centres keep a minimal distance, so the terms stay
     // distinguishable (no two "different" terms in the same place).
-    const gap = (spec.minCenterGap || 0) * span;
+    const gap = limits ? limits[blockIndex].gap : (spec.minCenterGap || 0) * span;
     for (let t = 1; t < n; t += 1) terms[t].c = Math.max(terms[t].c, terms[t - 1].c + gap);
     if (terms[n - 1].c > max) {
       terms[n - 1].c = max;
@@ -370,7 +394,7 @@ function* evolveSteps({ spec, initial, train, validation = [], options = {} }) {
     seedShare = 0.2, // share of N0 built by mutating the expert chromosome
     stagnation = 60,
     targetRmse = 0,
-    gridStep = 0.5,
+    gridStep = 0.2, // centre of gravity as a sum with step 0.2 (eq. 4.10), as the controller
     seed = 42,
   } = options;
 
@@ -382,7 +406,8 @@ function* evolveSteps({ spec, initial, train, validation = [], options = {} }) {
 
   // Step 1. Initial population P0 of N0 chromosomes: the expert controller,
   // mutated copies of it and random chromosomes.
-  const expert = validate(encode(initial, spec), spec, rnd);
+  const limits = validationLimits(spec, encode(initial, spec));
+  const expert = validate(encode(initial, spec), spec, rnd, limits);
   let population = [evaluate(expert, trainData, grid)];
   const seeded = Math.round(initialPopulation * seedShare);
   for (let i = 1; i < initialPopulation; i += 1) {
@@ -390,7 +415,7 @@ function* evolveSteps({ spec, initial, train, validation = [], options = {} }) {
       i < seeded
         ? mutate(clone(expert), { pReal: 0.5, pRule: 0.15, scale: 0.1, ranges }, rnd)
         : randomChromosome(spec, ranges, rnd);
-    population.push(evaluate(validate(ch, spec, rnd), trainData, grid));
+    population.push(evaluate(validate(ch, spec, rnd, limits), trainData, grid));
   }
   // Working population P of N best chromosomes (by RMSE).
   population.sort((a, b) => a.rmse - b.rmse);
@@ -440,7 +465,7 @@ function* evolveSteps({ spec, initial, train, validation = [], options = {} }) {
       const children = rnd.next() < crossoverRate ? crossover(p1, p2, rnd) : [clone(p1), clone(p2)];
       children.forEach((child) => {
         mutate(child, { pReal: mutationReal, pRule: mutationRule, scale, ranges }, rnd);
-        validate(child, spec, rnd);
+        validate(child, spec, rnd, limits);
         offspring.push(evaluate(child, trainData, grid));
       });
     }

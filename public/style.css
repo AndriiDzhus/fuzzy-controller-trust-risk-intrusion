@@ -2073,6 +2073,22 @@ input.value-input.is-invalid {
   font-size: 0.76rem;
 }
 
+.training-option-toggle {
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+  align-self: end;
+  padding-bottom: 6px;
+  cursor: pointer;
+}
+
+.training-option-toggle input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  accent-color: #2a78d6;
+}
+
 .training-option input {
   padding: 5px 8px;
   border: 1px solid #dbe3ea;

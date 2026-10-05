@@ -183,13 +183,51 @@ describe("training session", () => {
     expect(result.method).toBe("ga");
     expect(result.training.steps).toBe(6);
     expect(result.training.stopReason).toBe("generations");
-    expect(result.params.rateScale).toBe("log10p1");
+    // Rate in pps as in the theory unless logRate is set.
+    expect(result.params.rateScale).toBe("linear");
+    expect(result.params.ranges.rate.max).toBe(3000);
     expect(session.validateParams("intrusion", result.params)).toEqual([]);
     expect(result.training.metrics.trained.test.rmse).toBeDefined();
     expect(result.changes.variables.map((v) => v.symbol)).toEqual(["NP", "Rate", "We", "IP"]);
     // The model built from the params reproduces the reported metrics.
     const model = session.buildModelFromParams("intrusion", result.params);
     expect(model.calculate({ packets: 9.5, rate: 4, weight: 141.55 }).value).toBeGreaterThanOrEqual(0);
+  });
+
+  test("the expert chromosome scores the expert model: generation 0 equals the base RMSE", async () => {
+    const result = await session.runTraining({
+      controller: "intrusion",
+      bySplit: bySplitOf("intrusion", 60),
+      options: { generations: 1, initialPopulation: 8, populationSize: 4 },
+    });
+    // The default dataset targets are the expert model's own outputs rounded
+    // to 0.1, so the expert chromosome (validated, grid 0.2) scores ≈ 0.03.
+    expect(result.training.history[0].bestRmse).toBeCloseTo(result.training.metrics.base.train.rmse, 2);
+    expect(result.training.history[0].bestRmse).toBeLessThan(0.05);
+  });
+
+  test("logRate trains on the lg(1 + pps) scale with the expert model converted to it", async () => {
+    const result = await session.runTraining({
+      controller: "intrusion",
+      bySplit: bySplitOf("intrusion", 40),
+      options: { generations: 2, initialPopulation: 8, populationSize: 4, logRate: 1 },
+    });
+    expect(result.params.rateScale).toBe("log10p1");
+    expect(result.params.ranges.rate.max).toBe(7);
+    expect(session.validateParams("intrusion", result.params)).toEqual([]);
+    const rate = result.changes.variables.find((v) => v.symbol === "Rate");
+    expect(rate.terms.every((term) => term.before[1] <= 7)).toBe(true);
+  });
+
+  test("ANFIS on the default dataset starts at the rounding noise of the expert model", async () => {
+    const result = await session.runTraining({
+      controller: "security",
+      bySplit: bySplitOf("security", null),
+      options: { epochs: 3 },
+    });
+    // SR of data/security.csv is the expert model output rounded to 1.
+    expect(result.training.history[0].trainRmse).toBeLessThan(0.4);
+    expect(result.training.metrics.trained.test.rmse).toBeLessThan(0.4);
   });
 
   test("can be stopped between steps", async () => {

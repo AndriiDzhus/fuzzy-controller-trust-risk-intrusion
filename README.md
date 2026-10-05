@@ -58,7 +58,7 @@ public/
 scripts/
   data/prepare_datasets.py        повні вибірки з 6G IoT і CICIoT2023 -> data/full/
   data/propose_security_labels.py запропоновані експертні мітки SR (матриця ризику)
-  data/make_app_datasets.py       малі датасети апки data/security.csv, data/intrusion.csv
+  data/make-app-datasets.js       малі датасети апки data/security.csv, data/intrusion.csv (--target model|expert)
   train-security.js               навчання ANFIS -> src/controllers/trained/security.json
   train-intrusion.js              оптимізація ГА -> src/controllers/trained/intrusion.json
   build-pages.js                  статична збірка для GitHub Pages (dist/)
@@ -133,7 +133,7 @@ module.exports = { system, variables, ranges, calculate, membershipFunctions };
 
 ```bash
 npm run data:prepare       # Python 3 + pandas: повні вибірки з вихідних датасетів -> data/full/
-npm run data:app           # малі датасети апки (200 / 240 рядків) -> data/*.csv
+npm run data:app           # малі датасети апки (200 / 240 рядків) -> data/*.csv; --target expert — з експертними мітками
 npm run train:security     # ANFIS на data/security.csv   (--full: data/full/security/security_labeling.csv)
 npm run train:intrusion    # ГА на data/intrusion.csv      (--full: data/full/intrusion/intrusion.csv, ≈ 3 хв)
 ```
@@ -156,13 +156,23 @@ C = (AᵀA)⁻¹Aᵀy, за нормованими вагами правил. П
 впорядковані терми (мала < середня < велика) з мінімальною відстанню 10 % між
 центрами, а також відсутність двох правил з однаковими передумовами. Наступне
 покоління — найкращі N з батьків і нащадків. Вхід Rate навченої моделі
-задається в логарифмічній шкалі lg(1 + pps) ∈ [0, 7].
+береться в пакетах/с, як у теорії; з увімкненим перемикачем «Rate у шкалі lg(1 + pps)»
+навчена модель читає Rate як lg(1 + pps) ∈ [0, 7], а експертні гаусоїди перераховуються
+в цю шкалу.
 
 Параметри за замовчуванням (`METHODS` у `src/training/session.js`; теорія задає їх
 символами, числа взято з MATLAB-експериментів дисертації): ANFIS — 100 епох (із
 зупинкою, коли похибка не спадає 25 епох поспіль); ГА — N₀ = 300, N = 200, 200
-поколінь, цільова RMSE 0 (вимкнено), seed 42; зупинка також після 60 поколінь без
-покращення. Решта констант (ймовірності кросоверу 0,9 і мутації 0,15 / 0,04, турнір
+поколінь, цільова RMSE 0 (вимкнено), seed 42, Rate у пакетах/с (перемикач
+«Rate у шкалі lg(1 + pps)» для реального трафіку); зупинка також після 60 поколінь
+без покращення. Центр ваги в ГА рахується сумою з кроком 0,2, як у контролері, тому
+експертна хромосома дає ту саму RMSE, що й експертна модель.
+
+Датасети за замовчуванням (`data/security.csv`, `data/intrusion.csv`) містять як ціль
+вихід самого експертного контролера з округленням, як у MATLAB-експериментах роботи:
+похибка навчання лишається на рівні шуму округлення (ANFIS ≈ 0,29, ГА ≈ 0,03; у
+MATLAB 0,361 і 0,0297). Варіант з експертними мітками: `npm run data:app -- --target expert`
+(ANFIS ≈ 12, ГА ≈ 22). Докладніше в [data/README.md](data/README.md). Решта констант (ймовірності кросоверу 0,9 і мутації 0,15 / 0,04, турнір
 із 3, крок градієнта) зафіксована в коді.
 
 ### Блок «Навчання моделі» на сторінці

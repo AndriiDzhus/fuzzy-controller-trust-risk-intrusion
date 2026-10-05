@@ -4,7 +4,10 @@
  *
  *   npm run train:intrusion
  *   node scripts/train-intrusion.js [--full] [--generations 200] [--population 200] [--initial-population 300]
- *                                    [--target-rmse 0] [--seed 42] [--dry-run]
+ *                                    [--target-rmse 0] [--seed 42] [--log-rate] [--dry-run]
+ *
+ * --log-rate trains with Rate on the lg(1 + pps) scale (for real traffic with a
+ * wide spread of pps); without it Rate is in pps as in the theory.
  *
  * Data: data/intrusion.csv (the dataset the app ships; NP, Rate, We, IP,
  * label, category, split). With --full, the big CICIoT2023 sample built by
@@ -13,7 +16,7 @@
  *                                          (train: fitness; validation: watched; test: final check)
  *   data/full/intrusion/label_to_ip.csv    expert target IP for every label
  *
- * Inputs: NP = Number, Rate = lg(1 + Rate) (log scale), We = Weight.
+ * Inputs: NP = Number, Rate (pps, or lg(1 + Rate) with --log-rate), We = Weight.
  * Writes src/controllers/trained/intrusion.json, which the app loads as the
  * "trained" variant.
  */
@@ -36,6 +39,7 @@ function parseArgs(argv) {
     initialPopulation: d.initialPopulation,
     targetRmse: d.targetRmse,
     seed: d.seed,
+    logRate: d.logRate,
     full: false,
     out: path.join(root, "src/controllers/trained/intrusion.json"),
     dryRun: false,
@@ -43,6 +47,7 @@ function parseArgs(argv) {
   for (let i = 0; i < argv.length; i += 1) {
     const flag = argv[i];
     if (flag === "--full") args.full = true;
+    else if (flag === "--log-rate") args.logRate = 1;
     else if (flag === "--generations") args.generations = Number(argv[++i]);
     else if (flag === "--population") args.population = Number(argv[++i]);
     else if (flag === "--initial-population") args.initialPopulation = Number(argv[++i]);
@@ -135,6 +140,7 @@ function main() {
     generations: args.generations,
     targetRmse: args.targetRmse,
     seed: args.seed,
+    logRate: args.logRate,
   };
 
   runTraining({
