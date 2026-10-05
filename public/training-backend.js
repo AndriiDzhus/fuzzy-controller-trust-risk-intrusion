@@ -5,12 +5,12 @@
  *   remote  the Express server: dataset from the API, training as a job
  *           in a worker thread, progress by server-sent events
  *   local   the static build (GitHub Pages): dataset read in the page from
- *           data/<controller>.csv, training in a Web Worker (training-worker.js)
+ *           data/<controller>-<size>.csv, training in a Web Worker (training-worker.js)
  *
  * The mode follows window.fuzzyControllers, exactly like the calculations.
  *
- *   trainingBackend.datasetInfo(controller)            -> {file, total, columns}
- *   trainingBackend.downloadDataset(controller, rows)  -> {blob, filename, rows, total}
+ *   trainingBackend.datasetInfo(controller)            -> {sizes, defaultSize, files, columns}
+ *   trainingBackend.downloadDataset(controller, size)  -> {blob, filename, rows}
  *   trainingBackend.startTraining({controller, file, options, onProgress, onDone, onError}) -> {stop}
  */
 (function (root) {
@@ -35,15 +35,11 @@
       return response.json();
     },
 
-    async downloadDataset(controller, rows) {
-      const response = await fetch(`/api/controllers/${controller}/dataset?rows=${rows === null ? "all" : rows}`);
+    async downloadDataset(controller, size) {
+      const response = await fetch(`/api/controllers/${controller}/dataset?size=${size}`);
       if (!response.ok) throw new Error(`dataset: HTTP ${response.status}`);
       const blob = await response.blob();
-      const count = Number(response.headers.get("X-Row-Count")) || null;
-      const total = Number(response.headers.get("X-Row-Total")) || null;
-      // Asking for at least the whole dataset gives all rows.
-      const all = rows === null || (total !== null && rows >= total);
-      return { blob, filename: `${controller}-dataset-${all ? "all" : rows}.xlsx`, rows: count, total };
+      return { blob, filename: `${controller}-${size}.xlsx`, rows: Number(response.headers.get("X-Row-Count")) || null };
     },
 
     async startTraining({ controller, file, options, onProgress, onDone, onError }) {
@@ -110,34 +106,28 @@
   const local = {
     mode: "local",
 
-    async defaultTable(controller, rows) {
+    async defaultTable(controller, size) {
       const { datasets } = root.fuzzyTraining;
-      const files = datasets.DEFAULT_DATASET_FILES[controller];
-      const csv = {};
-      await Promise.all(
-        Object.entries(files).map(async ([key, file]) => {
-          csv[key] = await fetchText(file);
-        })
-      );
-      return datasets.defaultDataset(controller, csv, rows);
+      return datasets.defaultDataset(controller, await fetchText(datasets.datasetFile(controller, size)));
     },
 
     async datasetInfo(controller) {
-      const table = await this.defaultTable(controller, null);
       const { datasets } = root.fuzzyTraining;
-      return { controller, file: datasets.defaultDatasetName(controller), total: table.total, columns: table.header };
+      const size = datasets.DEFAULT_DATASET_SIZE[controller];
+      const table = await this.defaultTable(controller, size);
+      return {
+        controller,
+        sizes: datasets.DATASET_SIZES,
+        defaultSize: size,
+        files: Object.fromEntries(datasets.DATASET_SIZES.map((n) => [n, datasets.datasetName(controller, n)])),
+        columns: table.header,
+      };
     },
 
-    async downloadDataset(controller, rows) {
-      const table = await this.defaultTable(controller, rows);
+    async downloadDataset(controller, size) {
+      const table = await this.defaultTable(controller, size);
       const bytes = await root.xlsxLite.write([{ name: "Dataset", rows: [table.header, ...table.rows] }]);
-      return {
-        blob: new Blob([bytes], { type: XLSX_TYPE }),
-        // table.limit is null when the request covered the whole dataset.
-        filename: `${controller}-dataset-${table.limit === null ? "all" : table.limit}.xlsx`,
-        rows: table.rows.length,
-        total: table.total,
-      };
+      return { blob: new Blob([bytes], { type: XLSX_TYPE }), filename: `${controller}-${size}.xlsx`, rows: table.rows.length };
     },
 
     async startTraining({ controller, file, options, onProgress, onDone, onError }) {

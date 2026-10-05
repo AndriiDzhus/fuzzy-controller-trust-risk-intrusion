@@ -211,93 +211,51 @@ async function tableFromFile(file) {
 }
 
 // ---------------------------------------------------------------------------
-// Default datasets (data/<controller>.csv of the repository)
+// Default datasets: data/<controller>-<size>.csv of the repository
 // ---------------------------------------------------------------------------
 
-/** The default dataset of each controller, relative to the repository root. */
-const DEFAULT_DATASET_FILES = {
-  intrusion: { data: "data/intrusion.csv" },
-  security: { data: "data/security.csv" },
-};
+/**
+ * The files of the app differ only in the number of rows; each one covers all
+ * the working ranges of the inputs and every rule (scripts/data/make-app-datasets.js).
+ */
+const DATASET_SIZES = [20, 50, 100, 500];
 
-/** Name of the default dataset file, e.g. "intrusion.csv". */
-function defaultDatasetName(controller) {
-  const files = DEFAULT_DATASET_FILES[controller];
-  return files ? files.data.split("/").pop() : null;
+/** The size preselected in the training block. ANFIS: the thesis used 50 rows (40 / 10). */
+const DEFAULT_DATASET_SIZE = { security: 50, intrusion: 100 };
+
+const isDatasetSize = (controller, size) => Boolean(DEFAULT_DATASET_SIZE[controller]) && DATASET_SIZES.includes(size);
+
+/** Name of a dataset file, e.g. "intrusion-100.csv". */
+function datasetName(controller, size) {
+  if (!isDatasetSize(controller, size)) throw new Error(`no ${size}-row dataset for "${controller}"`);
+  return `${controller}-${size}.csv`;
 }
 
-/** Round-robin over groups, keeping the order inside a group. */
-function roundRobin(groups, limit) {
-  const queues = groups.map((g) => g.slice());
-  const out = [];
-  while (out.length < limit && queues.some((q) => q.length)) {
-    for (const q of queues) {
-      if (q.length && out.length < limit) out.push(q.shift());
-    }
-  }
-  return out;
-}
-
-/** n rows evenly spread over a list (all of them when n >= length). */
-function spread(rows, n) {
-  if (n >= rows.length) return rows.slice();
-  if (n <= 0) return [];
-  if (n === 1) return [rows[Math.floor(rows.length / 2)]];
-  return Array.from({ length: n }, (_, i) => rows[Math.round((i * (rows.length - 1)) / (n - 1))]);
+/** Path of a dataset file relative to the repository root, e.g. "data/intrusion-100.csv". */
+function datasetFile(controller, size) {
+  return `data/${datasetName(controller, size)}`;
 }
 
 /**
- * Rows of the default dataset: the file as it is, or its first `limit` rows.
- * The files are built so that any prefix is balanced (data/intrusion.csv
- * interleaves the traffic categories, data/security.csv mixes the rules).
- * A file with a split column keeps the shares of the splits instead.
- *
+ * A default dataset as a table of numbers.
  * @param {string} controller
- * @param {{data: string}} csv text of the file in DEFAULT_DATASET_FILES
- * @param {number|null} limit number of rows, or null for all; a limit at or
- *   above the dataset size gives all rows
- * @returns {{header: string[], rows: any[][], total: number, limit: number|null}}
- *   `limit` is the effective one (null when all rows are returned)
+ * @param {string} csv text of the file datasetFile(controller, size)
+ * @returns {{header: string[], rows: number[][], total: number}}
  */
-function defaultDataset(controller, csv, limit = null) {
-  if (!DEFAULT_DATASET_FILES[controller]) throw new Error(`no default dataset for "${controller}"`);
-  const { header, records } = tableFromCsv(csv.data);
-  const toRow = (r) => header.map((h) => (["label", "category", "split"].includes(h) ? r[h] : cellNumber(r[h])));
-  const total = records.length;
-  // A limit at or above the dataset size means the whole dataset.
-  if (limit !== null && limit >= total) limit = null;
-  if (limit === null) return { header, rows: records.map(toRow), total, limit };
-  limit = Math.max(limit, 1);
-  if (!header.includes("split")) return { header, rows: records.slice(0, limit).map(toRow), total, limit };
-
-  const shares = SCHEMAS[controller].splits;
-  const rows = [];
-  Object.keys(shares).forEach((split) => {
-    const ofSplit = records.filter((r) => (r.split || "train") === split);
-    const take = Math.max(1, Math.round(limit * shares[split]));
-    const groups = {};
-    ofSplit.forEach((r) => {
-      const key = r.category || "";
-      (groups[key] = groups[key] || []).push(r);
-    });
-    const keys = Object.keys(groups).sort();
-    const picked =
-      keys.length > 1
-        ? roundRobin(keys.map((k) => spread(groups[k], Math.ceil(take / keys.length))), take)
-        : spread(ofSplit, take);
-    rows.push(...picked.map(toRow));
-  });
-  return { header, rows: rows.slice(0, limit), total, limit };
+function defaultDataset(controller, csv) {
+  if (!DEFAULT_DATASET_SIZE[controller]) throw new Error(`no default dataset for "${controller}"`);
+  const { header, records } = tableFromCsv(csv);
+  return { header, rows: records.map((r) => header.map((h) => cellNumber(r[h]))), total: records.length };
 }
-
-const DATASET_ROW_OPTIONS = [20, 40, 100, null];
 
 module.exports = {
   SCHEMAS,
   MIN_TRAIN_ROWS,
-  DEFAULT_DATASET_FILES,
-  DATASET_ROW_OPTIONS,
-  defaultDatasetName,
+  DATASET_SIZES,
+  DEFAULT_DATASET_SIZE,
+  isDatasetSize,
+  datasetName,
+  datasetFile,
   normalizeHeader,
   matchColumns,
   parseTable,

@@ -11,13 +11,9 @@ const session = require("../src/training/session");
 const intrusion = require("../src/controllers/intrusionController");
 
 const root = path.join(__dirname, "..");
-const readCsvFiles = (controller) => {
-  const csv = {};
-  Object.entries(datasets.DEFAULT_DATASET_FILES[controller]).forEach(([key, file]) => {
-    csv[key] = fs.readFileSync(path.join(root, file), "utf8");
-  });
-  return csv;
-};
+/** A default dataset of the given size, as the table the app downloads. */
+const defaultTable = (controller, size) =>
+  datasets.defaultDataset(controller, fs.readFileSync(path.join(root, datasets.datasetFile(controller, size)), "utf8"));
 
 describe("xlsx-lite", () => {
   test("writes and reads numbers, strings and several sheets", async () => {
@@ -91,74 +87,96 @@ describe("datasets", () => {
     expect(prepared.error).toBe("tooFewRows");
   });
 
-  test("default intrusion dataset: 500 rows of 4 columns, balanced prefix, split assigned by the app", () => {
-    const table = datasets.defaultDataset("intrusion", readCsvFiles("intrusion"), 40);
-    expect(table.header).toEqual(["NP", "Rate", "We", "IP"]);
-    expect(table.rows).toHaveLength(40);
-    const prepared = datasets.prepareDataset("intrusion", datasets.tableFromRows([table.header, ...table.rows]));
-    expect(prepared.counts).toEqual({ train: 28, validation: 6, test: 6 });
-    const all = datasets.defaultDataset("intrusion", readCsvFiles("intrusion"), null);
-    expect(all.rows).toHaveLength(500);
-    all.rows.forEach((row) => {
-      expect(row[3]).toBeGreaterThanOrEqual(0);
-      expect(row[3]).toBeLessThanOrEqual(100);
-    });
-    // The first rows carry the whole range of IP (benign … DDoS), not one class.
-    expect(new Set(table.rows.map((row) => row[3])).size).toBeGreaterThan(5);
+  test("each controller has four default datasets of 20, 50, 100 and 500 rows", () => {
+    expect(datasets.DATASET_SIZES).toEqual([20, 50, 100, 500]);
+    expect(datasets.DEFAULT_DATASET_SIZE).toEqual({ security: 50, intrusion: 100 });
+    expect(datasets.datasetName("security", 50)).toBe("security-50.csv");
+    expect(datasets.datasetFile("intrusion", 500)).toBe("data/intrusion-500.csv");
+    expect(() => datasets.datasetName("intrusion", 40)).toThrow();
+    expect(() => datasets.datasetName("trust", 20)).toThrow();
+    expect(datasets.isDatasetSize("security", 100)).toBe(true);
+    expect(datasets.isDatasetSize("security", 7)).toBe(false);
+    expect(() => datasets.defaultDataset("trust", "a\n1")).toThrow();
   });
 
-  test("a limit at or above the dataset size gives the whole dataset", () => {
-    const intrusion = datasets.defaultDataset("intrusion", readCsvFiles("intrusion"), 100000);
-    expect(intrusion.rows).toHaveLength(500);
-    expect(intrusion.total).toBe(500);
-    expect(intrusion.limit).toBeNull();
-    const security = datasets.defaultDataset("security", readCsvFiles("security"), 200);
-    expect(security.rows).toHaveLength(200);
-    expect(security.limit).toBeNull();
-    const part = datasets.defaultDataset("security", readCsvFiles("security"), 199);
-    expect(part.rows.length).toBeLessThanOrEqual(199);
-    expect(part.total).toBe(200);
-    expect(part.limit).toBe(199);
-    expect(datasets.defaultDatasetName("security")).toBe("security.csv");
-    expect(datasets.defaultDatasetName("trust")).toBeNull();
+  test("default intrusion datasets: the file size is the row count, the split is made by the app", () => {
+    const expected = { 20: { train: 14, validation: 3, test: 3 }, 50: { train: 35, validation: 8, test: 7 }, 100: { train: 70, validation: 15, test: 15 }, 500: { train: 350, validation: 75, test: 75 } };
+    datasets.DATASET_SIZES.forEach((size) => {
+      const table = defaultTable("intrusion", size);
+      expect(table.header).toEqual(["NP", "Rate", "We", "IP"]);
+      expect(table.rows).toHaveLength(size);
+      expect(table.total).toBe(size);
+      table.rows.forEach((row) => {
+        expect(row[3]).toBeGreaterThanOrEqual(0);
+        expect(row[3]).toBeLessThanOrEqual(100);
+      });
+      const prepared = datasets.prepareDataset("intrusion", datasets.tableFromRows([table.header, ...table.rows]));
+      expect(prepared.ok).toBe(true);
+      const total = prepared.counts.train + prepared.counts.validation + prepared.counts.test;
+      expect(total).toBe(size);
+      expect(Math.abs(prepared.counts.train - expected[size].train)).toBeLessThanOrEqual(1);
+    });
   });
 
-  test("default security dataset: 200 rows of 4 columns, SR within [0, 100], all six rules fire", () => {
-    const all = datasets.defaultDataset("security", readCsvFiles("security"), null);
-    expect(all.header).toEqual(["EC", "TP", "Lat", "SR"]);
-    expect(all.rows).toHaveLength(200);
-    all.rows.forEach((row) => {
-      expect(row[3]).toBeGreaterThanOrEqual(0);
-      expect(row[3]).toBeLessThanOrEqual(100);
-    });
-    const security = require("../src/controllers/securityController");
-    const fired = new Set();
-    all.rows.forEach(([energy, strength, response]) => {
-      security.calculate({ energy, strength, response }).ruleEvaluations.forEach((rule, i) => {
-        if (rule.alpha > 0) fired.add(i);
+  test("every dataset covers the whole range of every input and of the target", () => {
+    // The ranges the datasets are generated over (security: thesis ranges; Rate is sampled on a log scale).
+    const ranges = { intrusion: [[0, 15], [0, 3000], [0, 250]], security: [[0.01, 0.05], [10, 35], [1, 10]] };
+    datasets.DATASET_SIZES.forEach((size) => {
+      Object.entries(ranges).forEach(([controller, universe]) => {
+        const { rows } = defaultTable(controller, size);
+        universe.forEach(([lo, hi], c) => {
+          const values = rows.map((r) => r[c]);
+          values.forEach((v) => {
+            expect(v).toBeGreaterThanOrEqual(lo);
+            expect(v).toBeLessThanOrEqual(hi);
+          });
+          if (controller === "intrusion" && c === 1) {
+            // Rate: log scale, from the quiet end to the flood end.
+            expect(Math.min(...values)).toBeLessThan(1);
+            expect(Math.max(...values)).toBeGreaterThan(size === 20 ? 1500 : 2500);
+            return;
+          }
+          // Four equal bins of the range all hold at least one row (the top bin of NP is a plateau of rare rows).
+          const bins = new Set(values.map((v) => Math.min(3, Math.floor(((v - lo) / (hi - lo)) * 4))));
+          expect(bins.size).toBe(4);
+        });
       });
     });
-    expect(fired.size).toBe(6);
-    const part = datasets.defaultDataset("security", readCsvFiles("security"), 20);
-    expect(part.rows).toHaveLength(20);
-    expect(datasets.prepareDataset("security", datasets.tableFromRows([part.header, ...part.rows])).counts).toEqual({ train: 14, test: 6 });
+  });
+
+  test("default security datasets: SR within [0, 100], all six rules fire in every file", () => {
+    const security = require("../src/controllers/securityController");
+    datasets.DATASET_SIZES.forEach((size) => {
+      const all = defaultTable("security", size);
+      expect(all.header).toEqual(["EC", "TP", "Lat", "SR"]);
+      expect(all.rows).toHaveLength(size);
+      const fired = new Set();
+      all.rows.forEach(([energy, strength, response, sr]) => {
+        expect(sr).toBeGreaterThanOrEqual(0);
+        expect(sr).toBeLessThanOrEqual(100);
+        security.calculate({ energy, strength, response }).ruleEvaluations.forEach((rule, i) => {
+          if (rule.alpha > 0) fired.add(i);
+        });
+      });
+      expect(fired.size).toBe(6);
+    });
+    expect(datasets.prepareDataset("security", datasets.tableFromRows([defaultTable("security", 50).header, ...defaultTable("security", 50).rows])).counts).toEqual({ train: 35, test: 15 });
   });
 
   test("a downloaded xlsx dataset can be uploaded back (file sniffing by content)", async () => {
-    const table = datasets.defaultDataset("intrusion", readCsvFiles("intrusion"), 30);
+    const table = defaultTable("intrusion", 20);
     const bytes = await xlsx.write([{ name: "Dataset", rows: [table.header, ...table.rows] }]);
     const back = await datasets.tableFromFile({ name: "no-extension", bytes });
     expect(back.header).toEqual(table.header);
-    expect(back.records).toHaveLength(30);
+    expect(back.records).toHaveLength(20);
     const csv = await datasets.tableFromFile({ name: "d.csv", text: "NP,Rate,We,IP\n9.5,1,141.55,100\n" });
     expect(csv.records).toEqual([{ NP: "9.5", Rate: "1", We: "141.55", IP: "100" }]);
   });
 });
 
 describe("training session", () => {
-  const bySplitOf = (controller, rows) => {
-    const csv = readCsvFiles(controller);
-    const table = datasets.defaultDataset(controller, csv, rows);
+  const bySplitOf = (controller, size) => {
+    const table = defaultTable(controller, size);
     return datasets.prepareDataset(controller, datasets.tableFromRows([table.header, ...table.rows])).bySplit;
   };
 
@@ -166,7 +184,7 @@ describe("training session", () => {
     const progress = [];
     const result = await session.runTraining({
       controller: "intrusion",
-      bySplit: bySplitOf("intrusion", 40),
+      bySplit: bySplitOf("intrusion", 50),
       options: { generations: 6, initialPopulation: 20, populationSize: 10 },
       datasetName: "test.xlsx",
       onProgress: (entry) => progress.push(entry),
@@ -190,7 +208,7 @@ describe("training session", () => {
     // Targets = the expert model's own outputs: the expert chromosome
     // (validated, centroid grid 0.2) must reproduce them exactly.
     const intrusionModel = require("../src/controllers/intrusionController");
-    const bySplit = bySplitOf("intrusion", 60);
+    const bySplit = bySplitOf("intrusion", 50);
     Object.values(bySplit).forEach((rows) =>
       rows.forEach((s) => {
         s.y = intrusionModel.calculate({ packets: s.raw.NP, rate: Math.min(s.raw.Rate, 3000), weight: s.raw.We }).value;
@@ -209,7 +227,7 @@ describe("training session", () => {
   test("ANFIS on the default dataset lowers the training error from the expert model", async () => {
     const result = await session.runTraining({
       controller: "security",
-      bySplit: bySplitOf("security", null),
+      bySplit: bySplitOf("security", 500),
       options: { epochs: 5 },
     });
     const h = result.training.history;
@@ -221,7 +239,7 @@ describe("training session", () => {
     let seen = 0;
     const result = await session.runTraining({
       controller: "intrusion",
-      bySplit: bySplitOf("intrusion", 40),
+      bySplit: bySplitOf("intrusion", 50),
       options: { generations: 50, initialPopulation: 20, populationSize: 10 },
       onProgress: () => {
         seen += 1;
