@@ -247,9 +247,10 @@ function spread(rows, n) {
 }
 
 /**
- * Rows of the default dataset: the file as it is, or `limit` rows of it with
- * the shares of the splits kept (70/15/15, 70/30) and, inside a split, spread
- * over the categories (Intrusion) or the rows (Security).
+ * Rows of the default dataset: the file as it is, or its first `limit` rows.
+ * The files are built so that any prefix is balanced (data/intrusion.csv
+ * interleaves the traffic categories, data/security.csv mixes the rules).
+ * A file with a split column keeps the shares of the splits instead.
  *
  * @param {string} controller
  * @param {{data: string}} csv text of the file in DEFAULT_DATASET_FILES
@@ -266,6 +267,8 @@ function defaultDataset(controller, csv, limit = null) {
   // A limit at or above the dataset size means the whole dataset.
   if (limit !== null && limit >= total) limit = null;
   if (limit === null) return { header, rows: records.map(toRow), total, limit };
+  limit = Math.max(limit, 1);
+  if (!header.includes("split")) return { header, rows: records.slice(0, limit).map(toRow), total, limit };
 
   const shares = SCHEMAS[controller].splits;
   const rows = [];
@@ -284,7 +287,7 @@ function defaultDataset(controller, csv, limit = null) {
         : spread(ofSplit, take);
     rows.push(...picked.map(toRow));
   });
-  return { header, rows: rows.slice(0, Math.max(limit, 1)), total, limit };
+  return { header, rows: rows.slice(0, limit), total, limit };
 }
 
 const DATASET_ROW_OPTIONS = [20, 40, 100, null];

@@ -33,7 +33,7 @@ describe("dataset download", () => {
   test("returns an xlsx with the requested rows", async () => {
     const bytes = await datasetBytes("intrusion", 20);
     const sheets = await xlsx.read(new Uint8Array(bytes));
-    expect(sheets[0].rows[0]).toEqual(["NP", "Rate", "We", "IP", "label", "category", "split"]);
+    expect(sheets[0].rows[0]).toEqual(["NP", "Rate", "We", "IP"]);
     expect(sheets[0].rows).toHaveLength(21);
   });
 
@@ -42,6 +42,7 @@ describe("dataset download", () => {
     expect(info.status).toBe(200);
     expect(info.body.total).toBe(200);
     expect(info.body.file).toBe("security.csv");
+    expect(info.body.columns).toEqual(["EC", "TP", "Lat", "SR"]);
     expect(info.body.columns[0]).toBe("EC");
     const response = await binary(request(app).get("/api/controllers/security/dataset?rows=9999"));
     expect(response.status).toBe(200);
@@ -96,7 +97,7 @@ describe("training jobs", () => {
   test("can be stopped", async () => {
     const bytes = await datasetBytes("intrusion", 40);
     const created = await request(app)
-      .post("/api/training/intrusion/jobs?name=ds.xlsx&generations=400&initialPopulation=16&populationSize=8")
+      .post("/api/training/intrusion/jobs?name=ds.xlsx&generations=4000&initialPopulation=16&populationSize=8&stagnation=100000")
       .set("Content-Type", "application/octet-stream")
       .send(bytes);
     expect(created.status).toBe(201);
@@ -106,7 +107,7 @@ describe("training jobs", () => {
     const job = await waitForJob(created.body.id);
     expect(job.status).toBe("stopped");
     expect(job.result.training.stopReason).toBe("stopped");
-    expect(job.result.training.steps).toBeLessThan(400);
+    expect(job.result.training.steps).toBeLessThan(4000);
   });
 
   test("unknown job and controller give 404", async () => {

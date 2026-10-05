@@ -3,12 +3,11 @@
  * ANFIS training of the Security controller.
  *
  *   npm run train:security
- *   node scripts/train-security.js [--full] [--data <csv>] [--target SR] [--epochs 100] [--dry-run]
+ *   node scripts/train-security.js [--data <csv>] [--target SR] [--epochs 100] [--dry-run]
  *
- * Reads data/security.csv (the dataset the app ships): EC, TP, Lat, the target
- * SR and the train / test split. --full reads the labelling workbench
- * data/full/security/security_labeling.csv instead, with --target SR_expert.
- * Rows with an empty target are skipped. Writes
+ * Reads data/security.csv (the dataset the app ships): EC, TP, Lat and the
+ * target SR; an optional split column (train / test), otherwise the rows are
+ * divided 70/30 as the app does it. Rows with an empty target are skipped. Writes
  * src/controllers/trained/security.json (the trained parameters, metrics and
  * learning curve), which the app loads as the "trained" variant.
  *
@@ -18,7 +17,8 @@
 const fs = require("fs");
 const path = require("path");
 const { runTraining, METHODS } = require("../src/training/session");
-const { readCsv, cellNumber } = require("../src/training/utils");
+const { readCsv } = require("../src/training/utils");
+const datasets = require("../src/training/datasets");
 
 const root = path.join(__dirname, "..");
 
@@ -32,10 +32,7 @@ function parseArgs(argv) {
   };
   for (let i = 0; i < argv.length; i += 1) {
     const flag = argv[i];
-    if (flag === "--full") {
-      args.data = path.join(root, "data/full/security/security_labeling.csv");
-      args.target = "SR_expert";
-    } else if (flag === "--data") args.data = path.resolve(argv[++i]);
+    if (flag === "--data") args.data = path.resolve(argv[++i]);
     else if (flag === "--target") args.target = argv[++i];
     else if (flag === "--epochs") args.epochs = Number(argv[++i]);
     else if (flag === "--out") args.out = path.resolve(argv[++i]);
@@ -46,25 +43,20 @@ function parseArgs(argv) {
   return args;
 }
 
+/**
+ * Rows of the file with `target` as SR; the split comes from the file's split
+ * column when present, otherwise it is assigned as the app does it (70/30).
+ */
 function loadSamples(file, target) {
   const rows = readCsv(file);
-  const samples = { train: [], test: [] };
-  let skipped = 0;
-  rows.forEach((row) => {
-    const x = [cellNumber(row.EC), cellNumber(row.TP), cellNumber(row.Lat)];
-    const y = cellNumber(row[target]);
-    if (x.some((v) => v === null) || y === null) {
-      skipped += 1;
-      return;
-    }
-    if (y < 0 || y > 100) throw new Error(`${target} must be within [0, 100], row_id ${row.row_id}: ${y}`);
-    samples[row.split === "test" ? "test" : "train"].push({
-      id: Number(row.row_id),
-      raw: { EC: x[0], TP: x[1], Lat: x[2] },
-      y,
-    });
-  });
-  return { ...samples, total: rows.length, skipped };
+  const records = rows.map((row) => ({ EC: row.EC, TP: row.TP, Lat: row.Lat, SR: row[target], split: row.split }));
+  const prepared = datasets.prepareDataset("security", { header: ["EC", "TP", "Lat", "SR", "split"], records });
+  if (!prepared.ok) {
+    if (prepared.error === "tooFewRows") return { train: prepared.bySplit?.train || [], test: [], total: rows.length, skipped: prepared.skipped };
+    throw new Error(`${path.relative(root, file)}: ${prepared.error}`);
+  }
+  const pick = (name) => (prepared.bySplit[name] || []).map(({ raw, y }) => ({ raw, y }));
+  return { train: pick("train"), test: pick("test"), total: rows.length, skipped: prepared.skipped };
 }
 
 function fmt(metrics) {
