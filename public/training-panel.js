@@ -38,6 +38,7 @@
         { key: "initialPopulation", min: 4, max: 2000, step: 1 },
         { key: "targetRmse", min: 0, max: 100, step: 0.1 },
         { key: "seed", min: 0, max: 1e9, step: 1 },
+        { key: "logRate", type: "toggle" },
       ],
       series: [
         { key: "bestRmse", nameKey: "common.training.series.best", cls: "s1" },
@@ -142,8 +143,14 @@
     const total = state.datasetTotal;
     const allLabel = total ? `${t("common.training.rowsAllBtn")} · ${total}` : t("common.training.rowsAllBtn");
     const optionFields = method.options
-      .map(
-        (opt) => `
+      .map((opt) =>
+        opt.type === "toggle"
+          ? `
+          <label class="training-option training-option-toggle">
+            <input type="checkbox" data-option="${opt.key}" />
+            <span>${escapeHtml(t(`common.training.options.${opt.key}`))}${help(t(`common.training.optionHelp.${opt.key}`))}</span>
+          </label>`
+          : `
           <label class="training-option">
             <span>${escapeHtml(t(`common.training.options.${opt.key}`))}${help(t(`common.training.optionHelp.${opt.key}`))}</span>
             <input type="number" data-option="${opt.key}" min="${opt.min}" max="${opt.max}" step="${opt.step}" />
@@ -214,7 +221,9 @@
     const defaults = { ...(root.fuzzyTraining?.session?.METHODS?.[controller]?.defaultOptions || {}), ...DEFAULT_OPTIONS[controller] };
     state.els.panel.querySelectorAll("[data-option]").forEach((input) => {
       const key = input.dataset.option;
-      input.value = state.options?.[key] ?? defaults[key] ?? "";
+      const value = state.options?.[key] ?? defaults[key] ?? "";
+      if (input.type === "checkbox") input.checked = Number(value) === 1;
+      else input.value = value;
     });
     bindPanel();
     renderRowsPicker();
@@ -254,12 +263,16 @@
   // (the API and the worker apply them when a field is left empty).
   const DEFAULT_OPTIONS = {
     security: { epochs: 100 },
-    intrusion: { generations: 200, populationSize: 200, initialPopulation: 300, targetRmse: 0, seed: 42 },
+    intrusion: { generations: 200, populationSize: 200, initialPopulation: 300, targetRmse: 0, seed: 42, logRate: 0 },
   };
 
   function readOptions() {
     const options = {};
     state.els.panel.querySelectorAll("[data-option]").forEach((input) => {
+      if (input.type === "checkbox") {
+        options[input.dataset.option] = input.checked ? 1 : 0;
+        return;
+      }
       const value = Number(input.value);
       if (Number.isFinite(value) && input.value !== "") options[input.dataset.option] = value;
     });
@@ -856,7 +869,7 @@
       <details class="training-changes">
         <summary>${escapeHtml(changesSummary(result.changes))}</summary>
         <div class="training-changes-body">
-          <p class="training-note">${escapeHtml(t(`${pageKey(state.controller)}.training.changesNote`))}</p>
+          <p class="training-note">${escapeHtml(t(`${pageKey(state.controller)}.training.${isLogRate() ? "changesNoteLog" : "changesNote"}`))}</p>
           <div class="training-legend"><span><i class="is-before"></i>${escapeHtml(t("common.training.before"))}</span><span><i class="is-after"></i>${escapeHtml(t("common.training.after"))}</span></div>
           <div class="training-vars">${result.changes.variables.map(renderVariable).join("")}</div>
           ${renderRules(result.changes)}
@@ -908,17 +921,21 @@
     return 0;
   }
 
+  /** Whether the current result trained Rate on the log scale. */
+  const isLogRate = () => state.result?.params?.rateScale === "log10p1";
+
   function variableTitle(symbol) {
     const page = pageKey(state.controller);
     const key = state.method.keyOf[symbol];
-    if (state.controller === "intrusion" && symbol === "Rate") return t("intrusion.membership.rateLog");
+    if (state.controller === "intrusion" && symbol === "Rate" && isLogRate()) return t("intrusion.membership.rateLog");
     return t(`${page}.membership.${key}`, symbol);
   }
 
   function renderVariable(variable) {
     const { method } = state;
     const varKey = method.keyOf[variable.symbol];
-    const [min, max] = method.ranges[variable.symbol];
+    const [min, max] =
+      variable.symbol === "Rate" && !isLogRate() ? [0, state.result?.params?.ranges?.rate?.max ?? 3000] : method.ranges[variable.symbol];
     const siblings = variable.terms.map((term) => term.term);
     const W = 300;
     const H = 110;

@@ -24,7 +24,10 @@ const { trainAnfisSteps } = require("./anfis");
 const { regressionMetrics, round } = require("./utils");
 
 // ---------------------------------------------------------------------------
-// Intrusion: the trained model reads Rate on the log scale lg(1 + pps)
+// Intrusion: Rate scale of the trained model. The theory works in pps (linear,
+// the universe of the expert model, 0–3000). With real CICIoT2023 traffic the
+// option logRate = 1 trains on lg(1 + pps) instead: 95 % of the rows have
+// Rate < 150 pps and the linear Gaussians see all of them as "small".
 // ---------------------------------------------------------------------------
 
 const TRAINED_INTRUSION_RANGES = {
@@ -49,12 +52,16 @@ function expertIntrusionInLogScale() {
   return { ...base, rateScale: "log10p1", ranges: TRAINED_INTRUSION_RANGES, inputs: { ...base.inputs, Rate: rate } };
 }
 
-/** Inputs of the trained Intrusion model for a raw sample. */
-function intrusionTrainedX(raw) {
+const useLogRate = (opts) => Number(opts && opts.logRate) === 1;
+const intrusionRanges = (opts) => (useLogRate(opts) ? TRAINED_INTRUSION_RANGES : intrusion.BASE_PARAMS.ranges);
+
+/** Inputs of the trained Intrusion model for a raw sample (log or linear Rate). */
+function intrusionTrainedX(raw, opts) {
+  const ranges = intrusionRanges(opts);
   return [
-    clamp(raw.NP, TRAINED_INTRUSION_RANGES.packets),
-    clamp(intrusion.toLogRate(raw.Rate), TRAINED_INTRUSION_RANGES.rate),
-    clamp(raw.We, TRAINED_INTRUSION_RANGES.weight),
+    clamp(raw.NP, ranges.packets),
+    clamp(useLogRate(opts) ? intrusion.toLogRate(raw.Rate) : raw.Rate, ranges.rate),
+    clamp(raw.We, ranges.weight),
   ];
 }
 
@@ -87,18 +94,23 @@ const METHODS = {
     // Theory (4.3.5): N0 random chromosomes, the N < N0 best of them form the
     // working population; stop after the given generations or at an acceptable
     // RMSE (targetRmse, 0 = off). N = 200 as in the MATLAB tuning of the thesis.
-    defaultOptions: { initialPopulation: 300, populationSize: 200, generations: 200, targetRmse: 0, seed: 42 },
+    // logRate: 0 — Rate in pps as in the theory; 1 — lg(1 + pps) (real traffic).
+    defaultOptions: { initialPopulation: 300, populationSize: 200, generations: 200, targetRmse: 0, seed: 42, logRate: 0 },
     module: intrusion,
     toX: intrusionTrainedX,
     toBaseInputs: intrusionBaseInputs,
     toTrainedInputs: (x) => ({ packets: x[0], rate: x[1], weight: x[2] }),
     baseParams: () => intrusion.BASE_PARAMS,
-    initialParams: expertIntrusionInLogScale,
-    finalParams: (result) => ({ rateScale: "log10p1", ranges: TRAINED_INTRUSION_RANGES, ...result.params }),
-    spec: () => ({
+    initialParams: (opts) => (useLogRate(opts) ? expertIntrusionInLogScale() : intrusion.BASE_PARAMS),
+    finalParams: (result, opts) => ({
+      rateScale: useLogRate(opts) ? "log10p1" : "linear",
+      ranges: intrusionRanges(opts),
+      ...result.params,
+    }),
+    spec: (opts) => ({
       inputs: [
         { symbol: "NP", range: [0, 15] },
-        { symbol: "Rate", range: [0, intrusion.LOG_RATE_MAX] },
+        { symbol: "Rate", range: [0, intrusionRanges(opts).rate.max] },
         { symbol: "We", range: [0, 250] },
       ],
       inputTerms: intrusion.INPUT_TERMS,
@@ -387,12 +399,12 @@ async function runTraining({
 }) {
   const method = methodOf(controller);
   const opts = { ...method.defaultOptions, ...options };
-  const spec = method.spec();
-  const initial = method.initialParams();
+  const spec = method.spec(opts);
+  const initial = method.initialParams(opts);
   const samples = {};
   const splits = {};
   method.splits.forEach((name) => {
-    splits[name] = (bySplit[name] || []).map((s) => ({ ...s, x: method.toX(s.raw) }));
+    splits[name] = (bySplit[name] || []).map((s) => ({ ...s, x: method.toX(s.raw, opts) }));
     samples[name] = splits[name].length;
   });
   if (!splits.train.length) throw new Error("the training split is empty");
@@ -412,7 +424,7 @@ async function runTraining({
   const raw = step.value;
   const seconds = (Date.now() - started) / 1000;
 
-  const params = method.finalParams(raw);
+  const params = method.finalParams(raw, opts);
   const trainedModel = method.module.buildModel(params, { variant: "trained" });
   const baseModel = method.module.variants.base;
   const metrics = { base: {}, trained: {} };
@@ -457,9 +469,9 @@ async function runTraining({
     method: method.method,
     params,
     training,
-    // For Intrusion the comparison is made in the units of the trained model
-    // (Rate on the log scale), i.e. against the expert model converted to it.
-    changes: paramsDiff(controller, method.initialParams(), params),
+    // For Intrusion the comparison is made in the units of the trained model:
+    // with logRate the expert model is converted to the log scale first.
+    changes: paramsDiff(controller, method.initialParams(opts), params),
   };
 }
 
