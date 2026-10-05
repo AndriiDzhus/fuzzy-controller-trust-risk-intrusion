@@ -23,39 +23,12 @@ const { evolveSteps, CHROMOSOME_LENGTH } = require("./genetic");
 const { trainAnfisSteps } = require("./anfis");
 const { regressionMetrics, round } = require("./utils");
 
-// ---------------------------------------------------------------------------
-// Intrusion: the trained model reads Rate on the log scale lg(1 + pps)
-// ---------------------------------------------------------------------------
-
-const TRAINED_INTRUSION_RANGES = {
-  packets: { min: 0, max: 15 },
-  rate: { min: 0, max: intrusion.LOG_RATE_MAX },
-  weight: { min: 0, max: 250 },
-};
 const clamp = (v, { min, max }) => Math.min(max, Math.max(min, v));
 
-/**
- * A Gaussian (c, σ) in pps becomes (lg(1 + c), σ / ((1 + c) ln 10)) on the log
- * scale: the same centre and the same local slope around it.
- */
-function expertIntrusionInLogScale() {
-  const base = intrusion.BASE_PARAMS;
-  const rate = {};
-  Object.entries(base.inputs.Rate).forEach(([term, { params: [sigma, center] }]) => {
-    const c = intrusion.toLogRate(center);
-    const s = Math.max(0.05, sigma / ((1 + center) * Math.LN10));
-    rate[term] = { type: "gauss", params: [round(s, 4), round(c, 4)] };
-  });
-  return { ...base, rateScale: "log10p1", ranges: TRAINED_INTRUSION_RANGES, inputs: { ...base.inputs, Rate: rate } };
-}
-
-/** Inputs of the trained Intrusion model for a raw sample. */
-function intrusionTrainedX(raw) {
-  return [
-    clamp(raw.NP, TRAINED_INTRUSION_RANGES.packets),
-    clamp(intrusion.toLogRate(raw.Rate), TRAINED_INTRUSION_RANGES.rate),
-    clamp(raw.We, TRAINED_INTRUSION_RANGES.weight),
-  ];
+/** Inputs of the Intrusion model for a raw sample (inside its universe). */
+function intrusionX(raw) {
+  const { ranges } = intrusion;
+  return [clamp(raw.NP, ranges.packets), clamp(raw.Rate, ranges.rate), clamp(raw.We, ranges.weight)];
 }
 
 /** Inputs of the base Intrusion model (pps limited to its universe). */
@@ -87,18 +60,20 @@ const METHODS = {
     // Theory (4.3.5): N0 random chromosomes, the N < N0 best of them form the
     // working population; stop after the given generations or at an acceptable
     // RMSE (targetRmse, 0 = off). N = 200 as in the MATLAB tuning of the thesis.
-    defaultOptions: { initialPopulation: 300, populationSize: 200, generations: 200, targetRmse: 0, seed: 42 },
+    // N = 100 and 150 generations keep a run on 500 rows within ~30 s in the
+    // browser (the MATLAB tuning of the thesis used 200 and ran to 625).
+    defaultOptions: { initialPopulation: 150, populationSize: 100, generations: 150, targetRmse: 0, seed: 42 },
     module: intrusion,
-    toX: intrusionTrainedX,
+    toX: intrusionX,
     toBaseInputs: intrusionBaseInputs,
     toTrainedInputs: (x) => ({ packets: x[0], rate: x[1], weight: x[2] }),
     baseParams: () => intrusion.BASE_PARAMS,
-    initialParams: expertIntrusionInLogScale,
-    finalParams: (result) => ({ rateScale: "log10p1", ranges: TRAINED_INTRUSION_RANGES, ...result.params }),
+    initialParams: () => intrusion.BASE_PARAMS,
+    finalParams: (result) => ({ rateScale: "linear", ranges: intrusion.BASE_PARAMS.ranges, ...result.params }),
     spec: () => ({
       inputs: [
         { symbol: "NP", range: [0, 15] },
-        { symbol: "Rate", range: [0, intrusion.LOG_RATE_MAX] },
+        { symbol: "Rate", range: [0, intrusion.ranges.rate.max] },
         { symbol: "We", range: [0, 250] },
       ],
       inputTerms: intrusion.INPUT_TERMS,
@@ -387,12 +362,12 @@ async function runTraining({
 }) {
   const method = methodOf(controller);
   const opts = { ...method.defaultOptions, ...options };
-  const spec = method.spec();
-  const initial = method.initialParams();
+  const spec = method.spec(opts);
+  const initial = method.initialParams(opts);
   const samples = {};
   const splits = {};
   method.splits.forEach((name) => {
-    splits[name] = (bySplit[name] || []).map((s) => ({ ...s, x: method.toX(s.raw) }));
+    splits[name] = (bySplit[name] || []).map((s) => ({ ...s, x: method.toX(s.raw, opts) }));
     samples[name] = splits[name].length;
   });
   if (!splits.train.length) throw new Error("the training split is empty");
@@ -412,7 +387,7 @@ async function runTraining({
   const raw = step.value;
   const seconds = (Date.now() - started) / 1000;
 
-  const params = method.finalParams(raw);
+  const params = method.finalParams(raw, opts);
   const trainedModel = method.module.buildModel(params, { variant: "trained" });
   const baseModel = method.module.variants.base;
   const metrics = { base: {}, trained: {} };
@@ -448,6 +423,8 @@ async function runTraining({
   if (method.method === "ga") {
     training.chromosomeLength = CHROMOSOME_LENGTH;
     training.fitness = { expert: round(raw.expert.fitness, 6), best: round(raw.best.fitness, 6) };
+    // The generation whose best chromosome is returned (lowest validation RMSE).
+    training.bestGeneration = raw.best.generation;
   } else {
     training.bestEpoch = raw.best.epoch;
   }
@@ -457,9 +434,7 @@ async function runTraining({
     method: method.method,
     params,
     training,
-    // For Intrusion the comparison is made in the units of the trained model
-    // (Rate on the log scale), i.e. against the expert model converted to it.
-    changes: paramsDiff(controller, method.initialParams(), params),
+    changes: paramsDiff(controller, method.initialParams(opts), params),
   };
 }
 
@@ -479,9 +454,7 @@ function securityCoverage(rows = [], n = 12) {
 module.exports = {
   METHODS,
   securityCoverage,
-  TRAINED_INTRUSION_RANGES,
-  expertIntrusionInLogScale,
-  intrusionTrainedX,
+  intrusionX,
   intrusionBaseInputs,
   modelMetrics,
   targetTerm,

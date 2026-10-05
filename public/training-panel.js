@@ -41,13 +41,13 @@
       ],
       series: [
         { key: "bestRmse", nameKey: "common.training.series.best", cls: "s1" },
-        { key: "meanRmse", nameKey: "common.training.series.mean", shortKey: "common.training.series.meanShort", cls: "s3" },
+        { key: "meanRmse", nameKey: "common.training.series.mean", shortKey: "common.training.series.meanShort", cls: "s3", axis: "right" },
         { key: "validationRmse", nameKey: "common.training.series.validation", cls: "s2" },
       ],
       inputSymbols: ["NP", "Rate", "We"],
       outputSymbol: "IP",
       keyOf: { NP: "packets", Rate: "rate", We: "weight", IP: "intrusion" },
-      ranges: { NP: [0, 15], Rate: [0, 7], We: [0, 250], IP: [0, 100] },
+      ranges: { NP: [0, 15], Rate: [0, 3000], We: [0, 250], IP: [0, 100] },
       reportSplits: ["train", "validation", "test"],
     },
   };
@@ -60,10 +60,14 @@
   const escapeHtml = (value) =>
     String(value ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
   const locale = () => (root.i18nHelper?.currentLang === "en" ? "en-US" : "uk-UA");
-  const fmt = (value, digits = 2) =>
-    value === null || value === undefined || !Number.isFinite(Number(value))
-      ? "—"
-      : Number(value).toLocaleString(locale(), { minimumFractionDigits: digits, maximumFractionDigits: digits });
+  // Without explicit digits: 2 decimals, 3 below 1 and 4 below 0.1 (RMSE of the
+  // trained models is hundredths: 0.0189, 0.361).
+  const fmt = (value, digits) => {
+    if (value === null || value === undefined || !Number.isFinite(Number(value))) return "—";
+    const v = Number(value);
+    const d = digits ?? (v !== 0 && Math.abs(v) < 0.1 ? 4 : Math.abs(v) < 1 ? 3 : 2);
+    return v.toLocaleString(locale(), { minimumFractionDigits: d, maximumFractionDigits: d });
+  };
   const pct = (value) => (value === null || value === undefined ? "—" : `${fmt(100 * value, 1)} %`);
   /** A "?" that shows `text` on hover / focus / tap (see .training-help in style.css). */
   const help = (text) =>
@@ -87,7 +91,7 @@
     expectedSteps: null,
     result: null,
     error: null,
-    rows: DEFAULT_ROWS, // rows of the default dataset: number, or null for the whole dataset
+    rows: null, // rows of the default dataset: number, or null for the whole dataset (default)
     customRows: DEFAULT_ROWS, // last number typed, kept while "whole dataset" is chosen
     datasetTotal: null, // size of the default dataset, once known
     datasetFile: null, // name of the default dataset file, once known
@@ -142,8 +146,14 @@
     const total = state.datasetTotal;
     const allLabel = total ? `${t("common.training.rowsAllBtn")} · ${total}` : t("common.training.rowsAllBtn");
     const optionFields = method.options
-      .map(
-        (opt) => `
+      .map((opt) =>
+        opt.type === "toggle"
+          ? `
+          <label class="training-option training-option-toggle">
+            <input type="checkbox" data-option="${opt.key}" />
+            <span>${escapeHtml(t(`common.training.options.${opt.key}`))}${help(t(`common.training.optionHelp.${opt.key}`))}</span>
+          </label>`
+          : `
           <label class="training-option">
             <span>${escapeHtml(t(`common.training.options.${opt.key}`))}${help(t(`common.training.optionHelp.${opt.key}`))}</span>
             <input type="number" data-option="${opt.key}" min="${opt.min}" max="${opt.max}" step="${opt.step}" />
@@ -214,7 +224,9 @@
     const defaults = { ...(root.fuzzyTraining?.session?.METHODS?.[controller]?.defaultOptions || {}), ...DEFAULT_OPTIONS[controller] };
     state.els.panel.querySelectorAll("[data-option]").forEach((input) => {
       const key = input.dataset.option;
-      input.value = state.options?.[key] ?? defaults[key] ?? "";
+      const value = state.options?.[key] ?? defaults[key] ?? "";
+      if (input.type === "checkbox") input.checked = Number(value) === 1;
+      else input.value = value;
     });
     bindPanel();
     renderRowsPicker();
@@ -254,12 +266,16 @@
   // (the API and the worker apply them when a field is left empty).
   const DEFAULT_OPTIONS = {
     security: { epochs: 100 },
-    intrusion: { generations: 200, populationSize: 200, initialPopulation: 300, targetRmse: 0, seed: 42 },
+    intrusion: { generations: 150, populationSize: 100, initialPopulation: 150, targetRmse: 0, seed: 42 },
   };
 
   function readOptions() {
     const options = {};
     state.els.panel.querySelectorAll("[data-option]").forEach((input) => {
+      if (input.type === "checkbox") {
+        options[input.dataset.option] = input.checked ? 1 : 0;
+        return;
+      }
       const value = Number(input.value);
       if (Number.isFinite(value) && input.value !== "") options[input.dataset.option] = value;
     });
@@ -647,25 +663,44 @@
       .filter((s) => history.some((h) => Number.isFinite(h[s.key])));
     const W = 640;
     const H = 250;
-    const pad = { l: 50, r: 16, t: 26, b: 36 };
+    // A series on the right axis (the GA's population mean, tens of times above
+    // the best RMSE) gets a scale of its own, so the best curve stays readable.
+    const hasRight = series.some((s) => s.axis === "right") && series.some((s) => s.axis !== "right");
+    const isRight = (s) => hasRight && s.axis === "right";
+    const pad = { l: 50, r: hasRight ? 44 : 16, t: 26, b: 36 };
     const xs = history.map((h) => h[stepKey]);
     const x0 = xs[0];
     const x1 = Math.max(xMax || 0, xs[xs.length - 1], x0 + 1);
-    const all = series.flatMap((s) => history.map((h) => h[s.key]).filter(Number.isFinite));
-    let yMin = Math.min(...all);
-    let yMax = Math.max(...all);
-    const span = yMax - yMin || 1;
-    yMin = Math.max(0, yMin - span * 0.08);
-    yMax += span * 0.08;
+    const range = (list) => {
+      const all = list.flatMap((s) => history.map((h) => h[s.key]).filter(Number.isFinite));
+      let lo = Math.min(...all);
+      let hi = Math.max(...all);
+      const sp = hi - lo || 1;
+      lo = Math.max(0, lo - sp * 0.08);
+      hi += sp * 0.08;
+      return { lo, hi, sp };
+    };
+    const left = range(series.filter((s) => !isRight(s)));
+    const right = hasRight ? range(series.filter(isRight)) : null;
+    const yMin = left.lo;
+    const yMax = left.hi;
+    const span = left.sp;
     const x = (v) => pad.l + ((v - x0) / (x1 - x0)) * (W - pad.l - pad.r);
-    const y = (v) => pad.t + (1 - (v - yMin) / (yMax - yMin)) * (H - pad.t - pad.b);
+    const scaleOf = (r) => (v) => pad.t + (1 - (v - r.lo) / (r.hi - r.lo)) * (H - pad.t - pad.b);
+    const y = scaleOf(left);
+    const yRight = right ? scaleOf(right) : null;
     const yTicks = niceTicks(yMin, yMax, 5);
+    const rightTicks = right
+      ? niceTicks(right.lo, right.hi, 5)
+          .map((v) => `<text class="lc-tick lc-tick-right" x="${W - pad.r + 8}" y="${yRight(v) + 4}" text-anchor="start">${escapeHtml(fmt(v, right.sp < 2 ? 2 : 1))}</text>`)
+          .join("")
+      : "";
     const xTicks = niceTicks(x0, x1, 6).filter((v) => Number.isInteger(v));
     const grid = yTicks
       .map(
         (v) =>
           `<line class="lc-grid" x1="${pad.l}" x2="${W - pad.r}" y1="${y(v)}" y2="${y(v)}"/>` +
-          `<text class="lc-tick" x="${pad.l - 8}" y="${y(v) + 4}" text-anchor="end">${escapeHtml(fmt(v, span < 2 ? 2 : 1))}</text>`
+          `<text class="lc-tick" x="${pad.l - 8}" y="${y(v) + 4}" text-anchor="end">${escapeHtml(fmt(v, span < 0.2 ? 3 : span < 2 ? 2 : 1))}</text>`
       )
       .join("");
     const xAxis = xTicks
@@ -674,7 +709,8 @@
     const lines = series
       .map((s) => {
         const pts = history.filter((h) => Number.isFinite(h[s.key]));
-        const d = pts.map((h, i) => `${i ? "L" : "M"}${x(h[stepKey]).toFixed(1)},${y(h[s.key]).toFixed(1)}`).join("");
+        const yy = isRight(s) ? yRight : y;
+        const d = pts.map((h, i) => `${i ? "L" : "M"}${x(h[stepKey]).toFixed(1)},${yy(h[s.key]).toFixed(1)}`).join("");
         return `<path class="lc-line ${s.cls}" d="${d}"/>`;
       })
       .join("");
@@ -684,7 +720,7 @@
           `<text class="lc-chosen-label" x="${x(chosen) + 4}" y="${pad.t + 10}">${escapeHtml(t("common.training.chosen"))}</text>`
         : "";
     const legend = series
-      .map((s) => `<span class="lc-legend-item"><i class="${s.cls}"></i>${escapeHtml(s.name)}</span>`)
+      .map((s) => `<span class="lc-legend-item"><i class="${s.cls}"></i>${escapeHtml(s.name)}${isRight(s) ? ` (${escapeHtml(t("common.training.rightAxis"))})` : ""}</span>`)
       .join("");
     const xLabel = t(`common.training.${stepKey}`);
     return `
@@ -694,6 +730,7 @@
           ${grid}
           <line class="lc-axis" x1="${pad.l}" x2="${W - pad.r}" y1="${H - pad.b}" y2="${H - pad.b}"/>
           ${xAxis}
+          ${rightTicks}
           <text class="lc-axis-label" x="${(pad.l + W - pad.r) / 2}" y="${H - 4}" text-anchor="middle">${escapeHtml(xLabel)}</text>
           <text class="lc-axis-label" x="10" y="12" text-anchor="start">RMSE</text>
           ${chosenMark}
@@ -707,9 +744,9 @@
       <script type="application/json" class="lc-data">${JSON.stringify({
         stepKey,
         xLabel,
-        series: series.map(({ key, name, cls }) => ({ key, name, cls })),
+        series: series.map((s) => ({ key: s.key, name: s.name, cls: s.cls, right: isRight(s) })),
         history,
-        geom: { W, H, pad, x0, x1, yMin, yMax },
+        geom: { W, H, pad, x0, x1, yMin, yMax, rMin: right ? right.lo : null, rMax: right ? right.hi : null },
       }).replace(/</g, "\\u003c")}</script>`;
   }
 
@@ -723,9 +760,12 @@
     const cross = svg.querySelector(".lc-cross");
     const dots = [...svg.querySelectorAll(".lc-dot")];
     const tip = wrap.querySelector(".lc-tip");
-    const { W, H, pad, x0, x1, yMin, yMax } = geom;
+    const { W, H, pad, x0, x1, yMin, yMax, rMin, rMax } = geom;
     const x = (v) => pad.l + ((v - x0) / (x1 - x0 || 1)) * (W - pad.l - pad.r);
-    const y = (v) => pad.t + (1 - (v - yMin) / (yMax - yMin)) * (H - pad.t - pad.b);
+    const y = (v, right = false) => {
+      const [lo, hi] = right ? [rMin, rMax] : [yMin, yMax];
+      return pad.t + (1 - (v - lo) / (hi - lo)) * (H - pad.t - pad.b);
+    };
     const hide = () => {
       cross.setAttribute("visibility", "hidden");
       dots.forEach((d) => d.setAttribute("visibility", "hidden"));
@@ -747,7 +787,7 @@
         const v = best[s.key];
         if (!Number.isFinite(v)) return dots[i].setAttribute("visibility", "hidden");
         dots[i].setAttribute("cx", cx);
-        dots[i].setAttribute("cy", y(v));
+        dots[i].setAttribute("cy", y(v, s.right));
         dots[i].setAttribute("visibility", "visible");
       });
       tip.innerHTML =
@@ -911,7 +951,6 @@
   function variableTitle(symbol) {
     const page = pageKey(state.controller);
     const key = state.method.keyOf[symbol];
-    if (state.controller === "intrusion" && symbol === "Rate") return t("intrusion.membership.rateLog");
     return t(`${page}.membership.${key}`, symbol);
   }
 

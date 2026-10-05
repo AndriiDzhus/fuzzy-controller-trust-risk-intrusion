@@ -17,9 +17,10 @@
  *        ∂μ/∂θ    = subgradient of the triangle at its break point
  *
  * The history starts with epoch 0 (the expert model) followed by one entry
- * per epoch. Every epoch lowers the training RMSE (over the rows where some rule fires,
- * the error the gradient minimises): a step that does not is rejected and the
- * step halves. The returned model is the epoch with the lowest penalised
+ * per epoch. Every epoch lowers the training RMSE (over the rows where some
+ * rule fires, the error the gradient minimises): each break point moves along
+ * its own gradient component with its own step size, and a move that does not
+ * lower the error is rejected while that step halves. The returned model is the epoch with the lowest penalised
  * RMSE among the epochs that keep coverage: wherever the expert model fires a
  * rule (training rows and args.coverage), the trained model must fire one too.
  *
@@ -263,7 +264,7 @@ function cloneState(state) {
  *   trained model must fire a rule wherever the expert model does
  * @param {object} [args.options]
  * @param {number} [args.options.epochs=200]
- * @param {number} [args.options.stepSize=0.01] initial step, normalised units
+ * @param {number} [args.options.stepSize=0.02] initial step of every break point, normalised units
  * @param {number} [args.options.minStep=1e-5] stop when a descent step this
  *   small does not lower the error
  * @param {number} [args.options.ridge=1e-3] Tikhonov term of the LSE step
@@ -279,7 +280,7 @@ function cloneState(state) {
 function* trainAnfisSteps({ spec, initial, train, test = [], coverage = [], options = {} }) {
   let {
     epochs = 100,
-    stepSize: initialStep = 0.01,
+    stepSize: initialStep = 0.02,
     ridge = 1e-3,
     tolerance = 1e-4,
     patience = 25,
@@ -333,7 +334,9 @@ function* trainAnfisSteps({ spec, initial, train, test = [], coverage = [], opti
   };
 
   let best = { epoch: 1, objective: current.metrics.rmse, state: cloneState(current.state) };
-  let stepSize = initialStep;
+  let stepSize = initialStep; // the largest per-parameter step, reported in the history
+  const steps = {}; // per-parameter step sizes
+  const maxStep = 0.2;
   let sinceImprovement = 0;
 
   const record = (epoch, stopReason = null) => {
@@ -376,30 +379,42 @@ function* trainAnfisSteps({ spec, initial, train, test = [], coverage = [], opti
     }
 
     // Step 2 (backward pass): gradient descent on the premises with the
-    // consequents fixed, then the least squares of the next epoch. A step that
-    // does not lower the error is rejected and the step size halves
-    // (backtracking); an accepted step grows it by 10 %.
+    // consequents fixed, then the least squares of the next epoch. Every
+    // break point moves along its own gradient component with its own step
+    // (backtracking per parameter): a move that does not lower the error, or
+    // breaks the coverage, is rejected and that step halves; an accepted move
+    // grows it by 20 %. One shared step would be dominated by the components
+    // that break the coverage (shrinking the "medium" terms) and the useful
+    // moves of the other parameters would be thrown away with them.
     let accepted = null;
     const grad = premiseGradient(current.state, spec, train);
-    const norm = gradientNorm(grad);
-    while (norm > 0 && stepSize >= minStep) {
-      const moved = cloneState(current.state);
-      Object.entries(grad).forEach(([symbol, g]) => {
-        ["L", "M", "H"].forEach((k) => {
-          g[k].forEach((v, q) => {
-            moved.premise[symbol][k][q] -= (stepSize * v) / norm;
-          });
+    let working = current;
+    Object.entries(grad).forEach(([symbol, g]) => {
+      ["L", "M", "H"].forEach((k) => {
+        g[k].forEach((v, q) => {
+          if (v === 0) return;
+          const id = `${symbol}.${k}.${q}`;
+          let step = steps[id] ?? initialStep;
+          let moved = false;
+          while (step >= minStep) {
+            const trial = cloneState(working.state);
+            trial.premise[symbol][k][q] -= Math.sign(v) * step;
+            trial.premise[symbol] = project(trial.premise[symbol]);
+            const candidate = withConsequents(trial);
+            if (candidate.metrics.rmse < working.metrics.rmse - 1e-12 && covers(candidate.state)) {
+              working = candidate;
+              moved = true;
+              step = Math.min(maxStep, step * 1.2);
+              break;
+            }
+            step *= 0.5;
+          }
+          steps[id] = Math.max(minStep, step);
+          if (moved) accepted = working;
         });
-        moved.premise[symbol] = project(moved.premise[symbol]);
       });
-      const candidate = withConsequents(moved);
-      if (candidate.metrics.rmse < current.metrics.rmse && covers(candidate.state)) {
-        accepted = candidate;
-        stepSize *= 1.1;
-        break;
-      }
-      stepSize *= 0.5;
-    }
+    });
+    stepSize = Math.max(...Object.values(steps), minStep);
     if (!accepted) {
       // No descent direction left: converged.
       entry.stopReason = "converged";

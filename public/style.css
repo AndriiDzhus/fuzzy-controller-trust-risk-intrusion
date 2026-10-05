@@ -2073,6 +2073,22 @@ input.value-input.is-invalid {
   font-size: 0.76rem;
 }
 
+.training-option-toggle {
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+  align-self: end;
+  padding-bottom: 6px;
+  cursor: pointer;
+}
+
+.training-option-toggle input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  accent-color: #2a78d6;
+}
+
 .training-option input {
   padding: 5px 8px;
   border: 1px solid #dbe3ea;
@@ -2456,16 +2472,23 @@ input.value-input.is-invalid {
   width: 100%;
   margin-top: 4px;
   border-collapse: collapse;
-  font-size: 0.75rem;
+  font-size: 0.72rem;
   font-variant-numeric: tabular-nums;
 }
 
 .training-params th,
 .training-params td {
-  padding: 3px 5px;
+  padding: 3px 4px;
   border-bottom: 1px solid #eef2f5;
   text-align: right;
   white-space: nowrap;
+}
+
+/* A "before → after" pair may wrap at the arrow when the card is narrow
+   (a trapezoid has four columns). */
+.training-params td {
+  white-space: normal;
+  word-break: keep-all;
 }
 
 .training-params thead th {
