@@ -212,7 +212,7 @@
         "optionHelp": {
           "epochs": "Скільки епох гібридного навчання ANFIS виконати. В одній епосі: МНК підбирає 6 наслідків, потім градієнтний крок зсуває 18 точок зламу трикутників. Зупиняється раніше, якщо похибка не зменшується 25 епох поспіль. 100 — як у MATLAB-експерименті дисертації.",
           "generations": "Максимальна кількість поколінь ГА (перший критерій зупинки з теорії). Зупиняється раніше, якщо найкраща RMSE не покращується 60 поколінь або досягнуто цільову RMSE.",
-          "populationSize": "N — робоча популяція: скільки хромосом переходить із покоління в покоління після відбору найкращих серед батьків і нащадків. За теорією N < N₀; 200 — як у MATLAB-експерименті дисертації.",
+          "populationSize": "N — робоча популяція: скільки хромосом переходить із покоління в покоління після відбору найкращих серед батьків і нащадків. За теорією N < N₀. У MATLAB-експерименті дисертації — 200; тут 100, щоб навчання на 500 рядках у браузері тривало менше ніж пів хвилини.",
           "initialPopulation": "N₀ — первинна популяція: випадкові хромосоми (частина — варіації експертної моделі), з яких за RMSE відбирають N найкращих. Має бути більшою за N.",
           "targetRmse": "Прийнятний рівень RMSE на навчальній вибірці (другий критерій зупинки з теорії): досягнувши його, алгоритм зупиняється. 0 — критерій вимкнено.",
           "seed": "Початкове число генератора випадкових чисел. Той самий seed і той самий датасет дають той самий результат, що важливо для відтворення експерименту."
@@ -221,7 +221,7 @@
           "generation": "Номер поточного покоління ГА та задана межа. Одне покоління — це селекція, кросовер, мутація, валідація, оцінювання нащадків і відбір N найкращих.",
           "epoch": "Номер поточної епохи ANFIS та задана межа. Епоха 0 — експертна модель до навчання; у кожній наступній спочатку МНК для наслідків, потім градієнтний крок для точок зламу.",
           "bestRmse": "RMSE найкращої хромосоми популяції на навчальній вибірці — саме її мінімізує алгоритм. Має спадати або стояти на місці; ніколи не росте.",
-          "meanRmse": "Середня RMSE по всій робочій популяції. Наближається до найкращої, коли популяція «збігається» до одного розв'язку: далі покращень майже не буде.",
+          "meanRmse": "Середня RMSE всіх нащадків, згенерованих у цьому поколінні (до відбору), — як «mean» у MATLAB. Вона завжди вища за найкращу й «шумить», бо серед нащадків є й невдалі мутації; коли популяція збігається, розкид зменшується.",
           "validationRmse": "RMSE найкращої хромосоми на валідаційній вибірці, якої алгоритм не бачить. Якщо навчальна RMSE падає, а ця росте — модель перенавчається.",
           "trainRmse": "RMSE поточної моделі на навчальній вибірці — на цих рядках підбираються параметри.",
           "testRmse": "RMSE поточної моделі на тестовій вибірці, яка в навчанні не бере участі. Це чесна оцінка точності.",
@@ -238,11 +238,12 @@
           "balancedAccuracy": "Якщо IP ≥ 50 вважати «атакою»: середнє між часткою правильно виявлених атак і часткою правильно розпізнаного нормального трафіку. 50 % — випадкове вгадування, 100 % — усе правильно."
         },
         "help": {
-          "rows": "Скільки рядків файла потрапить у .xlsx і в навчання за замовчуванням. Частки train / validation / test зберігаються, у Вторгненні — і баланс категорій.",
-          "upload": "Файл .xlsx або .csv з тими самими колонками, що й у датасеті за замовчуванням. Колонка split необов'язкова: без неї поділ робиться автоматично (seed 42).",
+          "rows": "Скільки перших рядків файла потрапить у .xlsx і в навчання за замовчуванням. Рядки в файлі випадкові й незалежні, тому будь-який його початок — репрезентативна вибірка.",
+          "upload": "Файл .xlsx або .csv з тими самими чотирма колонками, що й у датасеті за замовчуванням (три входи і ціль). Інші колонки ігноруються. Поділ на вибірки робиться автоматично (seed 42).",
           "options": "Параметри, які теорія дисертації називає як налаштовувані. Решта констант (ймовірності кросоверу й мутації, розмір турніру, крок градієнта) зафіксовані в коді за формулами роботи. Порожнє поле — значення за замовчуванням."
         },
         "runTitle": "Навчання",
+        "rightAxis": "права вісь",
         "idle": "Результату ще немає.",
         "starting": "Читання датасету…",
         "stopBtn": "Зупинити",
@@ -455,14 +456,14 @@
       "training": {
         "badge": "ANFIS",
         "hint": "ANFIS (Adaptive Neuro-Fuzzy Inference System — адаптивна нейро-нечітка система виводу) налаштовує за датасетом з еталонним індексом SR значення синглтонів-наслідків і точки зламу трикутних функцій належності. База з 6 правил не змінюється.",
-        "datasetNote": "Датасет за замовчуванням — security.csv: 200 рядків 6G IoT Intelligent Management Dataset (140 навчальних, 60 тестових). Еталонний SR — вихід експертного контролера, округлений до цілого, як у MATLAB-експерименті дисертації (рис. 3.10–3.14): похибка навчання лишається на рівні шуму округлення. Варіант з експертними оцінками SR будує npm run data:app -- --target expert.",
-        "uploadNote": "Колонки EC, TP, Lat, SR; split (train/test) необов'язкова — інакше поділ 70/30.",
+        "datasetNote": "Датасет за замовчуванням — security.csv: 200 рядків із входами, рівномірно розподіленими по робочих діапазонах (EC 0,01–0,05, TP 10–35, Lat 1–10), і експертною оцінкою ризику SR (0–100). Оцінку дає «експерт датасету» — модель, у якої кілька параметрів відрізняються від експертної (три синглтони зсунуто на 6 пунктів, чотири точки зламу трикутників — на 10–30 %), плюс шум вимірювання σ = 0,22. Навчання відновлює ці зсуви, а похибка опускається до рівня шуму: RMSE ≈ 7,5 → 0,36 (у MATLAB-експерименті дисертації 0,361).",
+        "uploadNote": "Колонки EC, TP, Lat, SR. Поділ на навчальну й тестову вибірки (70/30) робиться автоматично (seed 42).",
         "changesNote": "Трикутники входів задано точками зламу a, b, c; вихід — значення синглтонів.",
         "rulesTitle": "Правила після навчання",
         "rulesDescription": "ANFIS не змінює структуру бази: маска залишає ті самі 6 правил табл. 3.1. Навчаються лише функції належності входів і значення наслідків (синглтонів) — див. «Формули».",
         "metaChip": "навчені (ANFIS)",
         "about": "Гібридне навчання: на кожній епосі спочатку методом найменших квадратів знаходяться 6 наслідків (синглтонів) при зафіксованих функціях належності, потім градієнтним спуском зсуваються точки зламу трикутників при зафіксованих наслідках. Маска правил лишає ті самі 6 правил табл. 3.1 — нові правила не з'являються. Графік показує RMSE на навчальній і тестовій вибірках по епохах: головний спад дає перша епоха (МНК), далі крива вирівнюється.",
-        "columnsNote": "Колонки: EC, TP, Lat, SR (0–100), split."
+        "columnsNote": "Колонки: EC, TP, Lat, SR (0–100)."
       }
     },
     "intrusion": {
@@ -533,15 +534,14 @@
       "training": {
         "badge": "ГА",
         "hint": "Генетичний алгоритм (ГА) підлаштовує гаусові функції належності всіх величин і структуру 12 правил за датасетом з еталонною вірогідністю вторгнення IP.",
-        "datasetNote": "Датасет за замовчуванням — intrusion.csv: 240 рядків CICIoT2023 (MERGED), по 30 на кожну з 8 категорій трафіку (160 train / 40 validation / 40 test). Еталонне IP — вихід експертного контролера, округлений до 0,1, як у MATLAB-експерименті дисертації (рис. 4.10–4.12); варіант з експертними IP за класами будує npm run data:app -- --target expert.",
-        "uploadNote": "Колонки NP, Rate, We, IP; split (train/validation/test) необов'язкова — інакше поділ 70/15/15.",
+        "datasetNote": "Датасет за замовчуванням — intrusion.csv: 500 рядків із входами, рівномірно розподіленими по робочих діапазонах (NP 0–15, Rate 0–3000 пак/с — рівномірно в логарифмічній шкалі, щоб терми 15 / 150 / 1500 пак/с були представлені однаково, We 0–250), і експертною вірогідністю вторгнення IP (0–100). Оцінку дає «експерт датасету» — модель, у якої зсунуто центри вихідних термів «відсутня» (0 → 3,5) і «мала» (30 → 28), центр «малого» NP (3 → 3,45) і «великого» We (245 → 238), плюс шум вимірювання σ = 0,0175. Зсуви помітні на графіках «до / після». RMSE ≈ 0,83 → 0,06 за 150 поколінь: «полиця» й сходинки на початку, далі плавне уточнення, а середня RMSE популяції швидко падає з ≈ 22 до ≈ 1,5 (у MATLAB-експерименті дисертації 0,0297 → 0,0186 — там зсуви майже непомітні).",
+        "uploadNote": "Колонки NP, Rate, We, IP. Поділ на навчальну, валідаційну й тестову вибірки (70/15/15) робиться автоматично (seed 42).",
         "changesNote": "Гаусоїди задано центром c і шириною σ.",
-        "changesNoteLog": "Гаусоїди задано центром c і шириною σ; Rate — у шкалі lg(1 + pps), 0–7 (експертні параметри перераховано в цю шкалу).",
         "rulesTitle": "Правила після навчання",
         "rulesDescription": "Структуру всіх 12 правил (терми передумов і наслідку) сформовано генетичним алгоритмом за мінімумом RMSE на навчальній вибірці.",
         "metaChip": "навчені (ГА)",
-        "about": "Хромосома — 74 гени: 18 параметрів вхідних гаусоїд (c, σ), 8 параметрів вихідних і 48 індексів термів 12 правил. Пристосованість F = 1 / (1 + RMSE) на навчальній вибірці. Оператори: турнірна селекція, арифметичний кросовер для дійсних генів і двоточковий для правил, гаусова мутація параметрів та випадкова заміна індексу терму, валідація (σ > 0, центри в універсумі, порядок термів). Графік показує найкраще і середнє RMSE популяції та RMSE валідаційної вибірки по поколіннях. Rate береться в пакетах/с, як у теорії; для реального трафіку з великим розкидом можна увімкнути шкалу lg(1 + pps) у параметрах алгоритму.",
-        "columnsNote": "Колонки: NP, Rate (pps), We, IP (0–100), split."
+        "about": "Хромосома — 74 гени: 18 параметрів вхідних гаусоїд (c, σ), 8 параметрів вихідних і 48 індексів термів 12 правил. Пристосованість F = 1 / (1 + RMSE) на навчальній вибірці. Оператори: турнірна селекція, арифметичний кросовер для дійсних генів і двоточковий для правил, гаусова мутація параметрів та випадкова заміна індексу терму, валідація (σ > 0, центри в універсумі, порядок термів). Графік показує найкраще і середнє RMSE популяції та RMSE валідаційної вибірки по поколіннях.",
+        "columnsNote": "Колонки: NP, Rate (пакетів/с), We, IP (0–100)."
       }
     }
   },
@@ -739,7 +739,7 @@
         "optionHelp": {
           "epochs": "How many epochs of ANFIS hybrid learning to run. In one epoch: least squares fits the 6 consequents, then a gradient step moves the 18 break points of the triangles. Stops earlier when the error has not decreased for 25 epochs. 100 as in the MATLAB experiment of the thesis.",
           "generations": "Maximum number of GA generations (the first stop criterion of the theory). Stops earlier when the best RMSE has not improved for 60 generations or the target RMSE is reached.",
-          "populationSize": "N — the working population: how many chromosomes survive from one generation to the next after the best of parents and offspring are kept. The theory requires N < N₀; 200 as in the MATLAB experiment of the thesis.",
+          "populationSize": "N — the working population: how many chromosomes survive from one generation to the next after the best of parents and offspring are kept. The theory requires N < N₀. The MATLAB experiment of the thesis used 200; here 100, so a run on 500 rows takes under half a minute in the browser.",
           "initialPopulation": "N₀ — the initial population: random chromosomes (some are variations of the expert model), of which the N best by RMSE are kept. Must be larger than N.",
           "targetRmse": "Acceptable RMSE on the training rows (the second stop criterion of the theory): the algorithm stops once it is reached. 0 disables the criterion.",
           "seed": "Seed of the random number generator. The same seed and the same dataset give the same result, which matters for reproducing an experiment."
@@ -748,7 +748,7 @@
           "generation": "The current GA generation and the limit. One generation is selection, crossover, mutation, validation, evaluation of the offspring and keeping the N best.",
           "epoch": "The current ANFIS epoch and the limit. Epoch 0 is the expert model before training; every later epoch runs least squares for the consequents, then a gradient step for the break points.",
           "bestRmse": "RMSE of the best chromosome of the population on the training rows — this is what the algorithm minimises. It decreases or stays; it never grows.",
-          "meanRmse": "Mean RMSE over the whole working population. It approaches the best one when the population converges to a single solution: little improvement is left then.",
+          "meanRmse": "Mean RMSE of all offspring generated in this generation (before selection), like MATLAB’s “mean”. It stays above the best and is noisy, because some mutations are bad; the spread shrinks as the population converges.",
           "validationRmse": "RMSE of the best chromosome on the validation rows, which the algorithm never sees. Training RMSE falling while this one grows means overfitting.",
           "trainRmse": "RMSE of the current model on the training rows — the rows the parameters are fitted to.",
           "testRmse": "RMSE of the current model on the test rows, which take no part in training. This is the honest accuracy figure.",
@@ -765,11 +765,12 @@
           "balancedAccuracy": "Treating IP ≥ 50 as an attack: the mean of the share of attacks detected and the share of normal traffic recognised. 50 % is guessing, 100 % is all correct."
         },
         "help": {
-          "rows": "How many rows of the file go into the .xlsx and into training on the default dataset. The train / validation / test shares are kept, and for Intrusion the balance of categories too.",
-          "upload": "An .xlsx or .csv file with the same columns as the default dataset. The split column is optional: without it the split is made automatically (seed 42).",
+          "rows": "How many first rows of the file go into the .xlsx and into training on the default dataset. The rows of the file are random and independent, so any prefix is a representative sample.",
+          "upload": "An .xlsx or .csv file with the same four columns as the default dataset (three inputs and the target). Other columns are ignored. The split is made automatically (seed 42).",
           "options": "The parameters the thesis names as adjustable. The other constants (crossover and mutation probabilities, tournament size, gradient step) are fixed in the code by the formulas of the thesis. An empty field means the default value."
         },
         "runTitle": "Training",
+        "rightAxis": "right axis",
         "idle": "No result yet.",
         "starting": "Reading the dataset…",
         "stopBtn": "Stop",
@@ -982,14 +983,14 @@
       "training": {
         "badge": "ANFIS",
         "hint": "ANFIS (Adaptive Neuro-Fuzzy Inference System) fits the singleton consequents and the break points of the triangular membership functions to a dataset with a reference SR index. The 6-rule base stays unchanged.",
-        "datasetNote": "Default dataset: security.csv, 200 rows of the 6G IoT Intelligent Management Dataset (140 training, 60 test). The target SR is the output of the expert controller rounded to an integer, as in the MATLAB experiment of the thesis (fig. 3.10–3.14): the training error stays at the rounding noise. The variant with expert SR values is built by npm run data:app -- --target expert.",
-        "uploadNote": "Columns EC, TP, Lat, SR; split (train/test) is optional — otherwise a 70/30 split.",
+        "datasetNote": "Default dataset: security.csv, 200 rows with inputs spread uniformly over the working ranges (EC 0.01–0.05, TP 10–35, Lat 1–10) and an expert risk index SR (0–100). The rating comes from a “dataset expert”: the expert model with a few parameters off (three singletons shifted by 6 points, four break points of the triangles by 10–30 %) plus measurement noise σ = 0.22. The training recovers the shifts and the error falls to the noise level: RMSE ≈ 7.5 → 0.36 (the MATLAB experiment of the thesis: 0.361).",
+        "uploadNote": "Columns EC, TP, Lat, SR. The training / test split (70/30) is made automatically (seed 42).",
         "changesNote": "Input triangles are given by their break points a, b, c; the output by the singleton values.",
         "rulesTitle": "Rules after training",
         "rulesDescription": "ANFIS keeps the structure of the rule base: the mask keeps the same 6 rules of table 3.1. Only the input membership functions and the consequent values (singletons) are learned — see “Formulas”.",
         "metaChip": "trained (ANFIS)",
         "about": "Hybrid learning: on every epoch the 6 consequents (singletons) are first found by least squares with the membership functions fixed, then the break points of the triangles move by gradient descent with the consequents fixed. The rule mask keeps the same 6 rules of table 3.1 — no new rules appear. The chart shows the RMSE on the training and test sets per epoch: the first epoch (least squares) gives the main drop, then the curve flattens.",
-        "columnsNote": "Columns: EC, TP, Lat, SR (0–100), split."
+        "columnsNote": "Columns: EC, TP, Lat, SR (0–100)."
       }
     },
     "intrusion": {
@@ -1060,15 +1061,14 @@
       "training": {
         "badge": "GA",
         "hint": "The genetic algorithm (GA) fits the Gaussian membership functions of all variables and the structure of the 12 rules to a dataset with a reference intrusion probability IP.",
-        "datasetNote": "Default dataset: intrusion.csv, 240 rows of CICIoT2023 (MERGED), 30 per each of the 8 traffic categories (160 train / 40 validation / 40 test). The target IP is the output of the expert controller rounded to 0.1, as in the MATLAB experiment of the thesis (fig. 4.10–4.12); the variant with expert IP per class is built by npm run data:app -- --target expert.",
-        "uploadNote": "Columns NP, Rate, We, IP; split (train/validation/test) is optional — otherwise a 70/15/15 split.",
+        "datasetNote": "Default dataset: intrusion.csv, 500 rows with inputs spread uniformly over the working ranges (NP 0–15, Rate 0–3000 pps — uniform on the logarithmic scale so that the terms 15 / 150 / 1500 pps are represented alike, We 0–250) and an expert intrusion probability IP (0–100). The rating comes from a “dataset expert”: the expert model with the centres of the output terms “none” (0 → 3.5) and “low” (30 → 28), of the NP “low” (3 → 3.45) and the We “high” (245 → 238) shifted, plus measurement noise σ = 0.0175. The shifts are visible on the before / after charts. RMSE ≈ 0.83 → 0.06 in 150 generations: a plateau and steps at the start, then smooth refinement, while the mean RMSE of the population falls quickly from ≈ 22 to ≈ 1.5 (the MATLAB experiment of the thesis: 0.0297 → 0.0186, with almost invisible shifts).",
+        "uploadNote": "Columns NP, Rate, We, IP. The training / validation / test split (70/15/15) is made automatically (seed 42).",
         "changesNote": "Gaussians are given by the centre c and width σ.",
-        "changesNoteLog": "Gaussians are given by the centre c and width σ; Rate on the scale lg(1 + pps), 0–7 (the expert parameters are converted to it).",
         "rulesTitle": "Rules after training",
         "rulesDescription": "The structure of all 12 rules (premise and consequent terms) was formed by the genetic algorithm at the minimum RMSE on the training set.",
         "metaChip": "trained (GA)",
-        "about": "The chromosome has 74 genes: 18 parameters of the input Gaussians (c, σ), 8 of the output ones and 48 term indices of the 12 rules. Fitness F = 1 / (1 + RMSE) on the training set. Operators: tournament selection, arithmetic crossover for the real genes and two-point crossover for the rules, Gaussian mutation of the parameters and random re-assignment of a term index, validation (σ > 0, centres inside the universe, ordered terms). The chart shows the best and mean RMSE of the population and the RMSE of the validation set per generation. Rate is taken in packets/s as in the theory; for real traffic with a wide spread the lg(1 + pps) scale can be switched on in the algorithm settings.",
-        "columnsNote": "Columns: NP, Rate (pps), We, IP (0–100), split."
+        "about": "The chromosome has 74 genes: 18 parameters of the input Gaussians (c, σ), 8 of the output ones and 48 term indices of the 12 rules. Fitness F = 1 / (1 + RMSE) on the training set. Operators: tournament selection, arithmetic crossover for the real genes and two-point crossover for the rules, Gaussian mutation of the parameters and random re-assignment of a term index, validation (σ > 0, centres inside the universe, ordered terms). The chart shows the best and mean RMSE of the population and the RMSE of the validation set per generation.",
+        "columnsNote": "Columns: NP, Rate (packets/s), We, IP (0–100)."
       }
     }
   }

@@ -263,7 +263,8 @@ describe("genetic optimisation (Intrusion)", () => {
     const predicted = genetic.predict(ch, genetic.toColumns(samples), genetic.gridOf([0, 100], 0.2));
     samples.forEach((s, i) => {
       const { value } = intrusionController.calculate({ packets: s.x[0], rate: s.x[1], weight: s.x[2] });
-      expect(predicted[i]).toBeCloseTo(value, 6);
+      // Same grid (0.2); the GA caches centroids by clip heights rounded to 1e-4.
+      expect(Math.abs(predicted[i] - value)).toBeLessThan(0.01);
     });
   });
 

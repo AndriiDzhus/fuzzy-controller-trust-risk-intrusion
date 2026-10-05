@@ -1,4 +1,4 @@
 {
   "status": "untrained",
-  "note": "Run: npm run train:security (data/security.csv) or npm run train:security -- --full (SR_expert of data/full/security/security_labeling.csv)"
+  "note": "Run: npm run train:security (data/security.csv)"
 }

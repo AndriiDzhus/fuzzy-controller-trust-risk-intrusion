@@ -229,6 +229,7 @@ function predict(ch, data, grid) {
   const out = new Float64Array(data.n);
   const mu = new Float64Array(9);
   const h = new Float64Array(T_OUT);
+  const cache = new Map();
   for (let n = 0; n < data.n; n += 1) {
     for (let i = 0; i < N_IN; i += 1) {
       const x = data.x[i][n];
@@ -247,6 +248,17 @@ function predict(ch, data, grid) {
       if (s3 < s) s = s3;
       if (s > h[rules[b + 3]]) h[rules[b + 3]] = s;
     }
+    // The centroid depends on the four clip heights only; samples with the
+    // same heights (to 1e-4: NP and We are nearly discrete in CICIoT2023,
+    // saturated memberships repeat) share it. The error is below 0.01 IP.
+    // Rows where every rule is nearly silent are not cached: there the
+    // rounding of the heights would dominate the centroid.
+    const key = h[0] + h[1] + h[2] + h[3] > 0.002 ? `${(h[0] * 1e4) | 0},${(h[1] * 1e4) | 0},${(h[2] * 1e4) | 0},${(h[3] * 1e4) | 0}` : null;
+    const cached = key === null ? undefined : cache.get(key);
+    if (cached !== undefined) {
+      out[n] = cached;
+      continue;
+    }
     let num = 0;
     let den = 0;
     for (let q = 0; q < G; q += 1) {
@@ -259,6 +271,7 @@ function predict(ch, data, grid) {
       den += m;
     }
     out[n] = den > 0 ? num / den : 0;
+    if (key !== null) cache.set(key, out[n]);
   }
   return out;
 }
@@ -308,11 +321,21 @@ function crossover(p1, p2, rnd) {
   return [o1, o2];
 }
 
+/**
+ * Gaussian mutation (eq. 4.14): g += N(0, σ_mut²), σ_mut = scale · span of the
+ * gene. The span is the range of the variable, or 8 widths of the term when
+ * the term is narrow against its universe (Rate "low": σ = 20 pps on
+ * 0–3000 pps), so that a narrow term is moved and widened in its own scale
+ * rather than thrown across the universe.
+ */
+const WIDTHS_PER_SPAN = 8;
 function mutate(ch, { pReal, pRule, scale, ranges }, rnd) {
   for (let g = 0; g < REAL_GENES; g += 1) {
     if (rnd.next() < pReal) {
       const [min, max] = ranges[g];
-      ch.real[g] += rnd.normal() * scale * (max - min);
+      const width = ch.real[g - (g % 2) + 1];
+      const span = Math.min(max - min, WIDTHS_PER_SPAN * Math.abs(width));
+      ch.real[g] += rnd.normal() * scale * span;
     }
   }
   for (let g = 0; g < RULE_GENES; g += 1) {
@@ -385,11 +408,11 @@ function* evolveSteps({ spec, initial, train, validation = [], options = {} }) {
     initialPopulation = 300, // N0
     populationSize = 200, // N < N0
     generations = 200,
-    crossoverRate = 0.9,
-    mutationReal = 0.15,
-    mutationRule = 0.04,
-    mutationScaleStart = 0.08,
-    mutationScaleEnd = 0.01,
+    crossoverRate = 0.5, // share of parent pairs that cross over (the rest are copied, then mutated)
+    mutationReal = 0.04, // probability of a Gaussian mutation per real gene (≈ 1 of 26 genes)
+    mutationRule = 0.003, // probability of a new random index per rule gene (≈ 13 % of the offspring change a rule)
+    mutationScaleStart = 0.02, // σ of the Gaussian mutation, share of the range: start …
+    mutationScaleEnd = 0.0003, // … and end of the run (linear schedule)
     tournamentSize = 3,
     seedShare = 0.2, // share of N0 built by mutating the expert chromosome
     stagnation = 60,
@@ -419,28 +442,42 @@ function* evolveSteps({ spec, initial, train, validation = [], options = {} }) {
   }
   // Working population P of N best chromosomes (by RMSE).
   population.sort((a, b) => a.rmse - b.rmse);
+  const initialAll = population;
   population = population.slice(0, populationSize);
 
   const history = [];
+  // The returned model: with a validation set, the generation's best
+  // chromosome with the lowest validation RMSE seen so far (early stopping
+  // against overfitting the training rows, e.g. by a rule change that helps
+  // them only); without one, the final best by training RMSE.
+  let chosen = { chromosome: population[0], validationRmse: Infinity, generation: 0 };
+  // meanRmse: the mean over the chromosomes generated in the generation
+  // (the offspring before the selection, as in MATLAB's "mean" and the mean
+  // fitness of the scheme in fig. 4.1); for generation 0, over P0.
+  let generated = initialAll;
   const record = (generation, stopReason = null) => {
     const best = population[0];
-    const meanRmse = population.reduce((acc, ch) => acc + ch.rmse, 0) / population.length;
+    const meanRmse = generated.reduce((acc, ch) => acc + ch.rmse, 0) / generated.length;
+    const validationRmse = valData ? rmseOf(predict(best, valData, grid), valData.y) : null;
+    if (valData ? validationRmse < chosen.validationRmse - 1e-9 : true) {
+      chosen = { chromosome: best, validationRmse, generation };
+    }
     const entry = {
       generation,
       bestRmse: best.rmse,
       meanRmse,
       bestFitness: best.fitness,
-      validationRmse: valData ? rmseOf(predict(best, valData, grid), valData.y) : null,
+      validationRmse,
       stopReason,
     };
     history.push(entry);
     return entry;
   };
   const result = () => {
-    const best = population[0];
+    const best = chosen.chromosome;
     return {
       params: decode(best, spec),
-      best: { rmse: best.rmse, fitness: best.fitness },
+      best: { rmse: best.rmse, fitness: best.fitness, generation: chosen.generation },
       expert: { rmse: expert.rmse, fitness: expert.fitness },
       history,
       chromosomeLength: REAL_GENES + RULE_GENES,
@@ -470,6 +507,7 @@ function* evolveSteps({ spec, initial, train, validation = [], options = {} }) {
       });
     }
     // Next generation: the best N of parents and offspring.
+    generated = offspring;
     population = population.concat(offspring).sort((a, b) => a.rmse - b.rmse).slice(0, populationSize);
 
     const entry = record(generation);
