@@ -2800,51 +2800,11 @@ input.value-input.is-invalid {
   color: #fff;
 }
 
-.training-rows-custom {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 3px 4px 3px 12px;
-  border: 1px solid #dbe3ea;
-  border-radius: 999px;
-  background: #fff;
-  color: #2c3e50;
-  font-size: 0.84rem;
-  font-weight: 700;
-  cursor: text;
-}
-
-.training-rows-custom.is-active {
-  border-color: #2a78d6;
-  box-shadow: 0 0 0 2px rgba(42, 120, 214, 0.18);
-}
-
-.training-rows-custom:not(.is-active) input {
-  color: #95a5a6;
-}
-
-.training-rows-custom input {
-  width: 4.6rem;
-  padding: 3px 8px;
-  border: 0;
-  border-radius: 999px;
-  background: #f1f5f9;
-  font-size: 0.84rem;
-  font-weight: 700;
-  color: #2c3e50;
-  text-align: center;
-  font-variant-numeric: tabular-nums;
-}
-
-.training-rows-custom input::-webkit-outer-spin-button,
-.training-rows-custom input::-webkit-inner-spin-button {
-  -webkit-appearance: none;
-  margin: 0;
-}
-
-.training-rows-custom input[type="number"] {
-  -moz-appearance: textfield;
-  appearance: textfield;
+.training-rows-title {
+  margin-right: 2px;
+  color: #6b7680;
+  font-size: 0.8rem;
+  font-weight: 600;
 }
 
 .training-controls {

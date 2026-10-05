@@ -51,8 +51,11 @@
       reportSplits: ["train", "validation", "test"],
     },
   };
-  const DEFAULT_ROWS = 20;
-  const MIN_ROWS = 10; // the API refuses smaller downloads
+  // The default datasets: one file per size, all covering the same ranges
+  // (same values as DATASET_SIZES / DEFAULT_DATASET_SIZE in src/training/datasets.js).
+  const DATASET_SIZES = [20, 50, 100, 500];
+  const DEFAULT_SIZE = { security: 50, intrusion: 100 };
+  const SPLIT_SHARES = { security: [0.7, 0.3], intrusion: [0.7, 0.15, 0.15] };
   const STORAGE_KEY = "fuzzyTrainingResult";
 
   const t = (key, fallback = "") => (root.i18nHelper ? root.i18nHelper.t(key, fallback) : fallback || key);
@@ -91,10 +94,7 @@
     expectedSteps: null,
     result: null,
     error: null,
-    rows: null, // rows of the default dataset: number, or null for the whole dataset (default)
-    customRows: DEFAULT_ROWS, // last number typed, kept while "whole dataset" is chosen
-    datasetTotal: null, // size of the default dataset, once known
-    datasetFile: null, // name of the default dataset file, once known
+    size: null, // rows of the chosen default dataset (20 / 50 / 100 / 500)
     els: {},
   };
 
@@ -124,27 +124,28 @@
   // Layout
   // -------------------------------------------------------------------------
 
-  /** Rows of the default dataset chosen in the picker: number or null (all). */
-  function selectedRows() {
-    const { rows, datasetTotal } = state;
-    if (rows === null) return null;
-    if (datasetTotal !== null && rows >= datasetTotal) return null;
-    return rows;
-  }
+  /** File name of the chosen default dataset, e.g. "intrusion-100.csv". */
+  const datasetFileName = (size = state.size) => `${state.controller}-${size}.csv`;
 
-  function rowsLabel(rows = selectedRows()) {
-    if (rows === null) {
-      const total = state.datasetTotal;
-      return total ? `${t("common.training.rowsAll")} (${total})` : t("common.training.rowsAll");
-    }
-    return `${rows} ${t("common.training.rowsUnit")}`;
+  /** "70 / 15 / 15 rows" for the chosen size: the training / validation / test parts. */
+  function splitText(size = state.size) {
+    const shares = SPLIT_SHARES[state.controller] || [];
+    const counts = [];
+    let left = size;
+    shares.forEach((share, i) => {
+      const n = i === shares.length - 1 ? left : Math.round(size * share);
+      counts.push(n);
+      left -= n;
+    });
+    return counts.join(" / ");
   }
 
   function renderPanel() {
     const { controller, method } = state;
     const page = pageKey(controller);
-    const total = state.datasetTotal;
-    const allLabel = total ? `${t("common.training.rowsAllBtn")} · ${total}` : t("common.training.rowsAllBtn");
+    const sizeButtons = DATASET_SIZES.map(
+      (n) => `<button type="button" class="training-rows-chip" data-role="size" data-size="${n}" aria-pressed="false">${n}</button>`
+    ).join("");
     const optionFields = method.options
       .map((opt) =>
         opt.type === "toggle"
@@ -171,17 +172,11 @@
         <section class="training-card" data-stage="data">
           <h4><span class="training-stage">1</span>${escapeHtml(t("common.training.dataTitle"))}</h4>
           <div class="training-row">
-            <div class="training-row-label">${escapeHtml(t("common.training.defaultDataset"))}${
-              state.datasetFile ? ` <span class="training-row-file">${escapeHtml(state.datasetFile)}</span>` : ""
-            }${help(t("common.training.help.rows"))}</div>
-            <div class="training-rows" role="group" aria-label="${escapeHtml(t("common.training.rowsLabel"))}">
-              <button type="button" class="training-rows-chip" data-role="rows-all" aria-pressed="false">${escapeHtml(allLabel)}</button>
-              <label class="training-rows-custom" data-role="rows-custom-wrap">
-                <span>${escapeHtml(t("common.training.rowsCustomLabel"))}</span>
-                <input type="number" inputmode="numeric" min="${MIN_ROWS}" step="1" data-role="rows-custom" />
-              </label>
+            <div class="training-row-label">${escapeHtml(t("common.training.defaultDataset"))} <span class="training-row-file" data-role="size-file"></span>${help(t("common.training.help.rows"))}</div>
+            <div class="training-rows" role="group" aria-label="${escapeHtml(t("common.training.sizeLabel"))}">
+              <span class="training-rows-title">${escapeHtml(t("common.training.sizeLabel"))}</span>${sizeButtons}
             </div>
-            <p class="training-note" data-role="rows-note"></p>
+            <p class="training-note" data-role="size-note"></p>
             <div class="training-controls">
               <button type="button" class="docs-btn" data-role="download">${escapeHtml(t("common.training.downloadBtn"))}</button>
               <span class="training-note training-inline-note">${escapeHtml(t(`${page}.training.columnsNote`))}</span>
@@ -216,7 +211,7 @@
     `;
     const q = (role) => state.els.panel.querySelector(`[data-role="${role}"]`);
     Object.assign(state.els, {
-      rowsCustom: q("rows-custom"), rowsCustomWrap: q("rows-custom-wrap"), rowsAll: q("rows-all"), rowsNote: q("rows-note"), download: q("download"), drop: q("drop"), file: q("file"), choose: q("choose"),
+      sizeFile: q("size-file"), sizeNote: q("size-note"), sizes: [...state.els.panel.querySelectorAll('[data-role="size"]')], download: q("download"), drop: q("drop"), file: q("file"), choose: q("choose"),
       error: q("error"), status: q("status"), progress: q("progress"), chart: q("chart"), stop: q("stop"),
       results: q("results"), run: q("run"),
     });
@@ -235,29 +230,29 @@
     renderChip();
   }
 
-  /** Shows which of the two options is chosen: the whole dataset or N rows. */
+  /** Marks the chosen dataset size and shows its file and the split of its rows. */
   function renderRowsPicker() {
-    const { els, rows, datasetTotal } = state;
-    if (!els.rowsAll) return;
-    const all = rows === null;
-    els.rowsAll.classList.toggle("is-active", all);
-    els.rowsAll.setAttribute("aria-pressed", all ? "true" : "false");
-    els.rowsCustomWrap.classList.toggle("is-active", !all);
-    if (document.activeElement !== els.rowsCustom) els.rowsCustom.value = String(state.customRows);
-    const note =
-      datasetTotal !== null
-        ? t("common.training.rowsTotal").replaceAll("{total}", String(datasetTotal)).replaceAll("{min}", String(MIN_ROWS))
-        : "";
-    els.rowsNote.textContent = note;
-    els.rowsNote.hidden = !note;
+    const { els, size } = state;
+    if (!els.sizes) return;
+    els.sizes.forEach((button) => {
+      const active = Number(button.dataset.size) === size;
+      button.classList.toggle("is-active", active);
+      button.setAttribute("aria-pressed", active ? "true" : "false");
+    });
+    els.sizeFile.textContent = datasetFileName();
+    const labels = (state.controller === "intrusion" ? ["train", "validation", "test"] : ["train", "test"])
+      .map((name) => t(`common.training.split.${name}`).toLowerCase())
+      .join(" / ");
+    els.sizeNote.textContent = t("common.training.sizeNote")
+      .replaceAll("{n}", String(size))
+      .replaceAll("{split}", splitText())
+      .replaceAll("{parts}", labels);
   }
 
-  function setRows(rows) {
-    if (rows !== null) state.customRows = rows;
-    // Unchanged (e.g. the "change" event after "input"): do not rebuild the
-    // empty state, or a click on its button would be lost.
-    if (rows === state.rows) return;
-    state.rows = rows;
+  function setSize(size) {
+    // Unchanged: do not rebuild the empty state, or a click on its button would be lost.
+    if (size === state.size) return;
+    state.size = size;
     renderRowsPicker();
     if (state.status === "idle") renderRun();
   }
@@ -309,20 +304,7 @@
     els.panel.addEventListener("mouseover", placeTip);
     els.panel.addEventListener("focusin", placeTip);
     els.download.addEventListener("click", () => downloadDataset());
-    els.rowsAll.addEventListener("click", () => setRows(null));
-    // Focusing the number (or its label) chooses "N rows".
-    els.rowsCustom.addEventListener("focus", () => setRows(state.customRows));
-    const readCustom = () => {
-      const value = Math.floor(Number(els.rowsCustom.value));
-      if (els.rowsCustom.value === "" || !Number.isFinite(value)) return;
-      setRows(Math.max(MIN_ROWS, value));
-    };
-    els.rowsCustom.addEventListener("input", readCustom);
-    els.rowsCustom.addEventListener("change", () => {
-      readCustom();
-      // Empty or too small: show the value that is actually used.
-      els.rowsCustom.value = String(state.customRows);
-    });
+    els.sizes.forEach((button) => button.addEventListener("click", () => setSize(Number(button.dataset.size))));
     els.choose.addEventListener("click", () => els.file.click());
     els.file.addEventListener("change", () => {
       const file = els.file.files && els.file.files[0];
@@ -402,13 +384,13 @@
   // Dataset download
   // -------------------------------------------------------------------------
 
-  /** Downloads the default dataset: the rows chosen in the picker, or all of them. */
-  async function downloadDataset(rows = selectedRows()) {
+  /** Downloads the default dataset of the chosen size. */
+  async function downloadDataset(size = state.size) {
     const { els } = state;
     els.download.disabled = true;
     showError(null);
     try {
-      const { blob, filename } = await root.trainingBackend.downloadDataset(state.controller, rows);
+      const { blob, filename } = await root.trainingBackend.downloadDataset(state.controller, size);
       saveBlob(blob, filename);
     } catch (error) {
       showError(t("common.training.errors.download", error.message));
@@ -417,15 +399,15 @@
     }
   }
 
-  /** Trains on the default dataset with the row count chosen in the select. */
+  /** Trains on the default dataset of the chosen size. */
   async function trainOnDefaultDataset() {
     if (state.status === "running" || state.status === "starting") return;
-    const rows = selectedRows();
+    const { size } = state;
     showError(null);
     const button = state.els.status.querySelector('[data-role="train-default"]');
     if (button) button.disabled = true;
     try {
-      const { blob, filename } = await root.trainingBackend.downloadDataset(state.controller, rows);
+      const { blob, filename } = await root.trainingBackend.downloadDataset(state.controller, size);
       await startTraining(new File([blob], filename, { type: blob.type }));
     } catch (error) {
       showError(t("common.training.errors.download", error.message));
@@ -560,9 +542,8 @@
     const lines = [];
     if (status === "idle") {
       lines.push(`<p class="training-status-main is-muted">${escapeHtml(t("common.training.idle"))}</p>`);
-      const rowsText = rowsLabel();
-      const file = state.datasetFile || `${state.controller}.csv`;
-      const total = state.datasetTotal !== null ? ` (${state.datasetTotal} ${t("common.training.rowsUnit")})` : "";
+      const file = datasetFileName();
+      const total = ` (${state.size} ${t("common.training.rowsUnit")})`;
       lines.push(`
         <div class="training-empty">
           <p class="training-default-file">
@@ -571,7 +552,7 @@
             · <a href="#" data-role="download-all">${escapeHtml(t("common.training.downloadAll"))}</a>
           </p>
           <button type="button" class="docs-btn docs-btn-primary" data-role="train-default">${escapeHtml(t("common.training.trainDefaultBtn"))}</button>
-          <span class="training-note">${escapeHtml(t("common.training.trainDefaultHint").replace("{rows}", rowsText))}</span>
+          <span class="training-note">${escapeHtml(t("common.training.trainDefaultHint").replace("{file}", file))}</span>
         </div>`);
       if (isApplied()) {
         // A result was cleared while its parameters stay applied: keep a way back.
@@ -611,7 +592,7 @@
     els.status.querySelector('[data-role="train-default"]')?.addEventListener("click", trainOnDefaultDataset);
     els.status.querySelector('[data-role="download-all"]')?.addEventListener("click", (event) => {
       event.preventDefault();
-      downloadDataset(null);
+      downloadDataset();
     });
     els.status.querySelector('[data-role="revert-idle"]')?.addEventListener("click", async () => {
       await revertToExpert();
@@ -1127,6 +1108,7 @@
     if (!method || !step || !panel) return;
     state.controller = controller;
     state.method = method;
+    state.size = DEFAULT_SIZE[controller];
     state.els = { step, panel, chip: step.querySelector(".training-chip") };
     if (!root.trainingBackend) {
       panel.innerHTML = `<p class="training-note">${escapeHtml(t("common.training.errors.noBackend"))}</p>`;
@@ -1141,20 +1123,6 @@
       state.expectedSteps = stored.result.training.steps;
     }
     renderPanel();
-    // Size of the default dataset: shown in the row picker once known.
-    if (typeof root.trainingBackend.datasetInfo === "function") {
-      root.trainingBackend
-        .datasetInfo(controller)
-        .then((info) => {
-          if (info && Number.isFinite(info.total)) {
-            state.datasetTotal = info.total;
-            state.datasetFile = info.file || null;
-            if (state.status === "running" || state.status === "starting") renderRowsPicker();
-            else renderPanel();
-          }
-        })
-        .catch(() => {});
-    }
     root.addEventListener("languageChanged", () => renderPanel());
     root.addEventListener("activeModelChanged", () => {
       renderResults();

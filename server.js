@@ -15,8 +15,8 @@
  * model is then built from them (membership-functions accepts POST for that).
  *
  * Training (Security: ANFIS, Intrusion: genetic algorithm):
- *   GET  /api/controllers/:controller/dataset?rows=N|all   default dataset (.xlsx); N ≥ size → all
- *   GET  /api/controllers/:controller/dataset/info        {file, total, columns} of the default dataset
+ *   GET  /api/controllers/:controller/dataset?size=20|50|100|500   default dataset of that size (.xlsx)
+ *   GET  /api/controllers/:controller/dataset/info        {sizes, defaultSize, files, columns}
  *   POST /api/training/:controller/jobs?name=<file>&generations=…  raw file body (.xlsx / .csv)
  *   GET  /api/training/jobs/:id                                    snapshot
  *   GET  /api/training/jobs/:id/events                             server-sent events
@@ -146,29 +146,32 @@ app.get("/api/controllers/:controller/models", (req, res) => {
 // Training
 // ---------------------------------------------------------------------------
 
-function readDatasetFiles(controller) {
-  const files = datasets.DEFAULT_DATASET_FILES[controller];
-  if (!files) return null;
-  const csv = {};
-  Object.entries(files).forEach(([key, file]) => {
-    csv[key] = fs.readFileSync(path.join(__dirname, file), "utf8");
-  });
-  return csv;
+/** Size from the query: a default dataset size of the controller, or the preselected one. */
+function datasetSizeOf(controller, value) {
+  if (value === undefined || value === "") return datasets.DEFAULT_DATASET_SIZE[controller] || null;
+  const size = Number(value);
+  return datasets.isDatasetSize(controller, size) ? size : null;
 }
 
-// Size and columns of the default dataset (for the row picker of the page).
+function readDatasetFile(controller, size) {
+  return fs.readFileSync(path.join(__dirname, datasets.datasetFile(controller, size)), "utf8");
+}
+
+// The default datasets of a controller: sizes, the preselected one, columns.
 app.get("/api/controllers/:controller/dataset/info", (req, res) => {
   try {
-    const csv = readDatasetFiles(req.params.controller);
-    if (!csv) {
+    const { controller } = req.params;
+    const size = datasetSizeOf(controller, undefined);
+    if (!size) {
       res.status(404).json({ error: "No dataset for this controller" });
       return;
     }
-    const table = datasets.defaultDataset(req.params.controller, csv, null);
+    const table = datasets.defaultDataset(controller, readDatasetFile(controller, size));
     res.json({
-      controller: req.params.controller,
-      file: datasets.defaultDatasetName(req.params.controller),
-      total: table.total,
+      controller,
+      sizes: datasets.DATASET_SIZES,
+      defaultSize: size,
+      files: Object.fromEntries(datasets.DATASET_SIZES.map((n) => [n, datasets.datasetName(controller, n)])),
       columns: table.header,
     });
   } catch (error) {
@@ -176,27 +179,24 @@ app.get("/api/controllers/:controller/dataset/info", (req, res) => {
   }
 });
 
+// A default dataset as .xlsx: ?size=20|50|100|500 (the preselected size when omitted).
 app.get("/api/controllers/:controller/dataset", async (req, res) => {
   try {
-    const csv = readDatasetFiles(req.params.controller);
-    if (!csv) {
+    const { controller } = req.params;
+    if (!datasetSizeOf(controller, undefined)) {
       res.status(404).json({ error: "No dataset for this controller" });
       return;
     }
-    const rowsParam = String(req.query.rows || "all");
-    const limit = rowsParam === "all" ? null : Number(rowsParam);
-    if (limit !== null && !(Number.isInteger(limit) && limit >= 10 && limit <= 100000)) {
-      res.status(400).json({ error: "rows must be an integer ≥ 10 or \"all\"" });
+    const size = datasetSizeOf(controller, req.query.size);
+    if (!size) {
+      res.status(400).json({ error: `size must be one of ${datasets.DATASET_SIZES.join(", ")}` });
       return;
     }
-    const table = datasets.defaultDataset(req.params.controller, csv, limit);
+    const table = datasets.defaultDataset(controller, readDatasetFile(controller, size));
     const bytes = await xlsx.write([{ name: "Dataset", rows: [table.header, ...table.rows] }]);
-    // table.limit is null when the request covered the whole dataset.
-    const name = `${req.params.controller}-dataset-${table.limit === null ? "all" : table.limit}.xlsx`;
     res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
-    res.setHeader("Content-Disposition", `attachment; filename="${name}"`);
+    res.setHeader("Content-Disposition", `attachment; filename="${controller}-${size}.xlsx"`);
     res.setHeader("X-Row-Count", String(table.rows.length));
-    res.setHeader("X-Row-Total", String(table.total));
     res.send(Buffer.from(bytes));
   } catch (error) {
     sendServerError(res, error);
