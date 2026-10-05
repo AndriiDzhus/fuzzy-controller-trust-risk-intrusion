@@ -3,11 +3,11 @@
  * ANFIS training of the Security controller.
  *
  *   npm run train:security
- *   node scripts/train-security.js [--data <csv>] [--target SR] [--epochs 100] [--dry-run]
+ *   node scripts/train-security.js [--size 20|50|100|500 | --data <csv>] [--target SR] [--epochs 100] [--dry-run]
  *
- * Reads data/security.csv (the dataset the app ships): EC, TP, Lat and the
- * target SR; an optional split column (train / test), otherwise the rows are
- * divided 70/30 as the app does it. Rows with an empty target are skipped. Writes
+ * Reads one of the four datasets the app ships (data/security-20|50|100|500.csv,
+ * --size, default 50): EC, TP, Lat and the target SR. The rows are divided 70/30
+ * as the app does it. Rows with an empty target are skipped. Writes
  * src/controllers/trained/security.json (the trained parameters, metrics and
  * learning curve), which the app loads as the "trained" variant.
  *
@@ -24,7 +24,7 @@ const root = path.join(__dirname, "..");
 
 function parseArgs(argv) {
   const args = {
-    data: path.join(root, "data/security.csv"),
+    data: path.join(root, datasets.datasetFile("security", datasets.DEFAULT_DATASET_SIZE.security)),
     target: "SR",
     epochs: METHODS.security.defaultOptions.epochs,
     out: path.join(root, "src/controllers/trained/security.json"),
@@ -32,7 +32,11 @@ function parseArgs(argv) {
   };
   for (let i = 0; i < argv.length; i += 1) {
     const flag = argv[i];
-    if (flag === "--data") args.data = path.resolve(argv[++i]);
+    if (flag === "--size") {
+      const size = Number(argv[++i]);
+      if (!datasets.isDatasetSize("security", size)) throw new Error(`--size must be one of ${datasets.DATASET_SIZES.join(", ")}`);
+      args.data = path.join(root, datasets.datasetFile("security", size));
+    } else if (flag === "--data") args.data = path.resolve(argv[++i]);
     else if (flag === "--target") args.target = argv[++i];
     else if (flag === "--epochs") args.epochs = Number(argv[++i]);
     else if (flag === "--out") args.out = path.resolve(argv[++i]);

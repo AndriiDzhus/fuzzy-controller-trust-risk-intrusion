@@ -193,9 +193,7 @@
         },
         "dataTitle": "Дані",
         "defaultDataset": "Датасет за замовчуванням",
-        "rowsLabel": "Кількість рядків",
         "rowsUnit": "рядків",
-        "rowsAll": "усі рядки",
         "downloadBtn": "Отримати .xlsx",
         "trainOn": "Власний датасет",
         "chooseFile": "Вибрати файл .xlsx / .csv",
@@ -238,7 +236,7 @@
           "balancedAccuracy": "Якщо IP ≥ 50 вважати «атакою»: середнє між часткою правильно виявлених атак і часткою правильно розпізнаного нормального трафіку. 50 % — випадкове вгадування, 100 % — усе правильно."
         },
         "help": {
-          "rows": "Скільки перших рядків файла потрапить у .xlsx і в навчання за замовчуванням. Рядки в файлі випадкові й незалежні, тому будь-який його початок — репрезентативна вибірка.",
+          "rows": "Є чотири датасети — на 20, 50, 100 і 500 записів. Кожен охоплює всі робочі діапазони входів і всі правила, різниця лише в кількості: на малих навчання швидше, але легше перенавчитись (навчальна похибка менша за тестову), на великих — стабільніше. Обраний файл можна отримати як .xlsx і навчати на ньому за замовчуванням.",
           "upload": "Файл .xlsx або .csv з тими самими чотирма колонками, що й у датасеті за замовчуванням (три входи і ціль). Інші колонки ігноруються. Поділ на вибірки робиться автоматично (seed 42).",
           "options": "Параметри, які теорія дисертації називає як налаштовувані. Решта констант (ймовірності кросоверу й мутації, розмір турніру, крок градієнта) зафіксовані в коді за формулами роботи. Порожнє поле — значення за замовчуванням."
         },
@@ -316,16 +314,15 @@
         "defaultFile": "Навчання виконається на датасеті за замовчуванням",
         "downloadAll": "завантажити файл",
         "trainDefaultBtn": "Навчити на датасеті за замовчуванням",
-        "trainDefaultHint": "Візьме {rows} з цього файлу (кількість обирається в кроці 1) і одразу почне навчання. Або завантажте власний файл — навчання стартує відразу після вибору.",
+        "trainDefaultHint": "Навчання на файлі {file} стартує одразу; іншу кількість записів оберіть у кроці 1. Або завантажте власний файл — навчання стартує відразу після вибору.",
         "clearConfirm": "Видалити результат навчання?",
         "clearYes": "Так, видалити",
         "clearNo": "Скасувати",
         "clearNoteApplied": "Застосовані до контролера параметри залишаться, поки не натиснете «Повернути експертні параметри».",
         "appliedNoResult": "До контролера застосовано навчені параметри попереднього результату.",
         "aboutTitle": "Як працює навчання і які дані потрібні",
-        "rowsAllBtn": "Весь датасет",
-        "rowsCustomLabel": "Кількість рядків",
-        "rowsTotal": "У датасеті {total} рядків, мінімум для вивантаження — {min}."
+        "sizeLabel": "Записів у файлі:",
+        "sizeNote": "Файл на {n} записів; застосунок ділить його на вибірки ({parts}): {split}. Усі файли охоплюють ті самі діапазони входів і всі правила — різниця лише в кількості записів."
       }
     },
     "navigation": {
@@ -456,7 +453,7 @@
       "training": {
         "badge": "ANFIS",
         "hint": "ANFIS (Adaptive Neuro-Fuzzy Inference System — адаптивна нейро-нечітка система виводу) налаштовує за датасетом з еталонним індексом SR значення синглтонів-наслідків і точки зламу трикутних функцій належності. База з 6 правил не змінюється.",
-        "datasetNote": "Датасет за замовчуванням — security.csv: 200 рядків із входами, рівномірно розподіленими по робочих діапазонах (EC 0,01–0,05, TP 10–35, Lat 1–10), і експертною оцінкою ризику SR (0–100). Оцінку дає «експерт датасету» — модель, у якої кілька параметрів відрізняються від експертної (три синглтони зсунуто на 6 пунктів, чотири точки зламу трикутників — на 10–30 %), плюс шум вимірювання σ = 0,22. Навчання відновлює ці зсуви, а похибка опускається до рівня шуму: RMSE ≈ 7,5 → 0,36 (у MATLAB-експерименті дисертації 0,361).",
+        "datasetNote": "Датасети за замовчуванням — security-20.csv, security-50.csv, security-100.csv і security-500.csv: чотири файли з тими самими колонками (EC, TP, Lat, SR), які охоплюють усі робочі діапазони входів (EC 0,01–0,05, TP 10–35, Lat 1–10) і всі 6 правил; різниця лише в кількості записів. За замовчуванням — 50 записів, як у MATLAB-експерименті дисертації (40 навчальних і 10 тестових). Еталонний SR дає «експерт датасету» — той самий контролер, у якого три синглтони зсунуто на 6 пунктів, а вершини «середніх» трикутників EC, TP і Lat — на 0,007, 5 і 1,5, плюс шум вимірювання. Навчання відновлює ці зсуви, а похибка опускається до рівня шуму: RMSE ≈ 3,6 → 0,36 на навчальній і тестовій вибірках (у MATLAB 0,361). На 20 записах (14 навчальних) модель перенавчається: навчальна 0,34, тестова 0,57.",
         "uploadNote": "Колонки EC, TP, Lat, SR. Поділ на навчальну й тестову вибірки (70/30) робиться автоматично (seed 42).",
         "changesNote": "Трикутники входів задано точками зламу a, b, c; вихід — значення синглтонів.",
         "rulesTitle": "Правила після навчання",
@@ -534,7 +531,7 @@
       "training": {
         "badge": "ГА",
         "hint": "Генетичний алгоритм (ГА) підлаштовує гаусові функції належності всіх величин і структуру 12 правил за датасетом з еталонною вірогідністю вторгнення IP.",
-        "datasetNote": "Датасет за замовчуванням — intrusion.csv: 500 рядків із входами, рівномірно розподіленими по робочих діапазонах (NP 0–15, Rate 0–3000 пак/с — рівномірно в логарифмічній шкалі, щоб терми 15 / 150 / 1500 пак/с були представлені однаково, We 0–250), і експертною вірогідністю вторгнення IP (0–100). Оцінку дає «експерт датасету» — модель, у якої зсунуто центри вихідних термів «відсутня» (0 → 3,5) і «мала» (30 → 28), центр «малого» NP (3 → 3,45) і «великого» We (245 → 238), плюс шум вимірювання σ = 0,0175. Зсуви помітні на графіках «до / після». RMSE ≈ 0,83 → 0,06 за 150 поколінь: «полиця» й сходинки на початку, далі плавне уточнення, а середня RMSE популяції швидко падає з ≈ 22 до ≈ 1,5 (у MATLAB-експерименті дисертації 0,0297 → 0,0186 — там зсуви майже непомітні).",
+        "datasetNote": "Датасети за замовчуванням — intrusion-20.csv, intrusion-50.csv, intrusion-100.csv і intrusion-500.csv: чотири файли з тими самими колонками (NP, Rate, We, IP), які охоплюють усі робочі діапазони входів (NP 0–15, Rate 0–3000 пак/с — у логарифмічній шкалі, щоб терми 15 / 150 / 1500 пак/с були представлені однаково, We 0–250) і всі 12 правил; різниця лише в кількості записів. За замовчуванням — 100 записів. Еталонний IP дає «експерт датасету» — той самий контролер, у якого зсунуто центри вихідних термів «відсутня» (0 → 3,5) і «мала» (30 → 28), центр «малого» NP (3 → 3,45) і «великого» We (245 → 238), а два правила мають інший висновок: правило 1 → IP «мала» замість «відсутня», правило 3 → IP «відсутня» замість «мала»; плюс шум вимірювання σ = 0,0175. Зсуви помітні на графіках «до / після», а ГА відновлює обидва правила («Змінені правила»). RMSE ≈ 3,3 → 0,06 на навчальній вибірці за 150 поколінь (на 500 записах 3,1 → 0,05); крива йде сходинками, на яких знаходяться правила, потім плавно вирівнюється, а середня RMSE популяції швидко падає з ≈ 22 до ≈ 1,5. У MATLAB-експерименті дисертації 0,0297 → 0,0186 — там зсуви майже непомітні.",
         "uploadNote": "Колонки NP, Rate, We, IP. Поділ на навчальну, валідаційну й тестову вибірки (70/15/15) робиться автоматично (seed 42).",
         "changesNote": "Гаусоїди задано центром c і шириною σ.",
         "rulesTitle": "Правила після навчання",
@@ -720,9 +717,7 @@
         },
         "dataTitle": "Data",
         "defaultDataset": "Default dataset",
-        "rowsLabel": "Number of rows",
         "rowsUnit": "rows",
-        "rowsAll": "all rows",
         "downloadBtn": "Download .xlsx",
         "trainOn": "Your own dataset",
         "chooseFile": "Choose a .xlsx / .csv file",
@@ -765,7 +760,7 @@
           "balancedAccuracy": "Treating IP ≥ 50 as an attack: the mean of the share of attacks detected and the share of normal traffic recognised. 50 % is guessing, 100 % is all correct."
         },
         "help": {
-          "rows": "How many first rows of the file go into the .xlsx and into training on the default dataset. The rows of the file are random and independent, so any prefix is a representative sample.",
+          "rows": "There are four datasets: 20, 50, 100 and 500 rows. Each one covers all the working input ranges and every rule; they differ only in the number of rows: small ones train faster but overfit more easily (the training error is below the test error), large ones are steadier. The chosen file can be downloaded as .xlsx and is what training on the default dataset uses.",
           "upload": "An .xlsx or .csv file with the same four columns as the default dataset (three inputs and the target). Other columns are ignored. The split is made automatically (seed 42).",
           "options": "The parameters the thesis names as adjustable. The other constants (crossover and mutation probabilities, tournament size, gradient step) are fixed in the code by the formulas of the thesis. An empty field means the default value."
         },
@@ -843,16 +838,15 @@
         "defaultFile": "Training will run on the default dataset",
         "downloadAll": "download the file",
         "trainDefaultBtn": "Train on the default dataset",
-        "trainDefaultHint": "Takes {rows} of this file (the number is chosen in step 1) and starts training right away. Or upload your own file — training starts as soon as it is chosen.",
+        "trainDefaultHint": "Training on {file} starts right away; choose another number of rows in step 1. Or upload your own file — training starts as soon as it is chosen.",
         "clearConfirm": "Delete the training result?",
         "clearYes": "Yes, delete",
         "clearNo": "Cancel",
         "clearNoteApplied": "The parameters applied to the controller stay until you press “Return expert parameters”.",
         "appliedNoResult": "The trained parameters of a previous result are applied to the controller.",
         "aboutTitle": "How the training works and what data it needs",
-        "rowsAllBtn": "Whole dataset",
-        "rowsCustomLabel": "Number of rows",
-        "rowsTotal": "The dataset has {total} rows; the minimum download is {min}."
+        "sizeLabel": "Rows in the file:",
+        "sizeNote": "A file of {n} rows; the app splits it into sets ({parts}): {split}. All the files cover the same input ranges and every rule — they differ only in the number of rows."
       }
     },
     "navigation": {
@@ -983,7 +977,7 @@
       "training": {
         "badge": "ANFIS",
         "hint": "ANFIS (Adaptive Neuro-Fuzzy Inference System) fits the singleton consequents and the break points of the triangular membership functions to a dataset with a reference SR index. The 6-rule base stays unchanged.",
-        "datasetNote": "Default dataset: security.csv, 200 rows with inputs spread uniformly over the working ranges (EC 0.01–0.05, TP 10–35, Lat 1–10) and an expert risk index SR (0–100). The rating comes from a “dataset expert”: the expert model with a few parameters off (three singletons shifted by 6 points, four break points of the triangles by 10–30 %) plus measurement noise σ = 0.22. The training recovers the shifts and the error falls to the noise level: RMSE ≈ 7.5 → 0.36 (the MATLAB experiment of the thesis: 0.361).",
+        "datasetNote": "Default datasets: security-20.csv, security-50.csv, security-100.csv and security-500.csv — four files with the same columns (EC, TP, Lat, SR) that cover all the working input ranges (EC 0.01–0.05, TP 10–35, Lat 1–10) and all 6 rules; they differ only in the number of rows. The default is 50 rows, as in the MATLAB experiment of the thesis (40 training and 10 test rows). The target SR comes from a “dataset expert”: the same controller with three singletons shifted by 6 points and the peaks of the “medium” triangles of EC, TP and Lat shifted by 0.007, 5 and 1.5, plus measurement noise. The training recovers the shifts and the error falls to the noise level: RMSE ≈ 3.6 → 0.36 on the training and test sets (MATLAB: 0.361). On 20 rows (14 for training) the model overfits: 0.34 on training, 0.57 on test.",
         "uploadNote": "Columns EC, TP, Lat, SR. The training / test split (70/30) is made automatically (seed 42).",
         "changesNote": "Input triangles are given by their break points a, b, c; the output by the singleton values.",
         "rulesTitle": "Rules after training",
@@ -1061,7 +1055,7 @@
       "training": {
         "badge": "GA",
         "hint": "The genetic algorithm (GA) fits the Gaussian membership functions of all variables and the structure of the 12 rules to a dataset with a reference intrusion probability IP.",
-        "datasetNote": "Default dataset: intrusion.csv, 500 rows with inputs spread uniformly over the working ranges (NP 0–15, Rate 0–3000 pps — uniform on the logarithmic scale so that the terms 15 / 150 / 1500 pps are represented alike, We 0–250) and an expert intrusion probability IP (0–100). The rating comes from a “dataset expert”: the expert model with the centres of the output terms “none” (0 → 3.5) and “low” (30 → 28), of the NP “low” (3 → 3.45) and the We “high” (245 → 238) shifted, plus measurement noise σ = 0.0175. The shifts are visible on the before / after charts. RMSE ≈ 0.83 → 0.06 in 150 generations: a plateau and steps at the start, then smooth refinement, while the mean RMSE of the population falls quickly from ≈ 22 to ≈ 1.5 (the MATLAB experiment of the thesis: 0.0297 → 0.0186, with almost invisible shifts).",
+        "datasetNote": "Default datasets: intrusion-20.csv, intrusion-50.csv, intrusion-100.csv and intrusion-500.csv — four files with the same columns (NP, Rate, We, IP) that cover all the working input ranges (NP 0–15, Rate 0–3000 pps on the logarithmic scale so that the terms 15 / 150 / 1500 pps are represented alike, We 0–250) and all 12 rules; they differ only in the number of rows. The default is 100 rows. The target IP comes from a “dataset expert”: the same controller with the centres of the output terms “none” (0 → 3.5) and “low” (30 → 28), of the NP “low” (3 → 3.45) and the We “high” (245 → 238) shifted, and two rules with another conclusion: rule 1 → IP “low” instead of “none”, rule 3 → IP “none” instead of “low”; plus measurement noise σ = 0.0175. The shifts are visible on the before / after charts, and the GA recovers both rules (“Changed rules”). RMSE ≈ 3.3 → 0.06 on the training set in 150 generations (on 500 rows 3.1 → 0.05); the curve goes in steps where the rules are found, then levels off smoothly, while the mean RMSE of the population falls quickly from ≈ 22 to ≈ 1.5. The MATLAB experiment of the thesis: 0.0297 → 0.0186, with almost invisible shifts.",
         "uploadNote": "Columns NP, Rate, We, IP. The training / validation / test split (70/15/15) is made automatically (seed 42).",
         "changesNote": "Gaussians are given by the centre c and width σ.",
         "rulesTitle": "Rules after training",
