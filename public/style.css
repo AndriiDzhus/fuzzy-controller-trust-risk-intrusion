@@ -2752,6 +2752,16 @@ input.value-input.is-invalid {
   line-height: 1.5;
 }
 
+.training-docs-link {
+  color: #2a78d6;
+  text-decoration: underline dotted;
+  text-underline-offset: 2px;
+}
+
+.training-docs-link:hover {
+  text-decoration-style: solid;
+}
+
 .training-stage {
   display: inline-flex;
   align-items: center;
