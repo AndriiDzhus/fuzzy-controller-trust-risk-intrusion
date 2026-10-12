@@ -107,7 +107,7 @@ describe("E2E smoke: navigation and i18n", () => {
     const dict = await request(app).get("/i18n.json");
     expect(dict.body.uk.index.headline).toContain("індексу довіри");
     expect(dict.body.uk.security.headline).toContain("безпеки систем");
-    expect(dict.body.uk.intrusion.headline).toContain("вірогідності вторгнення");
+    expect(dict.body.uk.intrusion.headline).toContain("ймовірності вторгнення");
     expect(new Set([
       dict.body.uk.index.headline,
       dict.body.uk.security.headline,

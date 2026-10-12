@@ -906,6 +906,7 @@ function setupDocsModals(controller) {
 }
 
 window.setupDocsModals = setupDocsModals;
+window.openDocsModal = openDocsModal;
 window.controllerDocs = controllerDocs;
 window.buildTrainedDocs = buildTrainedDocs;
 window.ensureDocsModal = ensureDocsModal;

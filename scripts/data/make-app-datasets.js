@@ -1,11 +1,11 @@
 #!/usr/bin/env node
 /**
- * Builds the datasets the app ships, four sizes per controller:
- *   data/security-{20,50,100,500}.csv   EC, TP, Lat, SR   (ANFIS)
- *   data/intrusion-{20,50,100,500}.csv  NP, Rate, We, IP  (genetic algorithm)
- * The files differ only in the number of rows: each one covers all the working
- * ranges of the inputs and every rule of the controller (see `design`). The
- * user picks one in the training block; a lecturer edits it and uploads it back.
+ * Builds the datasets the app ships, one of 100 rows per controller:
+ *   data/security-100.csv   EC, TP, Lat, SR   (ANFIS)
+ *   data/intrusion-100.csv  NP, Rate, We, IP  (genetic algorithm)
+ * Each file covers all the working ranges of the inputs and every rule of the
+ * controller (see `design`). The user downloads it in the training block; a
+ * lecturer edits it and uploads it back.
  *
  *   npm run data:app
  *
@@ -76,14 +76,14 @@ function intrusionExpert(shifts = INTRUSION_SHIFTS) {
 }
 
 // ---------------------------------------------------------------------------
-// Sampling design: every size covers all the working ranges
+// Sampling design: the file covers all the working ranges
 // ---------------------------------------------------------------------------
 
 /**
  * Space-filling design on [0, 1]^d: the first rows are "anchors" (one near the
- * peaks of the terms of each rule, so that every rule fires in every file),
+ * peaks of the terms of each rule, so that every rule fires in the file),
  * the rest is a Latin hypercube (each input range is cut into as many strata
- * as there are rows, one row per stratum), so even 20 rows span every range.
+ * as there are rows, one row per stratum), so the rows span every range.
  */
 function design(n, dims, anchors, rnd) {
   const points = anchors.slice(0, n).map((a) => a.map((u) => clamp(u + (rnd.next() - 0.5) * 0.06, 0, 1)));
@@ -98,7 +98,7 @@ function design(n, dims, anchors, rnd) {
   return rnd.shuffle(points);
 }
 
-const SIZES = [20, 50, 100, 500];
+const ROWS = 100;
 
 // ---------------------------------------------------------------------------
 // Security: EC 0.01–0.05, TP 10–35, Lat 1–10
@@ -160,37 +160,22 @@ function intrusionRows(n, seed, expert = intrusionExpert(), noise = INTRUSION_NO
 }
 
 /**
- * The seed and the noise of each file. The training result of a small file
- * depends on how the 70/30 (70/15/15) split falls (rows of the changed rules
- * in the training part or not), so a seed is chosen per size from a scan:
- *   Security  ANFIS ends at ≈ 0.36 on train and test (MATLAB 0.361), the
- *             20-row file overfits a little (6 test rows)
+ * The seed and the noise of the files. The training result depends on how the
+ * 70/30 (70/15/15) split falls (rows of the changed rules in the training part
+ * or not), so the seed was chosen from a scan:
+ *   Security  ANFIS ends at ≈ 0.34 on train and test (MATLAB 0.361)
  *   Intrusion the GA finds both changed rules and ends at 0.03–0.07 on all
  *             three parts, errors of the same order as the MATLAB 0.0186
  */
-const SECURITY_PLAN = {
-  20: { seed: 40, noise: 0.45 },
-  50: { seed: 1, noise: 0.45 },
-  100: { seed: 3, noise: 0.36 },
-  500: { seed: 2, noise: 0.37 },
-};
-const INTRUSION_PLAN = {
-  20: { seed: 120, noise: INTRUSION_NOISE },
-  50: { seed: 45, noise: INTRUSION_NOISE },
-  100: { seed: 41, noise: INTRUSION_NOISE },
-  500: { seed: 2, noise: INTRUSION_NOISE },
-};
+const SECURITY_PLAN = { seed: 3, noise: 0.36 };
+const INTRUSION_PLAN = { seed: 41, noise: INTRUSION_NOISE };
 
 function build() {
-  SIZES.forEach((n) => {
-    const sec = SECURITY_PLAN[n];
-    writeCsv(path.join(root, "data", `security-${n}.csv`), ["EC", "TP", "Lat", "SR"], securityRows(n, sec.seed, undefined, sec.noise));
-    const intr = INTRUSION_PLAN[n];
-    writeCsv(path.join(root, "data", `intrusion-${n}.csv`), ["NP", "Rate", "We", "IP"], intrusionRows(n, intr.seed, undefined, intr.noise));
-    console.log(`data/security-${n}.csv, data/intrusion-${n}.csv: ${n} rows each`);
-  });
+  writeCsv(path.join(root, "data", `security-${ROWS}.csv`), ["EC", "TP", "Lat", "SR"], securityRows(ROWS, SECURITY_PLAN.seed, undefined, SECURITY_PLAN.noise));
+  writeCsv(path.join(root, "data", `intrusion-${ROWS}.csv`), ["NP", "Rate", "We", "IP"], intrusionRows(ROWS, INTRUSION_PLAN.seed, undefined, INTRUSION_PLAN.noise));
+  console.log(`data/security-${ROWS}.csv, data/intrusion-${ROWS}.csv: ${ROWS} rows each`);
 }
 
 if (require.main === module) build();
 
-module.exports = { SIZES, securityRows, intrusionRows, securityExpert, intrusionExpert, SECURITY_SHIFTS, INTRUSION_SHIFTS, SECURITY_NOISE, INTRUSION_NOISE };
+module.exports = { ROWS, securityRows, intrusionRows, securityExpert, intrusionExpert, SECURITY_SHIFTS, INTRUSION_SHIFTS, SECURITY_NOISE, INTRUSION_NOISE };

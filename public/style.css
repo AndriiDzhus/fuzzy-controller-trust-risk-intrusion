@@ -2752,6 +2752,16 @@ input.value-input.is-invalid {
   line-height: 1.5;
 }
 
+.training-docs-link {
+  color: #2a78d6;
+  text-decoration: underline dotted;
+  text-underline-offset: 2px;
+}
+
+.training-docs-link:hover {
+  text-decoration-style: solid;
+}
+
 .training-stage {
   display: inline-flex;
   align-items: center;
@@ -2769,42 +2779,6 @@ input.value-input.is-invalid {
 
 .training-results .training-stage {
   background: #1e8449;
-}
-
-.training-rows {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 6px;
-}
-
-.training-rows-chip {
-  padding: 6px 12px;
-  border: 1px solid #dbe3ea;
-  border-radius: 999px;
-  background: #fff;
-  color: #2c3e50;
-  font-size: 0.84rem;
-  font-weight: 700;
-  cursor: pointer;
-  font-variant-numeric: tabular-nums;
-}
-
-.training-rows-chip:hover {
-  background: #eef5fd;
-}
-
-.training-rows-chip.is-active {
-  border-color: #2a78d6;
-  background: #2a78d6;
-  color: #fff;
-}
-
-.training-rows-title {
-  margin-right: 2px;
-  color: #6b7680;
-  font-size: 0.8rem;
-  font-weight: 600;
 }
 
 .training-controls {
@@ -2919,11 +2893,6 @@ input.value-input.is-invalid {
 
   .training-dropzone {
     padding: 10px;
-  }
-
-  .training-rows-chip {
-    padding: 5px 10px;
-    font-size: 0.8rem;
   }
 
   /* SVG text scales with the viewBox: make it readable at phone width. */

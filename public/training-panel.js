@@ -51,10 +51,9 @@
       reportSplits: ["train", "validation", "test"],
     },
   };
-  // The default datasets: one file per size, all covering the same ranges
-  // (same values as DATASET_SIZES / DEFAULT_DATASET_SIZE in src/training/datasets.js).
-  const DATASET_SIZES = [20, 50, 100, 500];
-  const DEFAULT_SIZE = { security: 50, intrusion: 100 };
+  // The default dataset of a controller has 100 rows
+  // (same value as DEFAULT_DATASET_ROWS in src/training/datasets.js).
+  const DATASET_ROWS = 100;
   const SPLIT_SHARES = { security: [0.7, 0.3], intrusion: [0.7, 0.15, 0.15] };
   const STORAGE_KEY = "fuzzyTrainingResult";
 
@@ -72,6 +71,14 @@
     return v.toLocaleString(locale(), { minimumFractionDigits: d, maximumFractionDigits: d });
   };
   const pct = (value) => (value === null || value === undefined ? "—" : `${fmt(100 * value, 1)} %`);
+  /**
+   * Text with links to the documentation pop-ups: "{formulas|label}" and
+   * "{rules|label}" become links that open the membership functions / rule base
+   * modal of the page (openDocsModal in controller-docs.js).
+   */
+  const docsLinks = (text) =>
+    escapeHtml(text).replace(/\{(formulas|rules)\|([^}]*)\}/g, (m, kind, label) => `<a href="#" class="training-docs-link" data-docs-link="${kind}">${label}</a>`);
+
   /** A "?" that shows `text` on hover / focus / tap (see .training-help in style.css). */
   const help = (text) =>
     `<span class="training-help" tabindex="0" role="note" aria-label="${escapeHtml(text)}" data-tip="${escapeHtml(text)}">?</span>`;
@@ -94,7 +101,6 @@
     expectedSteps: null,
     result: null,
     error: null,
-    size: null, // rows of the chosen default dataset (20 / 50 / 100 / 500)
     els: {},
   };
 
@@ -124,11 +130,11 @@
   // Layout
   // -------------------------------------------------------------------------
 
-  /** File name of the chosen default dataset, e.g. "intrusion-100.csv". */
-  const datasetFileName = (size = state.size) => `${state.controller}-${size}.csv`;
+  /** File name of the default dataset, e.g. "intrusion-100.csv". */
+  const datasetFileName = () => `${state.controller}-${DATASET_ROWS}.csv`;
 
-  /** "70 / 15 / 15 rows" for the chosen size: the training / validation / test parts. */
-  function splitText(size = state.size) {
+  /** "70 / 15 / 15" rows: the training / validation / test parts of the default dataset. */
+  function splitText(size = DATASET_ROWS) {
     const shares = SPLIT_SHARES[state.controller] || [];
     const counts = [];
     let left = size;
@@ -143,9 +149,6 @@
   function renderPanel() {
     const { controller, method } = state;
     const page = pageKey(controller);
-    const sizeButtons = DATASET_SIZES.map(
-      (n) => `<button type="button" class="training-rows-chip" data-role="size" data-size="${n}" aria-pressed="false">${n}</button>`
-    ).join("");
     const optionFields = method.options
       .map((opt) =>
         opt.type === "toggle"
@@ -165,17 +168,14 @@
     state.els.panel.innerHTML = `
       <details class="training-about">
         <summary>${escapeHtml(t("common.training.aboutTitle"))}</summary>
-        <p>${escapeHtml(t(`${page}.training.about`))}</p>
-        <p>${escapeHtml(t(`${page}.training.datasetNote`))}</p>
+        <p>${docsLinks(t(`${page}.training.about`))}</p>
+        <p>${docsLinks(t(`${page}.training.datasetNote`))}</p>
       </details>
       <div class="training-grid">
         <section class="training-card" data-stage="data">
           <h4><span class="training-stage">1</span>${escapeHtml(t("common.training.dataTitle"))}</h4>
           <div class="training-row">
             <div class="training-row-label">${escapeHtml(t("common.training.defaultDataset"))} <span class="training-row-file" data-role="size-file"></span>${help(t("common.training.help.rows"))}</div>
-            <div class="training-rows" role="group" aria-label="${escapeHtml(t("common.training.sizeLabel"))}">
-              <span class="training-rows-title">${escapeHtml(t("common.training.sizeLabel"))}</span>${sizeButtons}
-            </div>
             <p class="training-note" data-role="size-note"></p>
             <div class="training-controls">
               <button type="button" class="docs-btn" data-role="download">${escapeHtml(t("common.training.downloadBtn"))}</button>
@@ -211,7 +211,7 @@
     `;
     const q = (role) => state.els.panel.querySelector(`[data-role="${role}"]`);
     Object.assign(state.els, {
-      sizeFile: q("size-file"), sizeNote: q("size-note"), sizes: [...state.els.panel.querySelectorAll('[data-role="size"]')], download: q("download"), drop: q("drop"), file: q("file"), choose: q("choose"),
+      sizeFile: q("size-file"), sizeNote: q("size-note"), download: q("download"), drop: q("drop"), file: q("file"), choose: q("choose"),
       error: q("error"), status: q("status"), progress: q("progress"), chart: q("chart"), stop: q("stop"),
       results: q("results"), run: q("run"),
     });
@@ -224,37 +224,24 @@
       else input.value = value;
     });
     bindPanel();
-    renderRowsPicker();
+    renderDatasetNote();
     renderRun();
     renderResults();
     renderChip();
   }
 
-  /** Marks the chosen dataset size and shows its file and the split of its rows. */
-  function renderRowsPicker() {
-    const { els, size } = state;
-    if (!els.sizes) return;
-    els.sizes.forEach((button) => {
-      const active = Number(button.dataset.size) === size;
-      button.classList.toggle("is-active", active);
-      button.setAttribute("aria-pressed", active ? "true" : "false");
-    });
+  /** Shows the file of the default dataset and the split of its rows. */
+  function renderDatasetNote() {
+    const { els } = state;
+    if (!els.sizeFile) return;
     els.sizeFile.textContent = datasetFileName();
     const labels = (state.controller === "intrusion" ? ["train", "validation", "test"] : ["train", "test"])
       .map((name) => t(`common.training.split.${name}`).toLowerCase())
       .join(" / ");
     els.sizeNote.textContent = t("common.training.sizeNote")
-      .replaceAll("{n}", String(size))
+      .replaceAll("{n}", String(DATASET_ROWS))
       .replaceAll("{split}", splitText())
       .replaceAll("{parts}", labels);
-  }
-
-  function setSize(size) {
-    // Unchanged: do not rebuild the empty state, or a click on its button would be lost.
-    if (size === state.size) return;
-    state.size = size;
-    renderRowsPicker();
-    if (state.status === "idle") renderRun();
   }
 
   // Same values as METHODS[*].defaultOptions in src/training/session.js
@@ -304,7 +291,12 @@
     els.panel.addEventListener("mouseover", placeTip);
     els.panel.addEventListener("focusin", placeTip);
     els.download.addEventListener("click", () => downloadDataset());
-    els.sizes.forEach((button) => button.addEventListener("click", () => setSize(Number(button.dataset.size))));
+    els.panel.addEventListener("click", (event) => {
+      const link = event.target.closest("[data-docs-link]");
+      if (!link) return;
+      event.preventDefault();
+      if (root.openDocsModal) root.openDocsModal(state.controller, link.getAttribute("data-docs-link"));
+    });
     els.choose.addEventListener("click", () => els.file.click());
     els.file.addEventListener("change", () => {
       const file = els.file.files && els.file.files[0];
@@ -384,13 +376,13 @@
   // Dataset download
   // -------------------------------------------------------------------------
 
-  /** Downloads the default dataset of the chosen size. */
-  async function downloadDataset(size = state.size) {
+  /** Downloads the default dataset. */
+  async function downloadDataset() {
     const { els } = state;
     els.download.disabled = true;
     showError(null);
     try {
-      const { blob, filename } = await root.trainingBackend.downloadDataset(state.controller, size);
+      const { blob, filename } = await root.trainingBackend.downloadDataset(state.controller);
       saveBlob(blob, filename);
     } catch (error) {
       showError(t("common.training.errors.download", error.message));
@@ -399,15 +391,14 @@
     }
   }
 
-  /** Trains on the default dataset of the chosen size. */
+  /** Trains on the default dataset. */
   async function trainOnDefaultDataset() {
     if (state.status === "running" || state.status === "starting") return;
-    const { size } = state;
     showError(null);
     const button = state.els.status.querySelector('[data-role="train-default"]');
     if (button) button.disabled = true;
     try {
-      const { blob, filename } = await root.trainingBackend.downloadDataset(state.controller, size);
+      const { blob, filename } = await root.trainingBackend.downloadDataset(state.controller);
       await startTraining(new File([blob], filename, { type: blob.type }));
     } catch (error) {
       showError(t("common.training.errors.download", error.message));
@@ -543,7 +534,7 @@
     if (status === "idle") {
       lines.push(`<p class="training-status-main is-muted">${escapeHtml(t("common.training.idle"))}</p>`);
       const file = datasetFileName();
-      const total = ` (${state.size} ${t("common.training.rowsUnit")})`;
+      const total = ` (${DATASET_ROWS} ${t("common.training.rowsUnit")})`;
       lines.push(`
         <div class="training-empty">
           <p class="training-default-file">
@@ -1108,7 +1099,6 @@
     if (!method || !step || !panel) return;
     state.controller = controller;
     state.method = method;
-    state.size = DEFAULT_SIZE[controller];
     state.els = { step, panel, chip: step.querySelector(".training-chip") };
     if (!root.trainingBackend) {
       panel.innerHTML = `<p class="training-note">${escapeHtml(t("common.training.errors.noBackend"))}</p>`;
