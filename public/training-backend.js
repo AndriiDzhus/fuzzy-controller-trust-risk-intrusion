@@ -5,12 +5,12 @@
  *   remote  the Express server: dataset from the API, training as a job
  *           in a worker thread, progress by server-sent events
  *   local   the static build (GitHub Pages): dataset read in the page from
- *           data/<controller>-<size>.csv, training in a Web Worker (training-worker.js)
+ *           data/<controller>-100.csv, training in a Web Worker (training-worker.js)
  *
  * The mode follows window.fuzzyControllers, exactly like the calculations.
  *
- *   trainingBackend.datasetInfo(controller)            -> {sizes, defaultSize, files, columns}
- *   trainingBackend.downloadDataset(controller, size)  -> {blob, filename, rows}
+ *   trainingBackend.datasetInfo(controller)      -> {rows, file, columns}
+ *   trainingBackend.downloadDataset(controller)  -> {blob, filename, rows}
  *   trainingBackend.startTraining({controller, file, options, onProgress, onDone, onError}) -> {stop}
  */
 (function (root) {
@@ -35,11 +35,11 @@
       return response.json();
     },
 
-    async downloadDataset(controller, size) {
-      const response = await fetch(`/api/controllers/${controller}/dataset?size=${size}`);
+    async downloadDataset(controller) {
+      const response = await fetch(`/api/controllers/${controller}/dataset`);
       if (!response.ok) throw new Error(`dataset: HTTP ${response.status}`);
       const blob = await response.blob();
-      return { blob, filename: `${controller}-${size}.xlsx`, rows: Number(response.headers.get("X-Row-Count")) || null };
+      return { blob, filename: `${controller}-100.xlsx`, rows: Number(response.headers.get("X-Row-Count")) || null };
     },
 
     async startTraining({ controller, file, options, onProgress, onDone, onError }) {
@@ -106,28 +106,26 @@
   const local = {
     mode: "local",
 
-    async defaultTable(controller, size) {
+    async defaultTable(controller) {
       const { datasets } = root.fuzzyTraining;
-      return datasets.defaultDataset(controller, await fetchText(datasets.datasetFile(controller, size)));
+      return datasets.defaultDataset(controller, await fetchText(datasets.datasetFile(controller)));
     },
 
     async datasetInfo(controller) {
       const { datasets } = root.fuzzyTraining;
-      const size = datasets.DEFAULT_DATASET_SIZE[controller];
-      const table = await this.defaultTable(controller, size);
+      const table = await this.defaultTable(controller);
       return {
         controller,
-        sizes: datasets.DATASET_SIZES,
-        defaultSize: size,
-        files: Object.fromEntries(datasets.DATASET_SIZES.map((n) => [n, datasets.datasetName(controller, n)])),
+        rows: datasets.DEFAULT_DATASET_ROWS,
+        file: datasets.datasetName(controller),
         columns: table.header,
       };
     },
 
-    async downloadDataset(controller, size) {
-      const table = await this.defaultTable(controller, size);
+    async downloadDataset(controller) {
+      const table = await this.defaultTable(controller);
       const bytes = await root.xlsxLite.write([{ name: "Dataset", rows: [table.header, ...table.rows] }]);
-      return { blob: new Blob([bytes], { type: XLSX_TYPE }), filename: `${controller}-${size}.xlsx`, rows: table.rows.length };
+      return { blob: new Blob([bytes], { type: XLSX_TYPE }), filename: `${controller}-${table.rows.length}.xlsx`, rows: table.rows.length };
     },
 
     async startTraining({ controller, file, options, onProgress, onDone, onError }) {
