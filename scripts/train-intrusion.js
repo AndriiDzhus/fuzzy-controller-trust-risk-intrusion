@@ -3,11 +3,11 @@
  * Genetic optimisation of the Intrusion controller.
  *
  *   npm run train:intrusion
- *   node scripts/train-intrusion.js [--size 20|50|100|500 | --data <csv>] [--generations 100] [--population 100]
+ *   node scripts/train-intrusion.js [--data <csv>] [--generations 100] [--population 100]
  *                                    [--initial-population 150] [--target-rmse 0] [--seed 42] [--dry-run]
  *
- * Data: one of the four datasets the app ships (data/intrusion-20|50|100|500.csv,
- * --size, default 100): NP, Rate, We, IP. The rows are divided 70/15/15 as the
+ * Data: the dataset the app ships (data/intrusion-100.csv, or --data <csv>):
+ * NP, Rate, We, IP. The rows are divided 70/15/15 as the
  * app does it.
  * Writes src/controllers/trained/intrusion.json, which the app loads as the
  * "trained" variant.
@@ -20,7 +20,7 @@ const { runTraining, METHODS } = require("../src/training/session");
 const datasets = require("../src/training/datasets");
 
 const root = path.join(__dirname, "..");
-const appData = path.join(root, datasets.datasetFile("intrusion", datasets.DEFAULT_DATASET_SIZE.intrusion));
+const appData = path.join(root, datasets.datasetFile("intrusion"));
 
 function parseArgs(argv) {
   const d = METHODS.intrusion.defaultOptions;
@@ -36,11 +36,7 @@ function parseArgs(argv) {
   };
   for (let i = 0; i < argv.length; i += 1) {
     const flag = argv[i];
-    if (flag === "--size") {
-      const size = Number(argv[++i]);
-      if (!datasets.isDatasetSize("intrusion", size)) throw new Error(`--size must be one of ${datasets.DATASET_SIZES.join(", ")}`);
-      args.data = path.join(root, datasets.datasetFile("intrusion", size));
-    } else if (flag === "--data") args.data = path.resolve(argv[++i]);
+    if (flag === "--data") args.data = path.resolve(argv[++i]);
     else if (flag === "--generations") args.generations = Number(argv[++i]);
     else if (flag === "--population") args.population = Number(argv[++i]);
     else if (flag === "--initial-population") args.initialPopulation = Number(argv[++i]);

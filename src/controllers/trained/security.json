@@ -1,4 +1,4 @@
 {
   "status": "untrained",
-  "note": "Run: npm run train:security (data/security-50.csv; --size 20|50|100|500)"
+  "note": "Run: npm run train:security (data/security-100.csv)"
 }

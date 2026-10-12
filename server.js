@@ -15,8 +15,8 @@
  * model is then built from them (membership-functions accepts POST for that).
  *
  * Training (Security: ANFIS, Intrusion: genetic algorithm):
- *   GET  /api/controllers/:controller/dataset?size=20|50|100|500   default dataset of that size (.xlsx)
- *   GET  /api/controllers/:controller/dataset/info        {sizes, defaultSize, files, columns}
+ *   GET  /api/controllers/:controller/dataset             default dataset, 100 rows (.xlsx)
+ *   GET  /api/controllers/:controller/dataset/info        {rows, file, columns}
  *   POST /api/training/:controller/jobs?name=<file>&generations=…  raw file body (.xlsx / .csv)
  *   GET  /api/training/jobs/:id                                    snapshot
  *   GET  /api/training/jobs/:id/events                             server-sent events
@@ -146,32 +146,23 @@ app.get("/api/controllers/:controller/models", (req, res) => {
 // Training
 // ---------------------------------------------------------------------------
 
-/** Size from the query: a default dataset size of the controller, or the preselected one. */
-function datasetSizeOf(controller, value) {
-  if (value === undefined || value === "") return datasets.DEFAULT_DATASET_SIZE[controller] || null;
-  const size = Number(value);
-  return datasets.isDatasetSize(controller, size) ? size : null;
+function readDatasetFile(controller) {
+  return fs.readFileSync(path.join(__dirname, datasets.datasetFile(controller)), "utf8");
 }
 
-function readDatasetFile(controller, size) {
-  return fs.readFileSync(path.join(__dirname, datasets.datasetFile(controller, size)), "utf8");
-}
-
-// The default datasets of a controller: sizes, the preselected one, columns.
+// The default dataset of a controller: its file, row count, columns.
 app.get("/api/controllers/:controller/dataset/info", (req, res) => {
   try {
     const { controller } = req.params;
-    const size = datasetSizeOf(controller, undefined);
-    if (!size) {
+    if (!datasets.hasDefaultDataset(controller)) {
       res.status(404).json({ error: "No dataset for this controller" });
       return;
     }
-    const table = datasets.defaultDataset(controller, readDatasetFile(controller, size));
+    const table = datasets.defaultDataset(controller, readDatasetFile(controller));
     res.json({
       controller,
-      sizes: datasets.DATASET_SIZES,
-      defaultSize: size,
-      files: Object.fromEntries(datasets.DATASET_SIZES.map((n) => [n, datasets.datasetName(controller, n)])),
+      rows: datasets.DEFAULT_DATASET_ROWS,
+      file: datasets.datasetName(controller),
       columns: table.header,
     });
   } catch (error) {
@@ -179,23 +170,18 @@ app.get("/api/controllers/:controller/dataset/info", (req, res) => {
   }
 });
 
-// A default dataset as .xlsx: ?size=20|50|100|500 (the preselected size when omitted).
+// The default dataset of a controller as .xlsx.
 app.get("/api/controllers/:controller/dataset", async (req, res) => {
   try {
     const { controller } = req.params;
-    if (!datasetSizeOf(controller, undefined)) {
+    if (!datasets.hasDefaultDataset(controller)) {
       res.status(404).json({ error: "No dataset for this controller" });
       return;
     }
-    const size = datasetSizeOf(controller, req.query.size);
-    if (!size) {
-      res.status(400).json({ error: `size must be one of ${datasets.DATASET_SIZES.join(", ")}` });
-      return;
-    }
-    const table = datasets.defaultDataset(controller, readDatasetFile(controller, size));
+    const table = datasets.defaultDataset(controller, readDatasetFile(controller));
     const bytes = await xlsx.write([{ name: "Dataset", rows: [table.header, ...table.rows] }]);
     res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
-    res.setHeader("Content-Disposition", `attachment; filename="${controller}-${size}.xlsx"`);
+    res.setHeader("Content-Disposition", `attachment; filename="${controller}-${datasets.DEFAULT_DATASET_ROWS}.xlsx"`);
     res.setHeader("X-Row-Count", String(table.rows.length));
     res.send(Buffer.from(bytes));
   } catch (error) {

@@ -211,39 +211,40 @@ async function tableFromFile(file) {
 }
 
 // ---------------------------------------------------------------------------
-// Default datasets: data/<controller>-<size>.csv of the repository
+// Default datasets: data/<controller>-100.csv of the repository
 // ---------------------------------------------------------------------------
 
 /**
- * The files of the app differ only in the number of rows; each one covers all
- * the working ranges of the inputs and every rule (scripts/data/make-app-datasets.js).
+ * Every controller that is trained has exactly one default dataset of 100 rows;
+ * it covers all the working ranges of the inputs and every rule
+ * (scripts/data/make-app-datasets.js).
  */
-const DATASET_SIZES = [20, 50, 100, 500];
+const DEFAULT_DATASET_ROWS = 100;
 
-/** The size preselected in the training block. ANFIS: the thesis used 50 rows (40 / 10). */
-const DEFAULT_DATASET_SIZE = { security: 50, intrusion: 100 };
+/** Controllers that have a default dataset. */
+const DATASET_CONTROLLERS = ["security", "intrusion"];
 
-const isDatasetSize = (controller, size) => Boolean(DEFAULT_DATASET_SIZE[controller]) && DATASET_SIZES.includes(size);
+const hasDefaultDataset = (controller) => DATASET_CONTROLLERS.includes(controller);
 
 /** Name of a dataset file, e.g. "intrusion-100.csv". */
-function datasetName(controller, size) {
-  if (!isDatasetSize(controller, size)) throw new Error(`no ${size}-row dataset for "${controller}"`);
-  return `${controller}-${size}.csv`;
+function datasetName(controller) {
+  if (!hasDefaultDataset(controller)) throw new Error(`no default dataset for "${controller}"`);
+  return `${controller}-${DEFAULT_DATASET_ROWS}.csv`;
 }
 
 /** Path of a dataset file relative to the repository root, e.g. "data/intrusion-100.csv". */
-function datasetFile(controller, size) {
-  return `data/${datasetName(controller, size)}`;
+function datasetFile(controller) {
+  return `data/${datasetName(controller)}`;
 }
 
 /**
  * A default dataset as a table of numbers.
  * @param {string} controller
- * @param {string} csv text of the file datasetFile(controller, size)
+ * @param {string} csv text of the file datasetFile(controller)
  * @returns {{header: string[], rows: number[][], total: number}}
  */
 function defaultDataset(controller, csv) {
-  if (!DEFAULT_DATASET_SIZE[controller]) throw new Error(`no default dataset for "${controller}"`);
+  if (!hasDefaultDataset(controller)) throw new Error(`no default dataset for "${controller}"`);
   const { header, records } = tableFromCsv(csv);
   return { header, rows: records.map((r) => header.map((h) => cellNumber(r[h]))), total: records.length };
 }
@@ -251,9 +252,8 @@ function defaultDataset(controller, csv) {
 module.exports = {
   SCHEMAS,
   MIN_TRAIN_ROWS,
-  DATASET_SIZES,
-  DEFAULT_DATASET_SIZE,
-  isDatasetSize,
+  DEFAULT_DATASET_ROWS,
+  hasDefaultDataset,
   datasetName,
   datasetFile,
   normalizeHeader,
