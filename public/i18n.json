@@ -452,13 +452,13 @@
       "training": {
         "badge": "ANFIS",
         "hint": "ANFIS (Adaptive Neuro-Fuzzy Inference System — адаптивна нейро-нечітка система виводу) налаштовує за датасетом з еталонним індексом SR значення синглтонів-наслідків і точки зламу трикутних функцій належності. База з 6 правил не змінюється.",
-        "datasetNote": "Датасет за замовчуванням — security-100.csv: 100 записів з колонками EC, TP, Lat, SR, які охоплюють усі робочі діапазони входів (EC 0,01–0,05, TP 10–35, Lat 1–10) і всі 6 правил. Еталонний SR дає «експерт датасету» — той самий контролер, у якого три синглтони зсунуто на 6 пунктів, а вершини «середніх» трикутників EC, TP і Lat — на 0,007, 5 і 1,5, плюс шум вимірювання. Навчання відновлює ці зсуви, а похибка опускається до рівня шуму: RMSE ≈ 4,5 → 0,34 на навчальній і тестовій вибірках (у MATLAB 0,361).",
+        "datasetNote": "Датасет за замовчуванням — security-100.csv: 100 записів, сформованих експертно, з колонками EC, TP, Lat та еталонним індексом SR. Записи охоплюють усі робочі діапазони входів (EC 0,01–0,05 кВт·год/ГБ, TP 10–35 дБм, Lat 1–10 мс) і всі 6 правил бази, тож навчання налаштовує кожну функцію належності та кожен наслідок.",
         "uploadNote": "Колонки EC, TP, Lat, SR. Поділ на навчальну й тестову вибірки (70/30) робиться автоматично (seed 42).",
         "changesNote": "Трикутники входів задано точками зламу a, b, c; вихід — значення синглтонів.",
         "rulesTitle": "Правила після навчання",
-        "rulesDescription": "ANFIS не змінює структуру бази: маска залишає ті самі 6 правил табл. 3.1. Навчаються лише функції належності входів і значення наслідків (синглтонів) — див. «Формули».",
+        "rulesDescription": "ANFIS не змінює структуру бази: маска залишає ті самі 6 правил. Навчаються лише функції належності входів і значення наслідків (синглтонів) — див. «Формули».",
         "metaChip": "навчені (ANFIS)",
-        "about": "Гібридне навчання: на кожній епосі спочатку методом найменших квадратів знаходяться 6 наслідків (синглтонів) при зафіксованих функціях належності, потім градієнтним спуском зсуваються точки зламу трикутників при зафіксованих наслідках. Маска правил лишає ті самі 6 правил табл. 3.1 — нові правила не з'являються. Графік показує RMSE на навчальній і тестовій вибірках по епохах: головний спад дає перша епоха (МНК), далі крива вирівнюється.",
+        "about": "Гібридне навчання: на кожній епосі спочатку методом найменших квадратів знаходяться 6 наслідків (синглтонів) при зафіксованих {formulas|функціях належності}, потім градієнтним спуском зсуваються точки зламу трикутників при зафіксованих наслідках. {rules|База правил} не змінюється: лишаються ті самі 6 правил, нові не з'являються. Графік показує RMSE на навчальній і тестовій вибірках по епохах: головний спад дає перша епоха (МНК), далі крива вирівнюється.",
         "columnsNote": "Колонки: EC, TP, Lat, SR (0–100)."
       }
     },
@@ -530,13 +530,13 @@
       "training": {
         "badge": "ГА",
         "hint": "Генетичний алгоритм (ГА) підлаштовує гаусові функції належності всіх величин і структуру 12 правил за датасетом з еталонною ймовірністю вторгнення IP.",
-        "datasetNote": "Датасет за замовчуванням — intrusion-100.csv: 100 записів з колонками NP, Rate, We, IP, які охоплюють усі робочі діапазони входів (NP 0–15, Rate 0–3000 пак/с — у логарифмічній шкалі, щоб терми 15 / 150 / 1500 пак/с були представлені однаково, We 0–250) і всі 12 правил. Еталонний IP дає «експерт датасету» — той самий контролер, у якого зсунуто центри вихідних термів «відсутня» (0 → 3,5) і «мала» (30 → 28), центр «малого» NP (3 → 3,45) і «великого» We (245 → 238), а два правила мають інший висновок: правило 1 → IP «мала» замість «відсутня», правило 3 → IP «відсутня» замість «мала»; плюс шум вимірювання σ = 0,0175. Зсуви помітні на графіках «до / після», а ГА відновлює обидва правила («Змінені правила»). RMSE ≈ 3,3 → 0,06 на навчальній вибірці за 150 поколінь; крива йде сходинками, на яких знаходяться правила, потім плавно вирівнюється, а середня RMSE популяції швидко падає з ≈ 22 до ≈ 1,5. У MATLAB-експерименті дисертації 0,0297 → 0,0186 — там зсуви майже непомітні.",
+        "datasetNote": "Датасет за замовчуванням — intrusion-100.csv: 100 записів, сформованих експертно, з колонками NP, Rate, We та еталонною ймовірністю вторгнення IP. Записи охоплюють усі робочі діапазони входів (NP 0–15, Rate 0–3000 пак/с — рівномірно в логарифмічній шкалі, щоб терми 15 / 150 / 1500 пак/с були представлені однаково, We 0–250) і всі 12 правил бази.",
         "uploadNote": "Колонки NP, Rate, We, IP. Поділ на навчальну, валідаційну й тестову вибірки (70/15/15) робиться автоматично (seed 42).",
         "changesNote": "Гаусоїди задано центром c і шириною σ.",
         "rulesTitle": "Правила після навчання",
         "rulesDescription": "Структуру всіх 12 правил (терми передумов і наслідку) сформовано генетичним алгоритмом за мінімумом RMSE на навчальній вибірці.",
         "metaChip": "навчені (ГА)",
-        "about": "Хромосома — 74 гени: 18 параметрів вхідних гаусоїд (c, σ), 8 параметрів вихідних і 48 індексів термів 12 правил. Пристосованість F = 1 / (1 + RMSE) на навчальній вибірці. Оператори: турнірна селекція, арифметичний кросовер для дійсних генів і двоточковий для правил, гаусова мутація параметрів та випадкова заміна індексу терму, валідація (σ > 0, центри в універсумі, порядок термів). Графік показує найкраще і середнє RMSE популяції та RMSE валідаційної вибірки по поколіннях.",
+        "about": "Хромосома — 74 гени: 18 параметрів вхідних гаусоїд (c, σ) і 8 параметрів вихідних ({formulas|функції належності}) та 48 індексів термів 12 правил ({rules|база правил}). Пристосованість F = 1 / (1 + RMSE) на навчальній вибірці. Оператори: турнірна селекція, арифметичний кросовер для дійсних генів і двоточковий для правил, гаусова мутація параметрів та випадкова заміна індексу терму, валідація (σ > 0, центри в універсумі, порядок термів). Графік показує найкраще і середнє RMSE популяції та RMSE валідаційної вибірки по поколіннях.",
         "columnsNote": "Колонки: NP, Rate (пакетів/с), We, IP (0–100)."
       }
     }
@@ -975,13 +975,13 @@
       "training": {
         "badge": "ANFIS",
         "hint": "ANFIS (Adaptive Neuro-Fuzzy Inference System) fits the singleton consequents and the break points of the triangular membership functions to a dataset with a reference SR index. The 6-rule base stays unchanged.",
-        "datasetNote": "The default dataset is security-100.csv: 100 rows with the columns EC, TP, Lat, SR that cover all the working input ranges (EC 0.01–0.05, TP 10–35, Lat 1–10) and all 6 rules. The target SR comes from a “dataset expert”: the same controller with three singletons shifted by 6 points and the peaks of the “medium” triangles of EC, TP and Lat shifted by 0.007, 5 and 1.5, plus measurement noise. The training recovers the shifts and the error falls to the noise level: RMSE ≈ 4.5 → 0.34 on the training and test sets (MATLAB: 0.361).",
+        "datasetNote": "The default dataset is security-100.csv: 100 expert-made rows with the columns EC, TP, Lat and the reference SR index. The rows cover all the working input ranges (EC 0.01–0.05 kWh/GB, TP 10–35 dBm, Lat 1–10 ms) and all 6 rules of the base, so the training adjusts every membership function and every consequent.",
         "uploadNote": "Columns EC, TP, Lat, SR. The training / test split (70/30) is made automatically (seed 42).",
         "changesNote": "Input triangles are given by their break points a, b, c; the output by the singleton values.",
         "rulesTitle": "Rules after training",
-        "rulesDescription": "ANFIS keeps the structure of the rule base: the mask keeps the same 6 rules of table 3.1. Only the input membership functions and the consequent values (singletons) are learned — see “Formulas”.",
+        "rulesDescription": "ANFIS keeps the structure of the rule base: the mask keeps the same 6 rules. Only the input membership functions and the consequent values (singletons) are learned — see “Formulas”.",
         "metaChip": "trained (ANFIS)",
-        "about": "Hybrid learning: on every epoch the 6 consequents (singletons) are first found by least squares with the membership functions fixed, then the break points of the triangles move by gradient descent with the consequents fixed. The rule mask keeps the same 6 rules of table 3.1 — no new rules appear. The chart shows the RMSE on the training and test sets per epoch: the first epoch (least squares) gives the main drop, then the curve flattens.",
+        "about": "Hybrid learning: on every epoch the 6 consequents (singletons) are first found by least squares with the {formulas|membership functions} fixed, then the break points of the triangles move by gradient descent with the consequents fixed. The {rules|rule base} stays unchanged: the same 6 rules, no new ones appear. The chart shows the RMSE on the training and test sets per epoch: the first epoch (least squares) gives the main drop, then the curve flattens.",
         "columnsNote": "Columns: EC, TP, Lat, SR (0–100)."
       }
     },
@@ -1053,13 +1053,13 @@
       "training": {
         "badge": "GA",
         "hint": "The genetic algorithm (GA) fits the Gaussian membership functions of all variables and the structure of the 12 rules to a dataset with a reference intrusion probability IP.",
-        "datasetNote": "The default dataset is intrusion-100.csv: 100 rows with the columns NP, Rate, We, IP that cover all the working input ranges (NP 0–15, Rate 0–3000 pps on the logarithmic scale so that the terms 15 / 150 / 1500 pps are represented alike, We 0–250) and all 12 rules. The target IP comes from a “dataset expert”: the same controller with the centres of the output terms “none” (0 → 3.5) and “low” (30 → 28), of the NP “low” (3 → 3.45) and the We “high” (245 → 238) shifted, and two rules with another conclusion: rule 1 → IP “low” instead of “none”, rule 3 → IP “none” instead of “low”; plus measurement noise σ = 0.0175. The shifts are visible on the before / after charts, and the GA recovers both rules (“Changed rules”). RMSE ≈ 3.3 → 0.06 on the training set in 150 generations; the curve goes in steps where the rules are found, then levels off smoothly, while the mean RMSE of the population falls quickly from ≈ 22 to ≈ 1.5. The MATLAB experiment of the thesis: 0.0297 → 0.0186, with almost invisible shifts.",
+        "datasetNote": "The default dataset is intrusion-100.csv: 100 expert-made rows with the columns NP, Rate, We and the reference intrusion probability IP. The rows cover all the working input ranges (NP 0–15, Rate 0–3000 pps, evenly on the logarithmic scale so that the terms 15 / 150 / 1500 pps are represented alike, We 0–250) and all 12 rules of the base.",
         "uploadNote": "Columns NP, Rate, We, IP. The training / validation / test split (70/15/15) is made automatically (seed 42).",
         "changesNote": "Gaussians are given by the centre c and width σ.",
         "rulesTitle": "Rules after training",
         "rulesDescription": "The structure of all 12 rules (premise and consequent terms) was formed by the genetic algorithm at the minimum RMSE on the training set.",
         "metaChip": "trained (GA)",
-        "about": "The chromosome has 74 genes: 18 parameters of the input Gaussians (c, σ), 8 of the output ones and 48 term indices of the 12 rules. Fitness F = 1 / (1 + RMSE) on the training set. Operators: tournament selection, arithmetic crossover for the real genes and two-point crossover for the rules, Gaussian mutation of the parameters and random re-assignment of a term index, validation (σ > 0, centres inside the universe, ordered terms). The chart shows the best and mean RMSE of the population and the RMSE of the validation set per generation.",
+        "about": "The chromosome has 74 genes: 18 parameters of the input Gaussians (c, σ) and 8 of the output ones ({formulas|membership functions}), plus 48 term indices of the 12 rules ({rules|rule base}). Fitness F = 1 / (1 + RMSE) on the training set. Operators: tournament selection, arithmetic crossover for the real genes and two-point crossover for the rules, Gaussian mutation of the parameters and random re-assignment of a term index, validation (σ > 0, centres inside the universe, ordered terms). The chart shows the best and mean RMSE of the population and the RMSE of the validation set per generation.",
         "columnsNote": "Columns: NP, Rate (packets/s), We, IP (0–100)."
       }
     }

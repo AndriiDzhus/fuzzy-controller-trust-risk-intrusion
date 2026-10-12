@@ -71,6 +71,14 @@
     return v.toLocaleString(locale(), { minimumFractionDigits: d, maximumFractionDigits: d });
   };
   const pct = (value) => (value === null || value === undefined ? "—" : `${fmt(100 * value, 1)} %`);
+  /**
+   * Text with links to the documentation pop-ups: "{formulas|label}" and
+   * "{rules|label}" become links that open the membership functions / rule base
+   * modal of the page (openDocsModal in controller-docs.js).
+   */
+  const docsLinks = (text) =>
+    escapeHtml(text).replace(/\{(formulas|rules)\|([^}]*)\}/g, (m, kind, label) => `<a href="#" class="training-docs-link" data-docs-link="${kind}">${label}</a>`);
+
   /** A "?" that shows `text` on hover / focus / tap (see .training-help in style.css). */
   const help = (text) =>
     `<span class="training-help" tabindex="0" role="note" aria-label="${escapeHtml(text)}" data-tip="${escapeHtml(text)}">?</span>`;
@@ -160,8 +168,8 @@
     state.els.panel.innerHTML = `
       <details class="training-about">
         <summary>${escapeHtml(t("common.training.aboutTitle"))}</summary>
-        <p>${escapeHtml(t(`${page}.training.about`))}</p>
-        <p>${escapeHtml(t(`${page}.training.datasetNote`))}</p>
+        <p>${docsLinks(t(`${page}.training.about`))}</p>
+        <p>${docsLinks(t(`${page}.training.datasetNote`))}</p>
       </details>
       <div class="training-grid">
         <section class="training-card" data-stage="data">
@@ -283,6 +291,12 @@
     els.panel.addEventListener("mouseover", placeTip);
     els.panel.addEventListener("focusin", placeTip);
     els.download.addEventListener("click", () => downloadDataset());
+    els.panel.addEventListener("click", (event) => {
+      const link = event.target.closest("[data-docs-link]");
+      if (!link) return;
+      event.preventDefault();
+      if (root.openDocsModal) root.openDocsModal(state.controller, link.getAttribute("data-docs-link"));
+    });
     els.choose.addEventListener("click", () => els.file.click());
     els.file.addEventListener("change", () => {
       const file = els.file.files && els.file.files[0];
