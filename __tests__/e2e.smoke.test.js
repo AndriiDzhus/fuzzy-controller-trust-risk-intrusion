@@ -217,7 +217,8 @@ describe("E2E smoke: navigation and i18n", () => {
     expect(res.body.uk.common.pipeline.accumulationHintMamdani).toContain("{tip:max}");
     expect(res.body.uk.common.pipeline.accumulationHintMamdani).not.toContain("{tip:cog}");
     expect(res.body.uk.common.pipeline.defuzzificationHintCog).toContain("{tip:cog}");
-    expect(res.body.uk.common.pipeline.defuzzificationHintCog).toContain("(не α)");
+    expect(res.body.uk.common.pipeline.defuzzificationHintCog).toContain("акумульованої множини");
+    expect(res.body.uk.common.pipeline.cogMarker).toBe("центр тяжіння");
     expect(res.body.uk.common.glossary.min.label).toBe("min");
     expect(res.body.uk.common.tooltip.clippedMu).toBeTruthy();
     expect(res.body.uk.common.pipeline.defuzzificationHintCog).toBe(

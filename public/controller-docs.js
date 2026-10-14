@@ -589,13 +589,19 @@ function renderVariable(variable) {
   `;
 }
 
+// Icons of the documentation buttons (same as in the page markup).
+const DOCS_ICONS = {
+  formulas: '<svg class="btn-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M2 18c5 0 6-13 10-13s5 13 10 13"/></svg>',
+  rules: '<svg class="btn-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6h12M9 12h12M9 18h12"/><path d="M3 6h2M3 12h2M3 18h2"/></svg>',
+};
+
 function renderDocsSwitch(kind, hintHtml) {
   const nextKind = kind === "rules" ? "formulas" : "rules";
   const label = docsText(nextKind === "rules" ? "common.docs.rulesBtn" : "common.docs.formulasBtn");
   return `
     <div class="docs-modal-switch-row">
       ${hintHtml || ""}
-      <button type="button" class="docs-btn docs-modal-switch" data-docs-switch="${nextKind}">${docsEscape(label)}</button>
+      <button type="button" class="docs-btn docs-modal-switch" data-docs-switch="${nextKind}">${DOCS_ICONS[nextKind]}<span>${docsEscape(label)}</span></button>
     </div>
   `;
 }

@@ -140,7 +140,7 @@ function report(result, args) {
     params,
     training: {
       ...training,
-      dataset: datasetName,
+      dataset: path.relative(root, args.data),
     },
     changes: result.changes,
   };
