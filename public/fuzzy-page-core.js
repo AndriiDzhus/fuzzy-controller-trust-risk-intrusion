@@ -703,6 +703,9 @@ function tooltipFooter(model) {
     )}</div>`;
   }
 
+  // No result row on graphs that do not carry one (step 3) or when no rule fired:
+  // Number(null) is 0, so the null check has to come first.
+  if (model.resultValue === null || model.resultValue === undefined) return "";
   if (!Number.isFinite(Number(model.resultValue))) return "";
   const term = model.resultTerm
     ? ` · ${escapeHtml(termLabel(model.resultTerm, model.varKey))}`
@@ -893,7 +896,7 @@ function drawCurveGraph(canvasId, termSeries, currentValue, options = {}) {
   ensureLegend(canvasId, terms, highlightTerm);
 }
 
-function drawResultMarker(ctx, w, h, p, resultValue, view = 100) {
+function drawResultMarker(ctx, w, h, p, resultValue, view = 100, label = "") {
   if (resultValue === null || resultValue === undefined || !Number.isFinite(Number(resultValue))) return;
   if (!inXView(resultValue, view)) return;
   const vx = toPlotX(Number(resultValue), w, p, view);
@@ -908,23 +911,78 @@ function drawResultMarker(ctx, w, h, p, resultValue, view = 100) {
 
   ctx.fillStyle = "#111";
   ctx.font = "bold 12px Arial";
+  const text = (label ? `${label} = ` : "") + formatNumber(resultValue, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  const textW = ctx.measureText(text).width;
+  // Label to the right of the marker, or to the left when it would leave the plot;
+  // a light backdrop keeps it readable over the curves.
+  const left = vx + 8 + textW <= w - p ? vx + 8 : vx - 8 - textW;
+  ctx.fillStyle = "rgba(255, 255, 255, 0.85)";
+  ctx.fillRect(left - 3, p + 1, textW + 6, 15);
+  ctx.fillStyle = "#111";
   ctx.textAlign = "left";
-  ctx.fillText(
-    formatNumber(resultValue, { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
-    Math.min(w - 70, vx + 8),
-    p + 12
-  );
+  ctx.fillText(text, left, p + 12);
 }
 
-function drawTermPeakLabel(ctx, w, h, p, term, points, color, view = 100, varKey = null) {
-  const peak = findPeakPoint(points);
-  if (!peak || peak.y <= 0.04 || !inXView(peak.x, view)) return;
-  const labelX = toPlotX(peak.x, w, p, view);
-  const labelY = h - p - peak.y * (h - 2 * p);
-  ctx.fillStyle = color;
+/**
+ * Term names above the peaks (the centre of the plateau for a clipped term).
+ * items: [{ term, points, color, alpha?, suffix? }]; `suffix` is appended after
+ * a separator, e.g. "α = 0,200" on the accumulation step. Labels are kept
+ * inside the plot, and a label that would overlap an earlier one is raised a
+ * line, so adjacent plateaus of similar height stay readable.
+ */
+function drawTermPeakLabels(ctx, w, h, p, items, view = 100, varKey = null) {
+  const LINE = 13;
   ctx.font = "11px Arial";
+  const labels = [];
+  items.forEach(({ term, points, color, alpha = 1, suffix = "" }) => {
+    const peak = findPeakPoint(points);
+    if (!peak || peak.y <= 0.04 || !inXView(peak.x, view)) return;
+    const text = suffix ? `${termLabel(term, varKey)} · ${suffix}` : termLabel(term, varKey);
+    const half = ctx.measureText(text).width / 2;
+    const x = Math.min(w - p - half, Math.max(p + half, toPlotX(peak.x, w, p, view)));
+    const y = Math.max(14, h - p - peak.y * (h - 2 * p) - 16);
+    labels.push({ text, x, y, half, color, alpha });
+  });
+  labels.sort((a, b) => a.x - b.x);
+  labels.forEach((label, i) => {
+    for (let j = 0; j < i; j += 1) {
+      const other = labels[j];
+      const overlapX = Math.abs(label.x - other.x) < label.half + other.half + 6;
+      if (overlapX && Math.abs(label.y - other.y) < LINE) label.y = Math.max(12, other.y - LINE);
+    }
+  });
   ctx.textAlign = "center";
-  ctx.fillText(termLabel(term, varKey), labelX, Math.max(14, labelY - 16));
+  labels.forEach(({ text, x, y, color, alpha }) => {
+    ctx.fillStyle = color;
+    ctx.globalAlpha = alpha;
+    ctx.fillText(text, x, y);
+  });
+  ctx.globalAlpha = 1;
+}
+
+/**
+ * Accumulation step: a dashed guide at the clip height α of every fired term,
+ * from the y-axis to the start of the term's plateau (the value itself is in
+ * the term label, so the guides carry no text and cannot collide).
+ */
+function drawClipLevels(ctx, w, h, p, clipped, activations, allTerms, varKey, view) {
+  const plotH = h - 2 * p;
+  ctx.save();
+  ctx.setLineDash([3, 4]);
+  ctx.lineWidth = 1;
+  Object.keys(clipped).forEach((term) => {
+    const alpha = Number(activations?.[term]) || 0;
+    if (alpha <= 0.04) return;
+    const y = h - p - alpha * plotH;
+    const start = (clipped[term] || []).find((pt) => pt.y >= alpha - 1e-9 && inXView(pt.x, view));
+    const xEnd = start ? toPlotX(start.x, w, p, view) : w - p;
+    ctx.strokeStyle = hexToRgba(termColor(term, allTerms, varKey), 0.7);
+    ctx.beginPath();
+    ctx.moveTo(p, y);
+    ctx.lineTo(xEnd, y);
+    ctx.stroke();
+  });
+  ctx.restore();
 }
 
 function drawAggregatedSetGraph(canvasId, points, resultValue, options = {}) {
@@ -940,6 +998,9 @@ function drawAggregatedSetGraph(canvasId, points, resultValue, options = {}) {
   const showAcc = options.showAccumulation !== false;
   const showDefuzz = options.showDefuzzification !== false;
   const highlightTerm = options.highlightTerm || null;
+  // Step 3 shows the clipped terms the union is made of; step 4 shows the union
+  // alone, as the figure whose centre of gravity is the result.
+  const clippedFills = options.clippedFills !== false;
   const clipped = showAcc ? clipTermSeries(termSeries, options.activations) : {};
   const clippedTerms = Object.keys(clipped);
 
@@ -950,7 +1011,7 @@ function drawAggregatedSetGraph(canvasId, points, resultValue, options = {}) {
   ctx.save();
   clipToPlot(ctx, w, h, p);
   if (showDefuzz && termSeries) {
-    if (highlightTerm && termSeries[highlightTerm]) {
+    if (highlightTerm && termSeries[highlightTerm] && options.highlightFill !== false) {
       fillTermArea(
         ctx,
         termSeries[highlightTerm],
@@ -972,16 +1033,18 @@ function drawAggregatedSetGraph(canvasId, points, resultValue, options = {}) {
   }
 
   if (showAcc) {
-    clippedTerms.forEach((term) => {
-      const color = termColor(term, allTerms, options.varKey);
-      fillTermArea(ctx, clipped[term], color, w, h, p, 0.22, view);
-      ctx.strokeStyle = hexToRgba(color, 0.9);
-      ctx.lineWidth = 1.6;
-      strokePlotCurve(ctx, clipped[term], w, h, p, view);
-    });
+    if (clippedFills) {
+      clippedTerms.forEach((term) => {
+        const color = termColor(term, allTerms, options.varKey);
+        fillTermArea(ctx, clipped[term], color, w, h, p, 0.22, view);
+        ctx.strokeStyle = hexToRgba(color, 0.9);
+        ctx.lineWidth = 1.6;
+        strokePlotCurve(ctx, clipped[term], w, h, p, view);
+      });
+    }
 
     if (Array.isArray(points) && points.length) {
-      fillTermArea(ctx, points, "#2c3e50", w, h, p, 0.1, view);
+      fillTermArea(ctx, points, "#2c3e50", w, h, p, clippedFills ? 0.1 : 0.18, view);
       ctx.strokeStyle = "#1a252f";
       ctx.lineWidth = 2.4;
       strokePlotCurve(ctx, points, w, h, p, view);
@@ -990,17 +1053,29 @@ function drawAggregatedSetGraph(canvasId, points, resultValue, options = {}) {
   ctx.restore();
 
   if (showDefuzz && termSeries && options.showPeakLabels) {
-    Object.entries(termSeries).forEach(([term, series]) => {
-      drawTermPeakLabel(ctx, w, h, p, term, series, termColor(term, allTerms, options.varKey), view, options.varKey);
+    // Terms with μ = 0 at the result take no part in the interpretation: their
+    // labels are faded so the eye stays on the set and the nearest terms.
+    const atResult = Number.isFinite(Number(resultValue)) ? Number(resultValue) : null;
+    const items = Object.entries(termSeries).map(([term, series]) => {
+      const mu = atResult === null ? 1 : interpolateSeriesY(series, atResult);
+      return { term, points: series, color: termColor(term, allTerms, options.varKey), alpha: mu > 0.005 ? 1 : 0.35 };
     });
+    drawTermPeakLabels(ctx, w, h, p, items, view, options.varKey);
   }
   if (showAcc && options.showPeakLabels && !showDefuzz) {
-    clippedTerms.forEach((term) => {
-      drawTermPeakLabel(ctx, w, h, p, term, clipped[term], termColor(term, allTerms, options.varKey), view, options.varKey);
-    });
+    // Accumulation: the clip height α goes into the term label ("Низький · α = 0,675")
+    // and a dashed guide joins the y-axis to the plateau at that height.
+    const items = clippedTerms.map((term) => ({
+      term,
+      points: clipped[term],
+      color: termColor(term, allTerms, options.varKey),
+      suffix: `α = ${formatMembership(Number(options.activations?.[term]) || 0)}`,
+    }));
+    drawTermPeakLabels(ctx, w, h, p, items, view, options.varKey);
+    drawClipLevels(ctx, w, h, p, clipped, options.activations, allTerms, options.varKey, view);
   }
 
-  if (showDefuzz) drawResultMarker(ctx, w, h, p, resultValue, view);
+  if (showDefuzz) drawResultMarker(ctx, w, h, p, resultValue, view, options.resultLabel || "");
   ensureLegend(canvasId, ["aggregated"]);
   syncAggregatedGraphKey(canvas);
 }
@@ -2490,15 +2565,24 @@ async function initFuzzyPage(config) {
         );
       }
       if (hasOutputCurves && outputCanvasId !== aggregatedCanvasId) {
-        drawCurveGraph(
+        // Defuzzification: the same aggregated set as in step 3, with the output
+        // terms drawn thin behind it and the centre of gravity marked on it.
+        drawAggregatedSetGraph(
           outputCanvasId,
-          outputSeries,
+          state.result.aggregatedOutput,
           crispValue,
           {
             ...getGraphOptions(config.graphs.output),
             varKey: outputKey,
+            termSeries: outputSeries,
+            activations: state.result.ruleOutputs,
             highlightTerm: outputHighlight,
-            showResultLabel: true,
+            showPeakLabels: true,
+            showAccumulation: true,
+            showDefuzzification: true,
+            clippedFills: false,
+            highlightFill: false,
+            resultLabel: i18nText("common.pipeline.cogMarker", ""),
           }
         );
       }

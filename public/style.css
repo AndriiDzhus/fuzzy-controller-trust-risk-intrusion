@@ -532,9 +532,7 @@ canvas {
 
 .graph-tooltip .tt-term {
   min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  overflow-wrap: anywhere;
 }
 
 .graph-tooltip .tt-mu {
@@ -1175,8 +1173,15 @@ body.graph-expanded::after {
 .process-step-hint {
   margin: 0 0 12px;
   color: #5d6d7e;
-  font-size: 0.88rem;
-  line-height: 1.45;
+  font-size: 0.92rem;
+  line-height: 1.5;
+}
+
+/* Symbols and glossary links inside the step hints read small next to the
+   body text: give them a little extra size. */
+.process-step-hint .sym-greek,
+.process-step-hint .mu-ref {
+  font-size: 1.12em;
 }
 
 .rule-eval {
@@ -1395,6 +1400,10 @@ body.graph-expanded::after {
 }
 
 .docs-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
   border: 1px solid #dbe3ea;
   background: #f2f6fa;
   color: #2c3e50;
@@ -1403,6 +1412,19 @@ body.graph-expanded::after {
   font-size: 0.875rem;
   font-weight: 700;
   cursor: pointer;
+}
+
+/* Inline SVG icon before the label of a documentation button. */
+.docs-btn .btn-icon {
+  flex: none;
+  width: 15px;
+  height: 15px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.9;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  opacity: 0.85;
 }
 
 .docs-btn:hover,
