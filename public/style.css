@@ -1414,6 +1414,12 @@ body.graph-expanded::after {
   cursor: pointer;
 }
 
+/* `display: inline-flex` above would override the hidden attribute (the
+   training "Stop" button is shown only while training runs). */
+.docs-btn[hidden] {
+  display: none;
+}
+
 /* Inline SVG icon before the label of a documentation button. */
 .docs-btn .btn-icon {
   flex: none;
