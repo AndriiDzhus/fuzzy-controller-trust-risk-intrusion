@@ -1,7 +1,7 @@
 {
   "status": "trained",
   "params": {
-    "rateScale": "log10p1",
+    "rateScale": "linear",
     "ranges": {
       "packets": {
         "min": 0,
@@ -9,7 +9,7 @@
       },
       "rate": {
         "min": 0,
-        "max": 7
+        "max": 3000
       },
       "weight": {
         "min": 0,
@@ -21,22 +21,22 @@
         "low": {
           "type": "gauss",
           "params": [
-            2.8469,
-            3.8388
+            2.6385,
+            3.0419
           ]
         },
         "medium": {
           "type": "gauss",
           "params": [
-            3.7429,
-            5.4031
+            1.4755,
+            9.4849
           ]
         },
         "high": {
           "type": "gauss",
           "params": [
-            2.4558,
-            10.417
+            1.9679,
+            14.9659
           ]
         }
       },
@@ -44,22 +44,22 @@
         "low": {
           "type": "gauss",
           "params": [
-            1.5679,
-            1.061
+            20.2132,
+            13.9737
           ]
         },
         "medium": {
           "type": "gauss",
           "params": [
-            1.3442,
-            3.2231
+            50.2667,
+            150.8718
           ]
         },
         "high": {
           "type": "gauss",
           "params": [
-            0.9422,
-            3.9317
+            506.6326,
+            1512.4286
           ]
         }
       },
@@ -67,22 +67,22 @@
         "low": {
           "type": "gauss",
           "params": [
-            14.4701,
-            57.1864
+            37.9033,
+            3.96
           ]
         },
         "medium": {
           "type": "gauss",
           "params": [
-            23.1532,
-            107.7823
+            10.5795,
+            141.7257
           ]
         },
         "high": {
           "type": "gauss",
           "params": [
-            11.9764,
-            245.508
+            36.6012,
+            243.3655
           ]
         }
       }
@@ -91,29 +91,29 @@
       "none": {
         "type": "gauss",
         "params": [
-          21.8143,
-          0.9429
+          12.0534,
+          3.4413
         ]
       },
       "low": {
         "type": "gauss",
         "params": [
-          26.8783,
-          49.8057
+          8.987,
+          28.0125
         ]
       },
       "medium": {
         "type": "gauss",
         "params": [
-          15.1268,
-          62.4939
+          12.2385,
+          60.0078
         ]
       },
       "high": {
         "type": "gauss",
         "params": [
-          4.6579,
-          99.947
+          14.9987,
+          100
         ]
       }
     },
@@ -121,64 +121,8 @@
       [
         [
           "medium",
-          "high",
-          "low"
-        ],
-        "none"
-      ],
-      [
-        [
           "low",
-          "high",
-          "low"
-        ],
-        "medium"
-      ],
-      [
-        [
-          "high",
-          "medium",
-          "high"
-        ],
-        "none"
-      ],
-      [
-        [
-          "medium",
-          "low",
-          "low"
-        ],
-        "high"
-      ],
-      [
-        [
-          "high",
-          "low",
-          "high"
-        ],
-        "high"
-      ],
-      [
-        [
-          "low",
-          "medium",
-          "low"
-        ],
-        "none"
-      ],
-      [
-        [
-          "low",
-          "high",
-          "high"
-        ],
-        "none"
-      ],
-      [
-        [
-          "high",
-          "high",
-          "high"
+          "medium"
         ],
         "low"
       ],
@@ -188,15 +132,15 @@
           "low",
           "medium"
         ],
-        "high"
+        "none"
       ],
       [
         [
           "medium",
-          "high",
+          "medium",
           "medium"
         ],
-        "high"
+        "none"
       ],
       [
         [
@@ -204,13 +148,69 @@
           "low",
           "high"
         ],
-        "none"
+        "medium"
+      ],
+      [
+        [
+          "low",
+          "medium",
+          "low"
+        ],
+        "medium"
       ],
       [
         [
           "high",
           "low",
+          "high"
+        ],
+        "medium"
+      ],
+      [
+        [
+          "low",
+          "high",
           "medium"
+        ],
+        "medium"
+      ],
+      [
+        [
+          "high",
+          "high",
+          "low"
+        ],
+        "high"
+      ],
+      [
+        [
+          "high",
+          "high",
+          "high"
+        ],
+        "high"
+      ],
+      [
+        [
+          "high",
+          "medium",
+          "high"
+        ],
+        "high"
+      ],
+      [
+        [
+          "medium",
+          "high",
+          "high"
+        ],
+        "high"
+      ],
+      [
+        [
+          "low",
+          "high",
+          "low"
         ],
         "high"
       ]
@@ -220,348 +220,145 @@
     "method": "Genetic algorithm: tournament selection, arithmetic + two-point crossover, Gaussian + index mutation",
     "methodKey": "ga",
     "stepName": "generation",
-    "createdAt": "2026-10-01T14:29:36.352Z",
-    "datasetName": "data/intrusion/intrusion_*.csv",
+    "createdAt": "2026-10-18T19:16:15.478Z",
+    "datasetName": "data/intrusion-100.csv",
     "samples": {
-      "train": 4000,
-      "validation": 1600,
-      "test": 1600
+      "train": 70,
+      "validation": 15,
+      "test": 15
     },
     "options": {
       "initialPopulation": 150,
-      "populationSize": 50,
-      "generations": 200,
+      "populationSize": 100,
+      "generations": 150,
+      "targetRmse": 0,
       "seed": 42
     },
-    "steps": 200,
+    "steps": 150,
     "stopReason": "generations",
-    "seconds": 75.1,
+    "seconds": 6.4,
     "metrics": {
       "base": {
         "train": {
-          "n": 4000,
-          "rmse": 53.8954,
-          "mae": 42.4982,
-          "r2": -1.4727,
+          "n": 70,
+          "rmse": 7.1667,
+          "mae": 3.5414,
+          "r2": 0.9238,
           "notFired": 0,
-          "termAccuracy": 0.2798,
+          "termAccuracy": 0.8857,
           "detection": {
             "threshold": 50,
-            "accuracy": 0.5693,
-            "balancedAccuracy": 0.3253,
-            "precision": 0.8199,
-            "recall": 0.6506,
-            "f1": 0.7255,
-            "tp": 2277,
-            "fp": 500,
-            "tn": 0,
-            "fn": 1223
-          },
-          "meanIPByCategory": {
-            "Benign": {
-              "n": 500,
-              "meanIP": 65.9
-            },
-            "BruteForce": {
-              "n": 500,
-              "meanIP": 64.2
-            },
-            "DDoS": {
-              "n": 500,
-              "meanIP": 24.21
-            },
-            "DoS": {
-              "n": 500,
-              "meanIP": 24.61
-            },
-            "Mirai": {
-              "n": 500,
-              "meanIP": 32.41
-            },
-            "Recon": {
-              "n": 500,
-              "meanIP": 55.99
-            },
-            "Spoofing": {
-              "n": 500,
-              "meanIP": 70.41
-            },
-            "Web": {
-              "n": 500,
-              "meanIP": 65.45
-            }
+            "accuracy": 1,
+            "balancedAccuracy": 1,
+            "precision": 1,
+            "recall": 1,
+            "f1": 1,
+            "tp": 51,
+            "fp": 0,
+            "tn": 19,
+            "fn": 0
           }
         },
         "validation": {
-          "n": 1600,
-          "rmse": 54.1518,
-          "mae": 42.6842,
-          "r2": -1.4966,
+          "n": 15,
+          "rmse": 6.3148,
+          "mae": 2.9514,
+          "r2": 0.9548,
           "notFired": 0,
-          "termAccuracy": 0.2769,
+          "termAccuracy": 0.9333,
           "detection": {
             "threshold": 50,
-            "accuracy": 0.5675,
-            "balancedAccuracy": 0.3243,
-            "precision": 0.8195,
-            "recall": 0.6486,
-            "f1": 0.7241,
-            "tp": 908,
-            "fp": 200,
-            "tn": 0,
-            "fn": 492
-          },
-          "meanIPByCategory": {
-            "Benign": {
-              "n": 200,
-              "meanIP": 66.03
-            },
-            "BruteForce": {
-              "n": 200,
-              "meanIP": 64.37
-            },
-            "DDoS": {
-              "n": 200,
-              "meanIP": 23.58
-            },
-            "DoS": {
-              "n": 200,
-              "meanIP": 23.03
-            },
-            "Mirai": {
-              "n": 200,
-              "meanIP": 32.74
-            },
-            "Recon": {
-              "n": 200,
-              "meanIP": 54.17
-            },
-            "Spoofing": {
-              "n": 200,
-              "meanIP": 70.9
-            },
-            "Web": {
-              "n": 200,
-              "meanIP": 64.99
-            }
+            "accuracy": 1,
+            "balancedAccuracy": 1,
+            "precision": 1,
+            "recall": 1,
+            "f1": 1,
+            "tp": 10,
+            "fp": 0,
+            "tn": 5,
+            "fn": 0
           }
         },
         "test": {
-          "n": 1600,
-          "rmse": 53.3623,
-          "mae": 42.1095,
-          "r2": -1.4243,
+          "n": 15,
+          "rmse": 4.2406,
+          "mae": 1.1173,
+          "r2": 0.9495,
           "notFired": 0,
-          "termAccuracy": 0.2731,
+          "termAccuracy": 1,
           "detection": {
             "threshold": 50,
-            "accuracy": 0.5806,
-            "balancedAccuracy": 0.3318,
-            "precision": 0.8229,
-            "recall": 0.6636,
-            "f1": 0.7347,
-            "tp": 929,
-            "fp": 200,
-            "tn": 0,
-            "fn": 471
-          },
-          "meanIPByCategory": {
-            "Benign": {
-              "n": 200,
-              "meanIP": 65.75
-            },
-            "BruteForce": {
-              "n": 200,
-              "meanIP": 64.8
-            },
-            "DDoS": {
-              "n": 200,
-              "meanIP": 25.4
-            },
-            "DoS": {
-              "n": 200,
-              "meanIP": 25.91
-            },
-            "Mirai": {
-              "n": 200,
-              "meanIP": 33.62
-            },
-            "Recon": {
-              "n": 200,
-              "meanIP": 54.84
-            },
-            "Spoofing": {
-              "n": 200,
-              "meanIP": 70.27
-            },
-            "Web": {
-              "n": 200,
-              "meanIP": 65.76
-            }
+            "accuracy": 1,
+            "balancedAccuracy": 1,
+            "precision": 1,
+            "recall": 1,
+            "f1": 1,
+            "tp": 14,
+            "fp": 0,
+            "tn": 1,
+            "fn": 0
           }
         }
       },
       "trained": {
         "train": {
-          "n": 4000,
-          "rmse": 22.3168,
-          "mae": 16.2401,
-          "r2": 0.576,
+          "n": 70,
+          "rmse": 0.0488,
+          "mae": 0.0341,
+          "r2": 1,
           "notFired": 0,
-          "termAccuracy": 0.4875,
+          "termAccuracy": 0.9571,
           "detection": {
             "threshold": 50,
-            "accuracy": 0.613,
-            "balancedAccuracy": 0.7711,
-            "precision": 0.9954,
-            "recall": 0.5603,
-            "f1": 0.717,
-            "tp": 1961,
-            "fp": 9,
-            "tn": 491,
-            "fn": 1539
-          },
-          "meanIPByCategory": {
-            "Benign": {
-              "n": 500,
-              "meanIP": 40.13
-            },
-            "BruteForce": {
-              "n": 500,
-              "meanIP": 43.93
-            },
-            "DDoS": {
-              "n": 500,
-              "meanIP": 95.18
-            },
-            "DoS": {
-              "n": 500,
-              "meanIP": 95.17
-            },
-            "Mirai": {
-              "n": 500,
-              "meanIP": 95.18
-            },
-            "Recon": {
-              "n": 500,
-              "meanIP": 52.85
-            },
-            "Spoofing": {
-              "n": 500,
-              "meanIP": 44.52
-            },
-            "Web": {
-              "n": 500,
-              "meanIP": 46.11
-            }
+            "accuracy": 1,
+            "balancedAccuracy": 1,
+            "precision": 1,
+            "recall": 1,
+            "f1": 1,
+            "tp": 51,
+            "fp": 0,
+            "tn": 19,
+            "fn": 0
           }
         },
         "validation": {
-          "n": 1600,
-          "rmse": 22.7138,
-          "mae": 16.605,
-          "r2": 0.5608,
+          "n": 15,
+          "rmse": 0.0777,
+          "mae": 0.0554,
+          "r2": 1,
           "notFired": 0,
-          "termAccuracy": 0.4888,
+          "termAccuracy": 0.9333,
           "detection": {
             "threshold": 50,
-            "accuracy": 0.5994,
-            "balancedAccuracy": 0.7454,
-            "precision": 0.9847,
-            "recall": 0.5507,
-            "f1": 0.7064,
-            "tp": 771,
-            "fp": 12,
-            "tn": 188,
-            "fn": 629
-          },
-          "meanIPByCategory": {
-            "Benign": {
-              "n": 200,
-              "meanIP": 40.37
-            },
-            "BruteForce": {
-              "n": 200,
-              "meanIP": 43.69
-            },
-            "DDoS": {
-              "n": 200,
-              "meanIP": 95.18
-            },
-            "DoS": {
-              "n": 200,
-              "meanIP": 95.18
-            },
-            "Mirai": {
-              "n": 200,
-              "meanIP": 95.18
-            },
-            "Recon": {
-              "n": 200,
-              "meanIP": 53.12
-            },
-            "Spoofing": {
-              "n": 200,
-              "meanIP": 43.87
-            },
-            "Web": {
-              "n": 200,
-              "meanIP": 44.6
-            }
+            "accuracy": 1,
+            "balancedAccuracy": 1,
+            "precision": 1,
+            "recall": 1,
+            "f1": 1,
+            "tp": 10,
+            "fp": 0,
+            "tn": 5,
+            "fn": 0
           }
         },
         "test": {
-          "n": 1600,
-          "rmse": 22.4371,
-          "mae": 16.4164,
-          "r2": 0.5714,
+          "n": 15,
+          "rmse": 0.0715,
+          "mae": 0.0578,
+          "r2": 1,
           "notFired": 0,
-          "termAccuracy": 0.49,
+          "termAccuracy": 0.9333,
           "detection": {
             "threshold": 50,
-            "accuracy": 0.62,
-            "balancedAccuracy": 0.7721,
-            "precision": 0.9938,
-            "recall": 0.5693,
-            "f1": 0.7239,
-            "tp": 797,
-            "fp": 5,
-            "tn": 195,
-            "fn": 603
-          },
-          "meanIPByCategory": {
-            "Benign": {
-              "n": 200,
-              "meanIP": 40.23
-            },
-            "BruteForce": {
-              "n": 200,
-              "meanIP": 43.91
-            },
-            "DDoS": {
-              "n": 200,
-              "meanIP": 95.18
-            },
-            "DoS": {
-              "n": 200,
-              "meanIP": 95.18
-            },
-            "Mirai": {
-              "n": 200,
-              "meanIP": 95.16
-            },
-            "Recon": {
-              "n": 200,
-              "meanIP": 53.94
-            },
-            "Spoofing": {
-              "n": 200,
-              "meanIP": 44.11
-            },
-            "Web": {
-              "n": 200,
-              "meanIP": 46.39
-            }
+            "accuracy": 1,
+            "balancedAccuracy": 1,
+            "precision": 1,
+            "recall": 1,
+            "f1": 1,
+            "tp": 14,
+            "fp": 0,
+            "tn": 1,
+            "fn": 0
           }
         }
       }
@@ -569,1696 +366,1220 @@
     "history": [
       {
         "generation": 0,
-        "bestRmse": 29.9023,
-        "meanRmse": 34.6656,
-        "bestFitness": 0.0324,
-        "validationRmse": 29.9466,
+        "bestRmse": 7.1667,
+        "meanRmse": 28.2396,
+        "bestFitness": 0.1224,
+        "validationRmse": 6.3148,
         "stopReason": null
       },
       {
         "generation": 1,
-        "bestRmse": 29.1472,
-        "meanRmse": 32.8632,
-        "bestFitness": 0.0332,
-        "validationRmse": 28.9808,
+        "bestRmse": 7.1667,
+        "meanRmse": 22.6234,
+        "bestFitness": 0.1224,
+        "validationRmse": 6.3148,
         "stopReason": null
       },
       {
         "generation": 2,
-        "bestRmse": 26.2931,
-        "meanRmse": 31.216,
-        "bestFitness": 0.0366,
-        "validationRmse": 26.1387,
+        "bestRmse": 6.5833,
+        "meanRmse": 17.9374,
+        "bestFitness": 0.1319,
+        "validationRmse": 5.5722,
         "stopReason": null
       },
       {
         "generation": 3,
-        "bestRmse": 26.2931,
-        "meanRmse": 30.1381,
-        "bestFitness": 0.0366,
-        "validationRmse": 26.1387,
+        "bestRmse": 6.5833,
+        "meanRmse": 13.8348,
+        "bestFitness": 0.1319,
+        "validationRmse": 5.5722,
         "stopReason": null
       },
       {
         "generation": 4,
-        "bestRmse": 26.2931,
-        "meanRmse": 29.2026,
-        "bestFitness": 0.0366,
-        "validationRmse": 26.1387,
+        "bestRmse": 6.3455,
+        "meanRmse": 11.5888,
+        "bestFitness": 0.1361,
+        "validationRmse": 5.6751,
         "stopReason": null
       },
       {
         "generation": 5,
-        "bestRmse": 25.3208,
-        "meanRmse": 28.4088,
-        "bestFitness": 0.038,
-        "validationRmse": 25.1342,
+        "bestRmse": 4.4427,
+        "meanRmse": 9.1341,
+        "bestFitness": 0.1837,
+        "validationRmse": 4.9185,
         "stopReason": null
       },
       {
         "generation": 6,
-        "bestRmse": 24.5872,
-        "meanRmse": 27.3582,
-        "bestFitness": 0.0391,
-        "validationRmse": 24.6536,
+        "bestRmse": 4.4427,
+        "meanRmse": 6.9953,
+        "bestFitness": 0.1837,
+        "validationRmse": 4.9185,
         "stopReason": null
       },
       {
         "generation": 7,
-        "bestRmse": 24.2262,
-        "meanRmse": 26.3009,
-        "bestFitness": 0.0396,
-        "validationRmse": 23.9891,
+        "bestRmse": 3.1594,
+        "meanRmse": 6.638,
+        "bestFitness": 0.2404,
+        "validationRmse": 2.2254,
         "stopReason": null
       },
       {
         "generation": 8,
-        "bestRmse": 23.9846,
-        "meanRmse": 25.4898,
-        "bestFitness": 0.04,
-        "validationRmse": 24.012,
+        "bestRmse": 2.508,
+        "meanRmse": 5.7091,
+        "bestFitness": 0.2851,
+        "validationRmse": 1.7842,
         "stopReason": null
       },
       {
         "generation": 9,
-        "bestRmse": 23.7589,
-        "meanRmse": 24.9145,
-        "bestFitness": 0.0404,
-        "validationRmse": 23.6599,
+        "bestRmse": 1.0576,
+        "meanRmse": 5.0985,
+        "bestFitness": 0.486,
+        "validationRmse": 1.3409,
         "stopReason": null
       },
       {
         "generation": 10,
-        "bestRmse": 23.5643,
-        "meanRmse": 24.5899,
-        "bestFitness": 0.0407,
-        "validationRmse": 23.5917,
+        "bestRmse": 0.8388,
+        "meanRmse": 4.5154,
+        "bestFitness": 0.5438,
+        "validationRmse": 0.8634,
         "stopReason": null
       },
       {
         "generation": 11,
-        "bestRmse": 23.5643,
-        "meanRmse": 24.3461,
-        "bestFitness": 0.0407,
-        "validationRmse": 23.5917,
+        "bestRmse": 0.8388,
+        "meanRmse": 3.0891,
+        "bestFitness": 0.5438,
+        "validationRmse": 0.8634,
         "stopReason": null
       },
       {
         "generation": 12,
-        "bestRmse": 23.1722,
-        "meanRmse": 24.1322,
-        "bestFitness": 0.0414,
-        "validationRmse": 23.1857,
+        "bestRmse": 0.8003,
+        "meanRmse": 2.5284,
+        "bestFitness": 0.5555,
+        "validationRmse": 0.8768,
         "stopReason": null
       },
       {
         "generation": 13,
-        "bestRmse": 23.1722,
-        "meanRmse": 23.9651,
-        "bestFitness": 0.0414,
-        "validationRmse": 23.1857,
+        "bestRmse": 0.7326,
+        "meanRmse": 1.5991,
+        "bestFitness": 0.5772,
+        "validationRmse": 0.7723,
         "stopReason": null
       },
       {
         "generation": 14,
-        "bestRmse": 23.1481,
-        "meanRmse": 23.7991,
-        "bestFitness": 0.0414,
-        "validationRmse": 23.1234,
+        "bestRmse": 0.6247,
+        "meanRmse": 1.8588,
+        "bestFitness": 0.6155,
+        "validationRmse": 0.7565,
         "stopReason": null
       },
       {
         "generation": 15,
-        "bestRmse": 23.1481,
-        "meanRmse": 23.6755,
-        "bestFitness": 0.0414,
-        "validationRmse": 23.1234,
+        "bestRmse": 0.6247,
+        "meanRmse": 1.5676,
+        "bestFitness": 0.6155,
+        "validationRmse": 0.7565,
         "stopReason": null
       },
       {
         "generation": 16,
-        "bestRmse": 23.1408,
-        "meanRmse": 23.5638,
-        "bestFitness": 0.0414,
-        "validationRmse": 23.1416,
+        "bestRmse": 0.5942,
+        "meanRmse": 1.6836,
+        "bestFitness": 0.6273,
+        "validationRmse": 0.8456,
         "stopReason": null
       },
       {
         "generation": 17,
-        "bestRmse": 23.1355,
-        "meanRmse": 23.449,
-        "bestFitness": 0.0414,
-        "validationRmse": 23.1073,
+        "bestRmse": 0.5668,
+        "meanRmse": 1.3661,
+        "bestFitness": 0.6382,
+        "validationRmse": 0.7735,
         "stopReason": null
       },
       {
         "generation": 18,
-        "bestRmse": 23.0619,
-        "meanRmse": 23.3513,
-        "bestFitness": 0.0416,
-        "validationRmse": 23.0693,
+        "bestRmse": 0.4906,
+        "meanRmse": 1.3024,
+        "bestFitness": 0.6709,
+        "validationRmse": 0.7491,
         "stopReason": null
       },
       {
         "generation": 19,
-        "bestRmse": 23.0619,
-        "meanRmse": 23.288,
-        "bestFitness": 0.0416,
-        "validationRmse": 23.0693,
+        "bestRmse": 0.4515,
+        "meanRmse": 1.1461,
+        "bestFitness": 0.6889,
+        "validationRmse": 0.6904,
         "stopReason": null
       },
       {
         "generation": 20,
-        "bestRmse": 23.0619,
-        "meanRmse": 23.2196,
-        "bestFitness": 0.0416,
-        "validationRmse": 23.0693,
+        "bestRmse": 0.428,
+        "meanRmse": 1.199,
+        "bestFitness": 0.7003,
+        "validationRmse": 0.4859,
         "stopReason": null
       },
       {
         "generation": 21,
-        "bestRmse": 22.9198,
-        "meanRmse": 23.1668,
-        "bestFitness": 0.0418,
-        "validationRmse": 23.0448,
+        "bestRmse": 0.428,
+        "meanRmse": 1.8712,
+        "bestFitness": 0.7003,
+        "validationRmse": 0.4859,
         "stopReason": null
       },
       {
         "generation": 22,
-        "bestRmse": 22.9198,
-        "meanRmse": 23.1346,
-        "bestFitness": 0.0418,
-        "validationRmse": 23.0448,
+        "bestRmse": 0.3488,
+        "meanRmse": 1.172,
+        "bestFitness": 0.7414,
+        "validationRmse": 0.4199,
         "stopReason": null
       },
       {
         "generation": 23,
-        "bestRmse": 22.9198,
-        "meanRmse": 23.1266,
-        "bestFitness": 0.0418,
-        "validationRmse": 23.0448,
+        "bestRmse": 0.2966,
+        "meanRmse": 1.3751,
+        "bestFitness": 0.7713,
+        "validationRmse": 0.3024,
         "stopReason": null
       },
       {
         "generation": 24,
-        "bestRmse": 22.9198,
-        "meanRmse": 23.1161,
-        "bestFitness": 0.0418,
-        "validationRmse": 23.0448,
+        "bestRmse": 0.2589,
+        "meanRmse": 1.9652,
+        "bestFitness": 0.7943,
+        "validationRmse": 0.2476,
         "stopReason": null
       },
       {
         "generation": 25,
-        "bestRmse": 22.8938,
-        "meanRmse": 23.094,
-        "bestFitness": 0.0419,
-        "validationRmse": 22.9993,
+        "bestRmse": 0.2427,
+        "meanRmse": 1.6227,
+        "bestFitness": 0.8047,
+        "validationRmse": 0.2231,
         "stopReason": null
       },
       {
         "generation": 26,
-        "bestRmse": 22.8938,
-        "meanRmse": 23.085,
-        "bestFitness": 0.0419,
-        "validationRmse": 22.9993,
+        "bestRmse": 0.2206,
+        "meanRmse": 1.5105,
+        "bestFitness": 0.8192,
+        "validationRmse": 0.2309,
         "stopReason": null
       },
       {
         "generation": 27,
-        "bestRmse": 22.8938,
-        "meanRmse": 23.0606,
-        "bestFitness": 0.0419,
-        "validationRmse": 22.9993,
+        "bestRmse": 0.1838,
+        "meanRmse": 1.0824,
+        "bestFitness": 0.8447,
+        "validationRmse": 0.1906,
         "stopReason": null
       },
       {
         "generation": 28,
-        "bestRmse": 22.7922,
-        "meanRmse": 23.0358,
-        "bestFitness": 0.042,
-        "validationRmse": 23.133,
+        "bestRmse": 0.1838,
+        "meanRmse": 0.9986,
+        "bestFitness": 0.8447,
+        "validationRmse": 0.1906,
         "stopReason": null
       },
       {
         "generation": 29,
-        "bestRmse": 22.7922,
-        "meanRmse": 23.0115,
-        "bestFitness": 0.042,
-        "validationRmse": 23.133,
+        "bestRmse": 0.1692,
+        "meanRmse": 1.4078,
+        "bestFitness": 0.8552,
+        "validationRmse": 0.1849,
         "stopReason": null
       },
       {
         "generation": 30,
-        "bestRmse": 22.7922,
-        "meanRmse": 22.9862,
-        "bestFitness": 0.042,
-        "validationRmse": 23.133,
+        "bestRmse": 0.1617,
+        "meanRmse": 0.6175,
+        "bestFitness": 0.8608,
+        "validationRmse": 0.2157,
         "stopReason": null
       },
       {
         "generation": 31,
-        "bestRmse": 22.7922,
-        "meanRmse": 22.9588,
-        "bestFitness": 0.042,
-        "validationRmse": 23.133,
+        "bestRmse": 0.1617,
+        "meanRmse": 1.3636,
+        "bestFitness": 0.8608,
+        "validationRmse": 0.2157,
         "stopReason": null
       },
       {
         "generation": 32,
-        "bestRmse": 22.7646,
-        "meanRmse": 22.9313,
-        "bestFitness": 0.0421,
-        "validationRmse": 22.9685,
+        "bestRmse": 0.1617,
+        "meanRmse": 1.8474,
+        "bestFitness": 0.8608,
+        "validationRmse": 0.2144,
         "stopReason": null
       },
       {
         "generation": 33,
-        "bestRmse": 22.6822,
-        "meanRmse": 22.9041,
-        "bestFitness": 0.0422,
-        "validationRmse": 22.9256,
+        "bestRmse": 0.1617,
+        "meanRmse": 0.9925,
+        "bestFitness": 0.8608,
+        "validationRmse": 0.2144,
         "stopReason": null
       },
       {
         "generation": 34,
-        "bestRmse": 22.6822,
-        "meanRmse": 22.8765,
-        "bestFitness": 0.0422,
-        "validationRmse": 22.9256,
+        "bestRmse": 0.1494,
+        "meanRmse": 0.8557,
+        "bestFitness": 0.87,
+        "validationRmse": 0.1783,
         "stopReason": null
       },
       {
         "generation": 35,
-        "bestRmse": 22.6822,
-        "meanRmse": 22.8481,
-        "bestFitness": 0.0422,
-        "validationRmse": 22.9256,
+        "bestRmse": 0.1346,
+        "meanRmse": 0.9381,
+        "bestFitness": 0.8814,
+        "validationRmse": 0.1756,
         "stopReason": null
       },
       {
         "generation": 36,
-        "bestRmse": 22.6822,
-        "meanRmse": 22.8393,
-        "bestFitness": 0.0422,
-        "validationRmse": 22.9256,
+        "bestRmse": 0.1346,
+        "meanRmse": 0.7524,
+        "bestFitness": 0.8814,
+        "validationRmse": 0.1756,
         "stopReason": null
       },
       {
         "generation": 37,
-        "bestRmse": 22.6822,
-        "meanRmse": 22.8228,
-        "bestFitness": 0.0422,
-        "validationRmse": 22.9256,
+        "bestRmse": 0.1257,
+        "meanRmse": 1.0536,
+        "bestFitness": 0.8884,
+        "validationRmse": 0.1797,
         "stopReason": null
       },
       {
         "generation": 38,
-        "bestRmse": 22.6822,
-        "meanRmse": 22.807,
-        "bestFitness": 0.0422,
-        "validationRmse": 22.9256,
+        "bestRmse": 0.1248,
+        "meanRmse": 1.1495,
+        "bestFitness": 0.889,
+        "validationRmse": 0.1803,
         "stopReason": null
       },
       {
         "generation": 39,
-        "bestRmse": 22.6716,
-        "meanRmse": 22.7945,
-        "bestFitness": 0.0422,
-        "validationRmse": 22.8807,
+        "bestRmse": 0.1226,
+        "meanRmse": 1.0207,
+        "bestFitness": 0.8908,
+        "validationRmse": 0.1868,
         "stopReason": null
       },
       {
         "generation": 40,
-        "bestRmse": 22.6716,
-        "meanRmse": 22.7767,
-        "bestFitness": 0.0422,
-        "validationRmse": 22.8807,
+        "bestRmse": 0.1226,
+        "meanRmse": 1.1445,
+        "bestFitness": 0.8908,
+        "validationRmse": 0.1868,
         "stopReason": null
       },
       {
         "generation": 41,
-        "bestRmse": 22.6498,
-        "meanRmse": 22.7568,
-        "bestFitness": 0.0423,
-        "validationRmse": 22.8466,
+        "bestRmse": 0.1226,
+        "meanRmse": 0.6813,
+        "bestFitness": 0.8908,
+        "validationRmse": 0.1868,
         "stopReason": null
       },
       {
         "generation": 42,
-        "bestRmse": 22.6498,
-        "meanRmse": 22.7481,
-        "bestFitness": 0.0423,
-        "validationRmse": 22.8466,
+        "bestRmse": 0.1201,
+        "meanRmse": 0.8111,
+        "bestFitness": 0.8928,
+        "validationRmse": 0.179,
         "stopReason": null
       },
       {
         "generation": 43,
-        "bestRmse": 22.6498,
-        "meanRmse": 22.7427,
-        "bestFitness": 0.0423,
-        "validationRmse": 22.8466,
+        "bestRmse": 0.1195,
+        "meanRmse": 0.918,
+        "bestFitness": 0.8933,
+        "validationRmse": 0.178,
         "stopReason": null
       },
       {
         "generation": 44,
-        "bestRmse": 22.6467,
-        "meanRmse": 22.7337,
-        "bestFitness": 0.0423,
-        "validationRmse": 22.8514,
+        "bestRmse": 0.1193,
+        "meanRmse": 1.0609,
+        "bestFitness": 0.8934,
+        "validationRmse": 0.1794,
         "stopReason": null
       },
       {
         "generation": 45,
-        "bestRmse": 22.6467,
-        "meanRmse": 22.73,
-        "bestFitness": 0.0423,
-        "validationRmse": 22.8514,
+        "bestRmse": 0.1179,
+        "meanRmse": 1.4362,
+        "bestFitness": 0.8945,
+        "validationRmse": 0.1781,
         "stopReason": null
       },
       {
         "generation": 46,
-        "bestRmse": 22.6467,
-        "meanRmse": 22.718,
-        "bestFitness": 0.0423,
-        "validationRmse": 22.8514,
+        "bestRmse": 0.1169,
+        "meanRmse": 0.6995,
+        "bestFitness": 0.8953,
+        "validationRmse": 0.1824,
         "stopReason": null
       },
       {
         "generation": 47,
-        "bestRmse": 22.6467,
-        "meanRmse": 22.7026,
-        "bestFitness": 0.0423,
-        "validationRmse": 22.8514,
+        "bestRmse": 0.1131,
+        "meanRmse": 1.3225,
+        "bestFitness": 0.8984,
+        "validationRmse": 0.1671,
         "stopReason": null
       },
       {
         "generation": 48,
-        "bestRmse": 22.6467,
-        "meanRmse": 22.698,
-        "bestFitness": 0.0423,
-        "validationRmse": 22.8514,
+        "bestRmse": 0.1131,
+        "meanRmse": 1.0175,
+        "bestFitness": 0.8984,
+        "validationRmse": 0.1671,
         "stopReason": null
       },
       {
         "generation": 49,
-        "bestRmse": 22.6467,
-        "meanRmse": 22.6904,
-        "bestFitness": 0.0423,
-        "validationRmse": 22.8514,
+        "bestRmse": 0.1089,
+        "meanRmse": 1.3325,
+        "bestFitness": 0.9018,
+        "validationRmse": 0.1717,
         "stopReason": null
       },
       {
         "generation": 50,
-        "bestRmse": 22.6409,
-        "meanRmse": 22.6789,
-        "bestFitness": 0.0423,
-        "validationRmse": 22.8612,
+        "bestRmse": 0.1081,
+        "meanRmse": 0.9213,
+        "bestFitness": 0.9024,
+        "validationRmse": 0.1735,
         "stopReason": null
       },
       {
         "generation": 51,
-        "bestRmse": 22.6409,
-        "meanRmse": 22.6756,
-        "bestFitness": 0.0423,
-        "validationRmse": 22.8612,
+        "bestRmse": 0.1059,
+        "meanRmse": 1.3348,
+        "bestFitness": 0.9042,
+        "validationRmse": 0.1952,
         "stopReason": null
       },
       {
         "generation": 52,
-        "bestRmse": 22.6199,
-        "meanRmse": 22.6703,
-        "bestFitness": 0.0423,
-        "validationRmse": 22.7939,
+        "bestRmse": 0.1028,
+        "meanRmse": 1.1488,
+        "bestFitness": 0.9068,
+        "validationRmse": 0.185,
         "stopReason": null
       },
       {
         "generation": 53,
-        "bestRmse": 22.6199,
-        "meanRmse": 22.6669,
-        "bestFitness": 0.0423,
-        "validationRmse": 22.7939,
+        "bestRmse": 0.1008,
+        "meanRmse": 1.8107,
+        "bestFitness": 0.9084,
+        "validationRmse": 0.1599,
         "stopReason": null
       },
       {
         "generation": 54,
-        "bestRmse": 22.6199,
-        "meanRmse": 22.665,
-        "bestFitness": 0.0423,
-        "validationRmse": 22.7939,
+        "bestRmse": 0.1,
+        "meanRmse": 0.9923,
+        "bestFitness": 0.9091,
+        "validationRmse": 0.1733,
         "stopReason": null
       },
       {
         "generation": 55,
-        "bestRmse": 22.6199,
-        "meanRmse": 22.6634,
-        "bestFitness": 0.0423,
-        "validationRmse": 22.7939,
+        "bestRmse": 0.0999,
+        "meanRmse": 0.7346,
+        "bestFitness": 0.9092,
+        "validationRmse": 0.1593,
         "stopReason": null
       },
       {
         "generation": 56,
-        "bestRmse": 22.6199,
-        "meanRmse": 22.6568,
-        "bestFitness": 0.0423,
-        "validationRmse": 22.7939,
+        "bestRmse": 0.0952,
+        "meanRmse": 1.4712,
+        "bestFitness": 0.9131,
+        "validationRmse": 0.1575,
         "stopReason": null
       },
       {
         "generation": 57,
-        "bestRmse": 22.6053,
-        "meanRmse": 22.6501,
-        "bestFitness": 0.0424,
-        "validationRmse": 22.8088,
+        "bestRmse": 0.093,
+        "meanRmse": 0.7036,
+        "bestFitness": 0.9149,
+        "validationRmse": 0.1592,
         "stopReason": null
       },
       {
         "generation": 58,
-        "bestRmse": 22.6053,
-        "meanRmse": 22.6478,
-        "bestFitness": 0.0424,
-        "validationRmse": 22.8088,
+        "bestRmse": 0.093,
+        "meanRmse": 0.9115,
+        "bestFitness": 0.9149,
+        "validationRmse": 0.1592,
         "stopReason": null
       },
       {
         "generation": 59,
-        "bestRmse": 22.6053,
-        "meanRmse": 22.645,
-        "bestFitness": 0.0424,
-        "validationRmse": 22.8088,
+        "bestRmse": 0.0923,
+        "meanRmse": 1.4035,
+        "bestFitness": 0.9155,
+        "validationRmse": 0.1578,
         "stopReason": null
       },
       {
         "generation": 60,
-        "bestRmse": 22.6053,
-        "meanRmse": 22.6433,
-        "bestFitness": 0.0424,
-        "validationRmse": 22.8088,
+        "bestRmse": 0.0919,
+        "meanRmse": 1.5755,
+        "bestFitness": 0.9158,
+        "validationRmse": 0.1634,
         "stopReason": null
       },
       {
         "generation": 61,
-        "bestRmse": 22.5744,
-        "meanRmse": 22.6398,
-        "bestFitness": 0.0424,
-        "validationRmse": 22.8468,
+        "bestRmse": 0.0903,
+        "meanRmse": 1.4022,
+        "bestFitness": 0.9172,
+        "validationRmse": 0.1636,
         "stopReason": null
       },
       {
         "generation": 62,
-        "bestRmse": 22.5744,
-        "meanRmse": 22.634,
-        "bestFitness": 0.0424,
-        "validationRmse": 22.8468,
+        "bestRmse": 0.0879,
+        "meanRmse": 1.2914,
+        "bestFitness": 0.9192,
+        "validationRmse": 0.1776,
         "stopReason": null
       },
       {
         "generation": 63,
-        "bestRmse": 22.5744,
-        "meanRmse": 22.6328,
-        "bestFitness": 0.0424,
-        "validationRmse": 22.8468,
+        "bestRmse": 0.0879,
+        "meanRmse": 0.8196,
+        "bestFitness": 0.9192,
+        "validationRmse": 0.1776,
         "stopReason": null
       },
       {
         "generation": 64,
-        "bestRmse": 22.5438,
-        "meanRmse": 22.6282,
-        "bestFitness": 0.0425,
-        "validationRmse": 22.8366,
+        "bestRmse": 0.0866,
+        "meanRmse": 0.7303,
+        "bestFitness": 0.9203,
+        "validationRmse": 0.1466,
         "stopReason": null
       },
       {
         "generation": 65,
-        "bestRmse": 22.5438,
-        "meanRmse": 22.6202,
-        "bestFitness": 0.0425,
-        "validationRmse": 22.8366,
+        "bestRmse": 0.0862,
+        "meanRmse": 1.6668,
+        "bestFitness": 0.9206,
+        "validationRmse": 0.1461,
         "stopReason": null
       },
       {
         "generation": 66,
-        "bestRmse": 22.5352,
-        "meanRmse": 22.6148,
-        "bestFitness": 0.0425,
-        "validationRmse": 22.7646,
+        "bestRmse": 0.0851,
+        "meanRmse": 1.1245,
+        "bestFitness": 0.9216,
+        "validationRmse": 0.1475,
         "stopReason": null
       },
       {
         "generation": 67,
-        "bestRmse": 22.5352,
-        "meanRmse": 22.6087,
-        "bestFitness": 0.0425,
-        "validationRmse": 22.7646,
+        "bestRmse": 0.0832,
+        "meanRmse": 0.9502,
+        "bestFitness": 0.9232,
+        "validationRmse": 0.1422,
         "stopReason": null
       },
       {
         "generation": 68,
-        "bestRmse": 22.5352,
-        "meanRmse": 22.6067,
-        "bestFitness": 0.0425,
-        "validationRmse": 22.7646,
+        "bestRmse": 0.0832,
+        "meanRmse": 1.8201,
+        "bestFitness": 0.9232,
+        "validationRmse": 0.1422,
         "stopReason": null
       },
       {
         "generation": 69,
-        "bestRmse": 22.5352,
-        "meanRmse": 22.6029,
-        "bestFitness": 0.0425,
-        "validationRmse": 22.7646,
+        "bestRmse": 0.0828,
+        "meanRmse": 1.8129,
+        "bestFitness": 0.9235,
+        "validationRmse": 0.1458,
         "stopReason": null
       },
       {
         "generation": 70,
-        "bestRmse": 22.5174,
-        "meanRmse": 22.5978,
-        "bestFitness": 0.0425,
-        "validationRmse": 22.8102,
+        "bestRmse": 0.0828,
+        "meanRmse": 0.8764,
+        "bestFitness": 0.9235,
+        "validationRmse": 0.1458,
         "stopReason": null
       },
       {
         "generation": 71,
-        "bestRmse": 22.5174,
-        "meanRmse": 22.596,
-        "bestFitness": 0.0425,
-        "validationRmse": 22.8102,
+        "bestRmse": 0.0828,
+        "meanRmse": 1.7981,
+        "bestFitness": 0.9235,
+        "validationRmse": 0.1458,
         "stopReason": null
       },
       {
         "generation": 72,
-        "bestRmse": 22.5174,
-        "meanRmse": 22.5927,
-        "bestFitness": 0.0425,
-        "validationRmse": 22.8102,
+        "bestRmse": 0.0819,
+        "meanRmse": 1.1554,
+        "bestFitness": 0.9243,
+        "validationRmse": 0.1456,
         "stopReason": null
       },
       {
         "generation": 73,
-        "bestRmse": 22.5174,
-        "meanRmse": 22.5879,
-        "bestFitness": 0.0425,
-        "validationRmse": 22.8102,
+        "bestRmse": 0.0814,
+        "meanRmse": 1.0833,
+        "bestFitness": 0.9247,
+        "validationRmse": 0.1408,
         "stopReason": null
       },
       {
         "generation": 74,
-        "bestRmse": 22.5165,
-        "meanRmse": 22.5827,
-        "bestFitness": 0.0425,
-        "validationRmse": 22.7763,
+        "bestRmse": 0.081,
+        "meanRmse": 0.5654,
+        "bestFitness": 0.9251,
+        "validationRmse": 0.1362,
         "stopReason": null
       },
       {
         "generation": 75,
-        "bestRmse": 22.5112,
-        "meanRmse": 22.5768,
-        "bestFitness": 0.0425,
-        "validationRmse": 22.7716,
+        "bestRmse": 0.081,
+        "meanRmse": 1.5821,
+        "bestFitness": 0.9251,
+        "validationRmse": 0.1362,
         "stopReason": null
       },
       {
         "generation": 76,
-        "bestRmse": 22.5112,
-        "meanRmse": 22.5735,
-        "bestFitness": 0.0425,
-        "validationRmse": 22.7716,
+        "bestRmse": 0.081,
+        "meanRmse": 1.1395,
+        "bestFitness": 0.9251,
+        "validationRmse": 0.1362,
         "stopReason": null
       },
       {
         "generation": 77,
-        "bestRmse": 22.5034,
-        "meanRmse": 22.5634,
-        "bestFitness": 0.0425,
-        "validationRmse": 22.8431,
+        "bestRmse": 0.081,
+        "meanRmse": 1.2917,
+        "bestFitness": 0.9251,
+        "validationRmse": 0.1362,
         "stopReason": null
       },
       {
         "generation": 78,
-        "bestRmse": 22.4844,
-        "meanRmse": 22.5527,
-        "bestFitness": 0.0426,
-        "validationRmse": 22.8047,
+        "bestRmse": 0.0806,
+        "meanRmse": 1.2486,
+        "bestFitness": 0.9254,
+        "validationRmse": 0.139,
         "stopReason": null
       },
       {
         "generation": 79,
-        "bestRmse": 22.4504,
-        "meanRmse": 22.5412,
-        "bestFitness": 0.0426,
-        "validationRmse": 22.7579,
+        "bestRmse": 0.0806,
+        "meanRmse": 1.7875,
+        "bestFitness": 0.9254,
+        "validationRmse": 0.139,
         "stopReason": null
       },
       {
         "generation": 80,
-        "bestRmse": 22.4504,
-        "meanRmse": 22.5332,
-        "bestFitness": 0.0426,
-        "validationRmse": 22.7579,
+        "bestRmse": 0.0795,
+        "meanRmse": 1.1026,
+        "bestFitness": 0.9263,
+        "validationRmse": 0.1375,
         "stopReason": null
       },
       {
         "generation": 81,
-        "bestRmse": 22.4504,
-        "meanRmse": 22.5261,
-        "bestFitness": 0.0426,
-        "validationRmse": 22.7579,
+        "bestRmse": 0.0795,
+        "meanRmse": 0.9391,
+        "bestFitness": 0.9263,
+        "validationRmse": 0.1375,
         "stopReason": null
       },
       {
         "generation": 82,
-        "bestRmse": 22.4504,
-        "meanRmse": 22.5144,
-        "bestFitness": 0.0426,
-        "validationRmse": 22.7579,
+        "bestRmse": 0.0795,
+        "meanRmse": 0.7608,
+        "bestFitness": 0.9263,
+        "validationRmse": 0.1375,
         "stopReason": null
       },
       {
         "generation": 83,
-        "bestRmse": 22.4504,
-        "meanRmse": 22.5102,
-        "bestFitness": 0.0426,
-        "validationRmse": 22.7579,
+        "bestRmse": 0.0777,
+        "meanRmse": 0.865,
+        "bestFitness": 0.9279,
+        "validationRmse": 0.1277,
         "stopReason": null
       },
       {
         "generation": 84,
-        "bestRmse": 22.4504,
-        "meanRmse": 22.5052,
-        "bestFitness": 0.0426,
-        "validationRmse": 22.7579,
+        "bestRmse": 0.0777,
+        "meanRmse": 1.5049,
+        "bestFitness": 0.9279,
+        "validationRmse": 0.1277,
         "stopReason": null
       },
       {
         "generation": 85,
-        "bestRmse": 22.4504,
-        "meanRmse": 22.5009,
-        "bestFitness": 0.0426,
-        "validationRmse": 22.7579,
+        "bestRmse": 0.0777,
+        "meanRmse": 1.1459,
+        "bestFitness": 0.9279,
+        "validationRmse": 0.1277,
         "stopReason": null
       },
       {
         "generation": 86,
-        "bestRmse": 22.4504,
-        "meanRmse": 22.4965,
-        "bestFitness": 0.0426,
-        "validationRmse": 22.7579,
+        "bestRmse": 0.0771,
+        "meanRmse": 0.6565,
+        "bestFitness": 0.9284,
+        "validationRmse": 0.1245,
         "stopReason": null
       },
       {
         "generation": 87,
-        "bestRmse": 22.4504,
-        "meanRmse": 22.495,
-        "bestFitness": 0.0426,
-        "validationRmse": 22.7579,
+        "bestRmse": 0.0752,
+        "meanRmse": 1.7016,
+        "bestFitness": 0.9301,
+        "validationRmse": 0.1368,
         "stopReason": null
       },
       {
         "generation": 88,
-        "bestRmse": 22.4504,
-        "meanRmse": 22.4919,
-        "bestFitness": 0.0426,
-        "validationRmse": 22.7579,
+        "bestRmse": 0.0752,
+        "meanRmse": 1.1253,
+        "bestFitness": 0.9301,
+        "validationRmse": 0.1368,
         "stopReason": null
       },
       {
         "generation": 89,
-        "bestRmse": 22.4362,
-        "meanRmse": 22.4869,
-        "bestFitness": 0.0427,
-        "validationRmse": 22.7419,
+        "bestRmse": 0.0744,
+        "meanRmse": 1.1544,
+        "bestFitness": 0.9307,
+        "validationRmse": 0.1202,
         "stopReason": null
       },
       {
         "generation": 90,
-        "bestRmse": 22.4301,
-        "meanRmse": 22.4824,
-        "bestFitness": 0.0427,
-        "validationRmse": 22.7395,
+        "bestRmse": 0.0742,
+        "meanRmse": 1.2174,
+        "bestFitness": 0.9309,
+        "validationRmse": 0.1323,
         "stopReason": null
       },
       {
         "generation": 91,
-        "bestRmse": 22.425,
-        "meanRmse": 22.4759,
-        "bestFitness": 0.0427,
-        "validationRmse": 22.7543,
+        "bestRmse": 0.0733,
+        "meanRmse": 0.5123,
+        "bestFitness": 0.9317,
+        "validationRmse": 0.1234,
         "stopReason": null
       },
       {
         "generation": 92,
-        "bestRmse": 22.425,
-        "meanRmse": 22.4731,
-        "bestFitness": 0.0427,
-        "validationRmse": 22.7543,
+        "bestRmse": 0.0733,
+        "meanRmse": 0.8674,
+        "bestFitness": 0.9317,
+        "validationRmse": 0.1234,
         "stopReason": null
       },
       {
         "generation": 93,
-        "bestRmse": 22.425,
-        "meanRmse": 22.4686,
-        "bestFitness": 0.0427,
-        "validationRmse": 22.7543,
+        "bestRmse": 0.0732,
+        "meanRmse": 1.7432,
+        "bestFitness": 0.9318,
+        "validationRmse": 0.1187,
         "stopReason": null
       },
       {
         "generation": 94,
-        "bestRmse": 22.4216,
-        "meanRmse": 22.4637,
-        "bestFitness": 0.0427,
-        "validationRmse": 22.756,
+        "bestRmse": 0.0694,
+        "meanRmse": 0.9448,
+        "bestFitness": 0.9351,
+        "validationRmse": 0.1109,
         "stopReason": null
       },
       {
         "generation": 95,
-        "bestRmse": 22.4216,
-        "meanRmse": 22.4637,
-        "bestFitness": 0.0427,
-        "validationRmse": 22.756,
+        "bestRmse": 0.0694,
+        "meanRmse": 1.585,
+        "bestFitness": 0.9351,
+        "validationRmse": 0.1109,
         "stopReason": null
       },
       {
         "generation": 96,
-        "bestRmse": 22.4216,
-        "meanRmse": 22.4633,
-        "bestFitness": 0.0427,
-        "validationRmse": 22.756,
+        "bestRmse": 0.0694,
+        "meanRmse": 0.9232,
+        "bestFitness": 0.9351,
+        "validationRmse": 0.1109,
         "stopReason": null
       },
       {
         "generation": 97,
-        "bestRmse": 22.4188,
-        "meanRmse": 22.4601,
-        "bestFitness": 0.0427,
-        "validationRmse": 22.7725,
+        "bestRmse": 0.0693,
+        "meanRmse": 0.7407,
+        "bestFitness": 0.9352,
+        "validationRmse": 0.1132,
         "stopReason": null
       },
       {
         "generation": 98,
-        "bestRmse": 22.4188,
-        "meanRmse": 22.458,
-        "bestFitness": 0.0427,
-        "validationRmse": 22.7725,
+        "bestRmse": 0.0691,
+        "meanRmse": 1.0336,
+        "bestFitness": 0.9353,
+        "validationRmse": 0.1123,
         "stopReason": null
       },
       {
         "generation": 99,
-        "bestRmse": 22.4188,
-        "meanRmse": 22.4558,
-        "bestFitness": 0.0427,
-        "validationRmse": 22.7725,
+        "bestRmse": 0.069,
+        "meanRmse": 1.2427,
+        "bestFitness": 0.9354,
+        "validationRmse": 0.1129,
         "stopReason": null
       },
       {
         "generation": 100,
-        "bestRmse": 22.4188,
-        "meanRmse": 22.4543,
-        "bestFitness": 0.0427,
-        "validationRmse": 22.7725,
+        "bestRmse": 0.0689,
+        "meanRmse": 1.2729,
+        "bestFitness": 0.9355,
+        "validationRmse": 0.1126,
         "stopReason": null
       },
       {
         "generation": 101,
-        "bestRmse": 22.4106,
-        "meanRmse": 22.4527,
-        "bestFitness": 0.0427,
-        "validationRmse": 22.8451,
+        "bestRmse": 0.0679,
+        "meanRmse": 0.4528,
+        "bestFitness": 0.9364,
+        "validationRmse": 0.1616,
         "stopReason": null
       },
       {
         "generation": 102,
-        "bestRmse": 22.3957,
-        "meanRmse": 22.449,
-        "bestFitness": 0.0427,
-        "validationRmse": 22.7292,
+        "bestRmse": 0.0679,
+        "meanRmse": 1.1769,
+        "bestFitness": 0.9364,
+        "validationRmse": 0.1616,
         "stopReason": null
       },
       {
         "generation": 103,
-        "bestRmse": 22.3957,
-        "meanRmse": 22.4484,
-        "bestFitness": 0.0427,
-        "validationRmse": 22.7292,
+        "bestRmse": 0.0679,
+        "meanRmse": 1.6248,
+        "bestFitness": 0.9364,
+        "validationRmse": 0.1616,
         "stopReason": null
       },
       {
         "generation": 104,
-        "bestRmse": 22.3957,
-        "meanRmse": 22.4475,
-        "bestFitness": 0.0427,
-        "validationRmse": 22.7292,
+        "bestRmse": 0.0673,
+        "meanRmse": 1.2499,
+        "bestFitness": 0.937,
+        "validationRmse": 0.1171,
         "stopReason": null
       },
       {
         "generation": 105,
-        "bestRmse": 22.3847,
-        "meanRmse": 22.4434,
-        "bestFitness": 0.0428,
-        "validationRmse": 22.8141,
+        "bestRmse": 0.0669,
+        "meanRmse": 1.1421,
+        "bestFitness": 0.9373,
+        "validationRmse": 0.1067,
         "stopReason": null
       },
       {
         "generation": 106,
-        "bestRmse": 22.3847,
-        "meanRmse": 22.4416,
-        "bestFitness": 0.0428,
-        "validationRmse": 22.8141,
+        "bestRmse": 0.0669,
+        "meanRmse": 1.6084,
+        "bestFitness": 0.9373,
+        "validationRmse": 0.1067,
         "stopReason": null
       },
       {
         "generation": 107,
-        "bestRmse": 22.3777,
-        "meanRmse": 22.4376,
-        "bestFitness": 0.0428,
-        "validationRmse": 22.7487,
+        "bestRmse": 0.0669,
+        "meanRmse": 1.4722,
+        "bestFitness": 0.9373,
+        "validationRmse": 0.1067,
         "stopReason": null
       },
       {
         "generation": 108,
-        "bestRmse": 22.3564,
-        "meanRmse": 22.4291,
-        "bestFitness": 0.0428,
-        "validationRmse": 22.74,
+        "bestRmse": 0.0669,
+        "meanRmse": 1.3802,
+        "bestFitness": 0.9373,
+        "validationRmse": 0.1127,
         "stopReason": null
       },
       {
         "generation": 109,
-        "bestRmse": 22.3564,
-        "meanRmse": 22.4207,
-        "bestFitness": 0.0428,
-        "validationRmse": 22.74,
+        "bestRmse": 0.0663,
+        "meanRmse": 1.241,
+        "bestFitness": 0.9378,
+        "validationRmse": 0.114,
         "stopReason": null
       },
       {
         "generation": 110,
-        "bestRmse": 22.3462,
-        "meanRmse": 22.4146,
-        "bestFitness": 0.0428,
-        "validationRmse": 22.7626,
+        "bestRmse": 0.0659,
+        "meanRmse": 1.0949,
+        "bestFitness": 0.9381,
+        "validationRmse": 0.1057,
         "stopReason": null
       },
       {
         "generation": 111,
-        "bestRmse": 22.3462,
-        "meanRmse": 22.4113,
-        "bestFitness": 0.0428,
-        "validationRmse": 22.7626,
+        "bestRmse": 0.0651,
+        "meanRmse": 1.2727,
+        "bestFitness": 0.9388,
+        "validationRmse": 0.1069,
         "stopReason": null
       },
       {
         "generation": 112,
-        "bestRmse": 22.3462,
-        "meanRmse": 22.4023,
-        "bestFitness": 0.0428,
-        "validationRmse": 22.7626,
+        "bestRmse": 0.0651,
+        "meanRmse": 0.6774,
+        "bestFitness": 0.9388,
+        "validationRmse": 0.1069,
         "stopReason": null
       },
       {
         "generation": 113,
-        "bestRmse": 22.3462,
-        "meanRmse": 22.399,
-        "bestFitness": 0.0428,
-        "validationRmse": 22.7626,
+        "bestRmse": 0.0651,
+        "meanRmse": 1.2587,
+        "bestFitness": 0.9388,
+        "validationRmse": 0.1069,
         "stopReason": null
       },
       {
         "generation": 114,
-        "bestRmse": 22.3432,
-        "meanRmse": 22.392,
-        "bestFitness": 0.0428,
-        "validationRmse": 22.7669,
+        "bestRmse": 0.0646,
+        "meanRmse": 0.9201,
+        "bestFitness": 0.9393,
+        "validationRmse": 0.1066,
         "stopReason": null
       },
       {
         "generation": 115,
-        "bestRmse": 22.3432,
-        "meanRmse": 22.386,
-        "bestFitness": 0.0428,
-        "validationRmse": 22.7669,
+        "bestRmse": 0.0639,
+        "meanRmse": 0.7088,
+        "bestFitness": 0.9399,
+        "validationRmse": 0.1073,
         "stopReason": null
       },
       {
         "generation": 116,
-        "bestRmse": 22.3432,
-        "meanRmse": 22.3812,
-        "bestFitness": 0.0428,
-        "validationRmse": 22.7669,
+        "bestRmse": 0.0639,
+        "meanRmse": 0.8271,
+        "bestFitness": 0.9399,
+        "validationRmse": 0.1073,
         "stopReason": null
       },
       {
         "generation": 117,
-        "bestRmse": 22.3432,
-        "meanRmse": 22.3776,
-        "bestFitness": 0.0428,
-        "validationRmse": 22.7669,
+        "bestRmse": 0.0639,
+        "meanRmse": 0.6946,
+        "bestFitness": 0.9399,
+        "validationRmse": 0.1073,
         "stopReason": null
       },
       {
         "generation": 118,
-        "bestRmse": 22.3362,
-        "meanRmse": 22.3729,
-        "bestFitness": 0.0429,
-        "validationRmse": 22.8087,
+        "bestRmse": 0.0638,
+        "meanRmse": 0.7684,
+        "bestFitness": 0.94,
+        "validationRmse": 0.1028,
         "stopReason": null
       },
       {
         "generation": 119,
-        "bestRmse": 22.3362,
-        "meanRmse": 22.3701,
-        "bestFitness": 0.0429,
-        "validationRmse": 22.8087,
+        "bestRmse": 0.0621,
+        "meanRmse": 0.8082,
+        "bestFitness": 0.9415,
+        "validationRmse": 0.0899,
         "stopReason": null
       },
       {
         "generation": 120,
-        "bestRmse": 22.3362,
-        "meanRmse": 22.3668,
-        "bestFitness": 0.0429,
-        "validationRmse": 22.8087,
+        "bestRmse": 0.0621,
+        "meanRmse": 0.5158,
+        "bestFitness": 0.9415,
+        "validationRmse": 0.0899,
         "stopReason": null
       },
       {
         "generation": 121,
-        "bestRmse": 22.3362,
-        "meanRmse": 22.3636,
-        "bestFitness": 0.0429,
-        "validationRmse": 22.8087,
+        "bestRmse": 0.0621,
+        "meanRmse": 0.9973,
+        "bestFitness": 0.9415,
+        "validationRmse": 0.0899,
         "stopReason": null
       },
       {
         "generation": 122,
-        "bestRmse": 22.3362,
-        "meanRmse": 22.3593,
-        "bestFitness": 0.0429,
-        "validationRmse": 22.8087,
+        "bestRmse": 0.0621,
+        "meanRmse": 1.3655,
+        "bestFitness": 0.9415,
+        "validationRmse": 0.0899,
         "stopReason": null
       },
       {
         "generation": 123,
-        "bestRmse": 22.3362,
-        "meanRmse": 22.3575,
-        "bestFitness": 0.0429,
-        "validationRmse": 22.8087,
+        "bestRmse": 0.0621,
+        "meanRmse": 1.0347,
+        "bestFitness": 0.9415,
+        "validationRmse": 0.0899,
         "stopReason": null
       },
       {
         "generation": 124,
-        "bestRmse": 22.3264,
-        "meanRmse": 22.3531,
-        "bestFitness": 0.0429,
-        "validationRmse": 22.7813,
+        "bestRmse": 0.0621,
+        "meanRmse": 0.8816,
+        "bestFitness": 0.9415,
+        "validationRmse": 0.0899,
         "stopReason": null
       },
       {
         "generation": 125,
-        "bestRmse": 22.3264,
-        "meanRmse": 22.3504,
-        "bestFitness": 0.0429,
-        "validationRmse": 22.7813,
+        "bestRmse": 0.0619,
+        "meanRmse": 0.7292,
+        "bestFitness": 0.9417,
+        "validationRmse": 0.0899,
         "stopReason": null
       },
       {
         "generation": 126,
-        "bestRmse": 22.3249,
-        "meanRmse": 22.3468,
-        "bestFitness": 0.0429,
-        "validationRmse": 22.7673,
+        "bestRmse": 0.0619,
+        "meanRmse": 1.0488,
+        "bestFitness": 0.9417,
+        "validationRmse": 0.0899,
         "stopReason": null
       },
       {
         "generation": 127,
-        "bestRmse": 22.3249,
-        "meanRmse": 22.344,
-        "bestFitness": 0.0429,
-        "validationRmse": 22.7673,
+        "bestRmse": 0.0601,
+        "meanRmse": 0.8718,
+        "bestFitness": 0.9433,
+        "validationRmse": 0.0924,
         "stopReason": null
       },
       {
         "generation": 128,
-        "bestRmse": 22.3249,
-        "meanRmse": 22.3427,
-        "bestFitness": 0.0429,
-        "validationRmse": 22.7673,
+        "bestRmse": 0.0601,
+        "meanRmse": 0.874,
+        "bestFitness": 0.9433,
+        "validationRmse": 0.0924,
         "stopReason": null
       },
       {
         "generation": 129,
-        "bestRmse": 22.3249,
-        "meanRmse": 22.3406,
-        "bestFitness": 0.0429,
-        "validationRmse": 22.7673,
+        "bestRmse": 0.06,
+        "meanRmse": 1.3367,
+        "bestFitness": 0.9434,
+        "validationRmse": 0.0926,
         "stopReason": null
       },
       {
         "generation": 130,
-        "bestRmse": 22.3249,
-        "meanRmse": 22.3392,
-        "bestFitness": 0.0429,
-        "validationRmse": 22.7673,
+        "bestRmse": 0.06,
+        "meanRmse": 1.0757,
+        "bestFitness": 0.9434,
+        "validationRmse": 0.0923,
         "stopReason": null
       },
       {
         "generation": 131,
-        "bestRmse": 22.3249,
-        "meanRmse": 22.3385,
-        "bestFitness": 0.0429,
-        "validationRmse": 22.7673,
+        "bestRmse": 0.06,
+        "meanRmse": 0.4562,
+        "bestFitness": 0.9434,
+        "validationRmse": 0.0923,
         "stopReason": null
       },
       {
         "generation": 132,
-        "bestRmse": 22.3249,
-        "meanRmse": 22.337,
-        "bestFitness": 0.0429,
-        "validationRmse": 22.7673,
+        "bestRmse": 0.0594,
+        "meanRmse": 0.6203,
+        "bestFitness": 0.9439,
+        "validationRmse": 0.0917,
         "stopReason": null
       },
       {
         "generation": 133,
-        "bestRmse": 22.3249,
-        "meanRmse": 22.3354,
-        "bestFitness": 0.0429,
-        "validationRmse": 22.7673,
+        "bestRmse": 0.0588,
+        "meanRmse": 1.3293,
+        "bestFitness": 0.9445,
+        "validationRmse": 0.0925,
         "stopReason": null
       },
       {
         "generation": 134,
-        "bestRmse": 22.3249,
-        "meanRmse": 22.3341,
-        "bestFitness": 0.0429,
-        "validationRmse": 22.7673,
+        "bestRmse": 0.0586,
+        "meanRmse": 1.0124,
+        "bestFitness": 0.9446,
+        "validationRmse": 0.0925,
         "stopReason": null
       },
       {
         "generation": 135,
-        "bestRmse": 22.321,
-        "meanRmse": 22.3323,
-        "bestFitness": 0.0429,
-        "validationRmse": 22.7907,
+        "bestRmse": 0.0562,
+        "meanRmse": 1.4559,
+        "bestFitness": 0.9468,
+        "validationRmse": 0.0911,
         "stopReason": null
       },
       {
         "generation": 136,
-        "bestRmse": 22.321,
-        "meanRmse": 22.331,
-        "bestFitness": 0.0429,
-        "validationRmse": 22.7907,
+        "bestRmse": 0.0562,
+        "meanRmse": 2.0351,
+        "bestFitness": 0.9468,
+        "validationRmse": 0.0911,
         "stopReason": null
       },
       {
         "generation": 137,
-        "bestRmse": 22.321,
-        "meanRmse": 22.3306,
-        "bestFitness": 0.0429,
-        "validationRmse": 22.7907,
+        "bestRmse": 0.056,
+        "meanRmse": 1.0771,
+        "bestFitness": 0.947,
+        "validationRmse": 0.0915,
         "stopReason": null
       },
       {
         "generation": 138,
-        "bestRmse": 22.321,
-        "meanRmse": 22.33,
-        "bestFitness": 0.0429,
-        "validationRmse": 22.7907,
+        "bestRmse": 0.0548,
+        "meanRmse": 1.1927,
+        "bestFitness": 0.9481,
+        "validationRmse": 0.0913,
         "stopReason": null
       },
       {
         "generation": 139,
-        "bestRmse": 22.321,
-        "meanRmse": 22.3295,
-        "bestFitness": 0.0429,
-        "validationRmse": 22.7907,
+        "bestRmse": 0.0534,
+        "meanRmse": 0.4973,
+        "bestFitness": 0.9493,
+        "validationRmse": 0.0922,
         "stopReason": null
       },
       {
         "generation": 140,
-        "bestRmse": 22.321,
-        "meanRmse": 22.3288,
-        "bestFitness": 0.0429,
-        "validationRmse": 22.7907,
+        "bestRmse": 0.0532,
+        "meanRmse": 0.3336,
+        "bestFitness": 0.9495,
+        "validationRmse": 0.0921,
         "stopReason": null
       },
       {
         "generation": 141,
-        "bestRmse": 22.321,
-        "meanRmse": 22.3284,
-        "bestFitness": 0.0429,
-        "validationRmse": 22.7907,
+        "bestRmse": 0.053,
+        "meanRmse": 0.8361,
+        "bestFitness": 0.9497,
+        "validationRmse": 0.0883,
         "stopReason": null
       },
       {
         "generation": 142,
-        "bestRmse": 22.3208,
-        "meanRmse": 22.3274,
-        "bestFitness": 0.0429,
-        "validationRmse": 22.7598,
+        "bestRmse": 0.0527,
+        "meanRmse": 0.5758,
+        "bestFitness": 0.9499,
+        "validationRmse": 0.09,
         "stopReason": null
       },
       {
         "generation": 143,
-        "bestRmse": 22.3206,
-        "meanRmse": 22.3263,
-        "bestFitness": 0.0429,
-        "validationRmse": 22.789,
+        "bestRmse": 0.0524,
+        "meanRmse": 0.6753,
+        "bestFitness": 0.9502,
+        "validationRmse": 0.0907,
         "stopReason": null
       },
       {
         "generation": 144,
-        "bestRmse": 22.3206,
-        "meanRmse": 22.3261,
-        "bestFitness": 0.0429,
-        "validationRmse": 22.789,
+        "bestRmse": 0.05,
+        "meanRmse": 0.7501,
+        "bestFitness": 0.9524,
+        "validationRmse": 0.091,
         "stopReason": null
       },
       {
         "generation": 145,
-        "bestRmse": 22.3206,
-        "meanRmse": 22.3257,
-        "bestFitness": 0.0429,
-        "validationRmse": 22.789,
+        "bestRmse": 0.05,
+        "meanRmse": 1.4281,
+        "bestFitness": 0.9524,
+        "validationRmse": 0.091,
         "stopReason": null
       },
       {
         "generation": 146,
-        "bestRmse": 22.3206,
-        "meanRmse": 22.3253,
-        "bestFitness": 0.0429,
-        "validationRmse": 22.789,
+        "bestRmse": 0.0498,
+        "meanRmse": 0.6816,
+        "bestFitness": 0.9526,
+        "validationRmse": 0.0895,
         "stopReason": null
       },
       {
         "generation": 147,
-        "bestRmse": 22.3206,
-        "meanRmse": 22.3251,
-        "bestFitness": 0.0429,
-        "validationRmse": 22.789,
+        "bestRmse": 0.0488,
+        "meanRmse": 1.0696,
+        "bestFitness": 0.9535,
+        "validationRmse": 0.0778,
         "stopReason": null
       },
       {
         "generation": 148,
-        "bestRmse": 22.3206,
-        "meanRmse": 22.3248,
-        "bestFitness": 0.0429,
-        "validationRmse": 22.789,
+        "bestRmse": 0.0487,
+        "meanRmse": 0.5882,
+        "bestFitness": 0.9536,
+        "validationRmse": 0.0788,
         "stopReason": null
       },
       {
         "generation": 149,
-        "bestRmse": 22.3206,
-        "meanRmse": 22.3245,
-        "bestFitness": 0.0429,
-        "validationRmse": 22.789,
+        "bestRmse": 0.0487,
+        "meanRmse": 1.3125,
+        "bestFitness": 0.9536,
+        "validationRmse": 0.0788,
         "stopReason": null
       },
       {
         "generation": 150,
-        "bestRmse": 22.3206,
-        "meanRmse": 22.3242,
-        "bestFitness": 0.0429,
-        "validationRmse": 22.789,
-        "stopReason": null
-      },
-      {
-        "generation": 151,
-        "bestRmse": 22.3198,
-        "meanRmse": 22.3237,
-        "bestFitness": 0.0429,
-        "validationRmse": 22.7955,
-        "stopReason": null
-      },
-      {
-        "generation": 152,
-        "bestRmse": 22.3198,
-        "meanRmse": 22.3234,
-        "bestFitness": 0.0429,
-        "validationRmse": 22.7955,
-        "stopReason": null
-      },
-      {
-        "generation": 153,
-        "bestRmse": 22.319,
-        "meanRmse": 22.323,
-        "bestFitness": 0.0429,
-        "validationRmse": 22.7934,
-        "stopReason": null
-      },
-      {
-        "generation": 154,
-        "bestRmse": 22.319,
-        "meanRmse": 22.3225,
-        "bestFitness": 0.0429,
-        "validationRmse": 22.7934,
-        "stopReason": null
-      },
-      {
-        "generation": 155,
-        "bestRmse": 22.319,
-        "meanRmse": 22.3223,
-        "bestFitness": 0.0429,
-        "validationRmse": 22.7934,
-        "stopReason": null
-      },
-      {
-        "generation": 156,
-        "bestRmse": 22.319,
-        "meanRmse": 22.322,
-        "bestFitness": 0.0429,
-        "validationRmse": 22.7934,
-        "stopReason": null
-      },
-      {
-        "generation": 157,
-        "bestRmse": 22.319,
-        "meanRmse": 22.3218,
-        "bestFitness": 0.0429,
-        "validationRmse": 22.7934,
-        "stopReason": null
-      },
-      {
-        "generation": 158,
-        "bestRmse": 22.319,
-        "meanRmse": 22.3215,
-        "bestFitness": 0.0429,
-        "validationRmse": 22.7934,
-        "stopReason": null
-      },
-      {
-        "generation": 159,
-        "bestRmse": 22.319,
-        "meanRmse": 22.3213,
-        "bestFitness": 0.0429,
-        "validationRmse": 22.7934,
-        "stopReason": null
-      },
-      {
-        "generation": 160,
-        "bestRmse": 22.319,
-        "meanRmse": 22.3212,
-        "bestFitness": 0.0429,
-        "validationRmse": 22.7934,
-        "stopReason": null
-      },
-      {
-        "generation": 161,
-        "bestRmse": 22.3185,
-        "meanRmse": 22.3211,
-        "bestFitness": 0.0429,
-        "validationRmse": 22.7689,
-        "stopReason": null
-      },
-      {
-        "generation": 162,
-        "bestRmse": 22.3185,
-        "meanRmse": 22.321,
-        "bestFitness": 0.0429,
-        "validationRmse": 22.7689,
-        "stopReason": null
-      },
-      {
-        "generation": 163,
-        "bestRmse": 22.3185,
-        "meanRmse": 22.3209,
-        "bestFitness": 0.0429,
-        "validationRmse": 22.7689,
-        "stopReason": null
-      },
-      {
-        "generation": 164,
-        "bestRmse": 22.3185,
-        "meanRmse": 22.3209,
-        "bestFitness": 0.0429,
-        "validationRmse": 22.7689,
-        "stopReason": null
-      },
-      {
-        "generation": 165,
-        "bestRmse": 22.3185,
-        "meanRmse": 22.3209,
-        "bestFitness": 0.0429,
-        "validationRmse": 22.7689,
-        "stopReason": null
-      },
-      {
-        "generation": 166,
-        "bestRmse": 22.3185,
-        "meanRmse": 22.3209,
-        "bestFitness": 0.0429,
-        "validationRmse": 22.7689,
-        "stopReason": null
-      },
-      {
-        "generation": 167,
-        "bestRmse": 22.3185,
-        "meanRmse": 22.3207,
-        "bestFitness": 0.0429,
-        "validationRmse": 22.7689,
-        "stopReason": null
-      },
-      {
-        "generation": 168,
-        "bestRmse": 22.3185,
-        "meanRmse": 22.3206,
-        "bestFitness": 0.0429,
-        "validationRmse": 22.7689,
-        "stopReason": null
-      },
-      {
-        "generation": 169,
-        "bestRmse": 22.3185,
-        "meanRmse": 22.3206,
-        "bestFitness": 0.0429,
-        "validationRmse": 22.7689,
-        "stopReason": null
-      },
-      {
-        "generation": 170,
-        "bestRmse": 22.3185,
-        "meanRmse": 22.3205,
-        "bestFitness": 0.0429,
-        "validationRmse": 22.7689,
-        "stopReason": null
-      },
-      {
-        "generation": 171,
-        "bestRmse": 22.3178,
-        "meanRmse": 22.3204,
-        "bestFitness": 0.0429,
-        "validationRmse": 22.7842,
-        "stopReason": null
-      },
-      {
-        "generation": 172,
-        "bestRmse": 22.3178,
-        "meanRmse": 22.3204,
-        "bestFitness": 0.0429,
-        "validationRmse": 22.7842,
-        "stopReason": null
-      },
-      {
-        "generation": 173,
-        "bestRmse": 22.3178,
-        "meanRmse": 22.3203,
-        "bestFitness": 0.0429,
-        "validationRmse": 22.7842,
-        "stopReason": null
-      },
-      {
-        "generation": 174,
-        "bestRmse": 22.3178,
-        "meanRmse": 22.3202,
-        "bestFitness": 0.0429,
-        "validationRmse": 22.7842,
-        "stopReason": null
-      },
-      {
-        "generation": 175,
-        "bestRmse": 22.3178,
-        "meanRmse": 22.3201,
-        "bestFitness": 0.0429,
-        "validationRmse": 22.7842,
-        "stopReason": null
-      },
-      {
-        "generation": 176,
-        "bestRmse": 22.3161,
-        "meanRmse": 22.3199,
-        "bestFitness": 0.0429,
-        "validationRmse": 22.7867,
-        "stopReason": null
-      },
-      {
-        "generation": 177,
-        "bestRmse": 22.3161,
-        "meanRmse": 22.3198,
-        "bestFitness": 0.0429,
-        "validationRmse": 22.7867,
-        "stopReason": null
-      },
-      {
-        "generation": 178,
-        "bestRmse": 22.3161,
-        "meanRmse": 22.3196,
-        "bestFitness": 0.0429,
-        "validationRmse": 22.7867,
-        "stopReason": null
-      },
-      {
-        "generation": 179,
-        "bestRmse": 22.3161,
-        "meanRmse": 22.3194,
-        "bestFitness": 0.0429,
-        "validationRmse": 22.7867,
-        "stopReason": null
-      },
-      {
-        "generation": 180,
-        "bestRmse": 22.3161,
-        "meanRmse": 22.3194,
-        "bestFitness": 0.0429,
-        "validationRmse": 22.7867,
-        "stopReason": null
-      },
-      {
-        "generation": 181,
-        "bestRmse": 22.3161,
-        "meanRmse": 22.3194,
-        "bestFitness": 0.0429,
-        "validationRmse": 22.7867,
-        "stopReason": null
-      },
-      {
-        "generation": 182,
-        "bestRmse": 22.3161,
-        "meanRmse": 22.3194,
-        "bestFitness": 0.0429,
-        "validationRmse": 22.7867,
-        "stopReason": null
-      },
-      {
-        "generation": 183,
-        "bestRmse": 22.3161,
-        "meanRmse": 22.3193,
-        "bestFitness": 0.0429,
-        "validationRmse": 22.7867,
-        "stopReason": null
-      },
-      {
-        "generation": 184,
-        "bestRmse": 22.3161,
-        "meanRmse": 22.3193,
-        "bestFitness": 0.0429,
-        "validationRmse": 22.7867,
-        "stopReason": null
-      },
-      {
-        "generation": 185,
-        "bestRmse": 22.3161,
-        "meanRmse": 22.3191,
-        "bestFitness": 0.0429,
-        "validationRmse": 22.7867,
-        "stopReason": null
-      },
-      {
-        "generation": 186,
-        "bestRmse": 22.3161,
-        "meanRmse": 22.3191,
-        "bestFitness": 0.0429,
-        "validationRmse": 22.7867,
-        "stopReason": null
-      },
-      {
-        "generation": 187,
-        "bestRmse": 22.3159,
-        "meanRmse": 22.3189,
-        "bestFitness": 0.0429,
-        "validationRmse": 22.7892,
-        "stopReason": null
-      },
-      {
-        "generation": 188,
-        "bestRmse": 22.3159,
-        "meanRmse": 22.3189,
-        "bestFitness": 0.0429,
-        "validationRmse": 22.7892,
-        "stopReason": null
-      },
-      {
-        "generation": 189,
-        "bestRmse": 22.3159,
-        "meanRmse": 22.3187,
-        "bestFitness": 0.0429,
-        "validationRmse": 22.7892,
-        "stopReason": null
-      },
-      {
-        "generation": 190,
-        "bestRmse": 22.3159,
-        "meanRmse": 22.3187,
-        "bestFitness": 0.0429,
-        "validationRmse": 22.7892,
-        "stopReason": null
-      },
-      {
-        "generation": 191,
-        "bestRmse": 22.3159,
-        "meanRmse": 22.3187,
-        "bestFitness": 0.0429,
-        "validationRmse": 22.7892,
-        "stopReason": null
-      },
-      {
-        "generation": 192,
-        "bestRmse": 22.3159,
-        "meanRmse": 22.3187,
-        "bestFitness": 0.0429,
-        "validationRmse": 22.7892,
-        "stopReason": null
-      },
-      {
-        "generation": 193,
-        "bestRmse": 22.3159,
-        "meanRmse": 22.3185,
-        "bestFitness": 0.0429,
-        "validationRmse": 22.7892,
-        "stopReason": null
-      },
-      {
-        "generation": 194,
-        "bestRmse": 22.3159,
-        "meanRmse": 22.3184,
-        "bestFitness": 0.0429,
-        "validationRmse": 22.7892,
-        "stopReason": null
-      },
-      {
-        "generation": 195,
-        "bestRmse": 22.3159,
-        "meanRmse": 22.3183,
-        "bestFitness": 0.0429,
-        "validationRmse": 22.7892,
-        "stopReason": null
-      },
-      {
-        "generation": 196,
-        "bestRmse": 22.3159,
-        "meanRmse": 22.3182,
-        "bestFitness": 0.0429,
-        "validationRmse": 22.7892,
-        "stopReason": null
-      },
-      {
-        "generation": 197,
-        "bestRmse": 22.3159,
-        "meanRmse": 22.3182,
-        "bestFitness": 0.0429,
-        "validationRmse": 22.7892,
-        "stopReason": null
-      },
-      {
-        "generation": 198,
-        "bestRmse": 22.3149,
-        "meanRmse": 22.318,
-        "bestFitness": 0.0429,
-        "validationRmse": 22.7142,
-        "stopReason": null
-      },
-      {
-        "generation": 199,
-        "bestRmse": 22.3149,
-        "meanRmse": 22.3179,
-        "bestFitness": 0.0429,
-        "validationRmse": 22.7142,
-        "stopReason": null
-      },
-      {
-        "generation": 200,
-        "bestRmse": 22.3149,
-        "meanRmse": 22.3178,
-        "bestFitness": 0.0429,
-        "validationRmse": 22.7142,
+        "bestRmse": 0.0481,
+        "meanRmse": 1.3871,
+        "bestFitness": 0.9542,
+        "validationRmse": 0.0792,
         "stopReason": "generations"
       }
     ],
     "chromosomeLength": 74,
     "fitness": {
-      "expert": 0.018539,
-      "best": 0.042891
+      "expert": 0.122449,
+      "best": 0.953507
     },
-    "datasets": {
-      "train": "data/intrusion/intrusion_train.csv",
-      "validation": "data/intrusion/intrusion_validation.csv",
-      "test": "data/intrusion/intrusion_test.csv",
-      "target": "data/intrusion/label_to_ip.csv"
-    },
-    "targetByLabel": {
-      "BenignTraffic": 0,
-      "DictionaryBruteForce": 60,
-      "DDoS-ACK_Fragmentation": 100,
-      "DDoS-HTTP_Flood": 100,
-      "DDoS-ICMP_Flood": 100,
-      "DDoS-ICMP_Fragmentation": 100,
-      "DDoS-PSHACK_Flood": 100,
-      "DDoS-RSTFINFlood": 100,
-      "DDoS-SYN_Flood": 100,
-      "DDoS-SlowLoris": 100,
-      "DDoS-SynonymousIP_Flood": 100,
-      "DDoS-TCP_Flood": 100,
-      "DDoS-UDP_Flood": 100,
-      "DDoS-UDP_Fragmentation": 100,
-      "DoS-HTTP_Flood": 100,
-      "DoS-SYN_Flood": 100,
-      "DoS-TCP_Flood": 100,
-      "DoS-UDP_Flood": 100,
-      "Mirai-greeth_flood": 100,
-      "Mirai-greip_flood": 100,
-      "Mirai-udpplain": 100,
-      "Recon-HostDiscovery": 30,
-      "Recon-OSScan": 30,
-      "Recon-PingSweep": 30,
-      "Recon-PortScan": 30,
-      "VulnerabilityScan": 30,
-      "DNS_Spoofing": 60,
-      "MITM-ArpSpoofing": 60,
-      "Backdoor_Malware": 100,
-      "BrowserHijacking": 60,
-      "CommandInjection": 60,
-      "SqlInjection": 60,
-      "Uploading_Attack": 60,
-      "XSS": 60
-    },
-    "categoryByLabel": {
-      "BenignTraffic": "Benign",
-      "DictionaryBruteForce": "BruteForce",
-      "DDoS-ACK_Fragmentation": "DDoS",
-      "DDoS-HTTP_Flood": "DDoS",
-      "DDoS-ICMP_Flood": "DDoS",
-      "DDoS-ICMP_Fragmentation": "DDoS",
-      "DDoS-PSHACK_Flood": "DDoS",
-      "DDoS-RSTFINFlood": "DDoS",
-      "DDoS-SYN_Flood": "DDoS",
-      "DDoS-SlowLoris": "DDoS",
-      "DDoS-SynonymousIP_Flood": "DDoS",
-      "DDoS-TCP_Flood": "DDoS",
-      "DDoS-UDP_Flood": "DDoS",
-      "DDoS-UDP_Fragmentation": "DDoS",
-      "DoS-HTTP_Flood": "DoS",
-      "DoS-SYN_Flood": "DoS",
-      "DoS-TCP_Flood": "DoS",
-      "DoS-UDP_Flood": "DoS",
-      "Mirai-greeth_flood": "Mirai",
-      "Mirai-greip_flood": "Mirai",
-      "Mirai-udpplain": "Mirai",
-      "Recon-HostDiscovery": "Recon",
-      "Recon-OSScan": "Recon",
-      "Recon-PingSweep": "Recon",
-      "Recon-PortScan": "Recon",
-      "VulnerabilityScan": "Recon",
-      "DNS_Spoofing": "Spoofing",
-      "MITM-ArpSpoofing": "Spoofing",
-      "Backdoor_Malware": "Web",
-      "BrowserHijacking": "Web",
-      "CommandInjection": "Web",
-      "SqlInjection": "Web",
-      "Uploading_Attack": "Web",
-      "XSS": "Web"
-    }
+    "bestGeneration": 147,
+    "dataset": "data/intrusion-100.csv"
   },
   "changes": {
     "variables": [
@@ -2274,8 +1595,8 @@
               3
             ],
             "after": [
-              2.8469,
-              3.8388
+              2.6385,
+              3.0419
             ],
             "changed": true
           },
@@ -2287,8 +1608,8 @@
               9.5
             ],
             "after": [
-              3.7429,
-              5.4031
+              1.4755,
+              9.4849
             ],
             "changed": true
           },
@@ -2300,8 +1621,8 @@
               15
             ],
             "after": [
-              2.4558,
-              10.417
+              1.9679,
+              14.9659
             ],
             "changed": true
           }
@@ -2315,12 +1636,12 @@
             "term": "low",
             "type": "gauss",
             "before": [
-              0.5429,
-              1.2041
+              20,
+              15
             ],
             "after": [
-              1.5679,
-              1.061
+              20.2132,
+              13.9737
             ],
             "changed": true
           },
@@ -2328,12 +1649,12 @@
             "term": "medium",
             "type": "gauss",
             "before": [
-              0.1438,
-              2.179
+              50,
+              150
             ],
             "after": [
-              1.3442,
-              3.2231
+              50.2667,
+              150.8718
             ],
             "changed": true
           },
@@ -2341,12 +1662,12 @@
             "term": "high",
             "type": "gauss",
             "before": [
-              0.1447,
-              3.1764
+              500,
+              1500
             ],
             "after": [
-              0.9422,
-              3.9317
+              506.6326,
+              1512.4286
             ],
             "changed": true
           }
@@ -2364,8 +1685,8 @@
               1
             ],
             "after": [
-              14.4701,
-              57.1864
+              37.9033,
+              3.96
             ],
             "changed": true
           },
@@ -2377,8 +1698,8 @@
               141.5
             ],
             "after": [
-              23.1532,
-              107.7823
+              10.5795,
+              141.7257
             ],
             "changed": true
           },
@@ -2390,8 +1711,8 @@
               245
             ],
             "after": [
-              11.9764,
-              245.508
+              36.6012,
+              243.3655
             ],
             "changed": true
           }
@@ -2409,8 +1730,8 @@
               0
             ],
             "after": [
-              21.8143,
-              0.9429
+              12.0534,
+              3.4413
             ],
             "changed": true
           },
@@ -2422,8 +1743,8 @@
               30
             ],
             "after": [
-              26.8783,
-              49.8057
+              8.987,
+              28.0125
             ],
             "changed": true
           },
@@ -2435,8 +1756,8 @@
               60
             ],
             "after": [
-              15.1268,
-              62.4939
+              12.2385,
+              60.0078
             ],
             "changed": true
           },
@@ -2448,8 +1769,8 @@
               100
             ],
             "after": [
-              4.6579,
-              99.947
+              14.9987,
+              100
             ],
             "changed": true
           }
@@ -2470,29 +1791,10 @@
         "after": {
           "conditions": [
             "medium",
-            "high",
-            "low"
-          ],
-          "out": "none"
-        }
-      },
-      {
-        "index": 2,
-        "before": {
-          "conditions": [
-            "low",
             "low",
             "medium"
           ],
-          "out": "none"
-        },
-        "after": {
-          "conditions": [
-            "low",
-            "high",
-            "low"
-          ],
-          "out": "medium"
+          "out": "low"
         }
       },
       {
@@ -2507,9 +1809,9 @@
         },
         "after": {
           "conditions": [
-            "high",
             "medium",
-            "high"
+            "medium",
+            "medium"
           ],
           "out": "none"
         }
@@ -2528,165 +1830,13 @@
           "conditions": [
             "medium",
             "low",
-            "low"
-          ],
-          "out": "high"
-        }
-      },
-      {
-        "index": 5,
-        "before": {
-          "conditions": [
-            "low",
-            "medium",
-            "low"
-          ],
-          "out": "medium"
-        },
-        "after": {
-          "conditions": [
-            "high",
-            "low",
-            "high"
-          ],
-          "out": "high"
-        }
-      },
-      {
-        "index": 6,
-        "before": {
-          "conditions": [
-            "high",
-            "low",
             "high"
           ],
           "out": "medium"
-        },
-        "after": {
-          "conditions": [
-            "low",
-            "medium",
-            "low"
-          ],
-          "out": "none"
-        }
-      },
-      {
-        "index": 7,
-        "before": {
-          "conditions": [
-            "low",
-            "high",
-            "medium"
-          ],
-          "out": "medium"
-        },
-        "after": {
-          "conditions": [
-            "low",
-            "high",
-            "high"
-          ],
-          "out": "none"
-        }
-      },
-      {
-        "index": 8,
-        "before": {
-          "conditions": [
-            "high",
-            "high",
-            "low"
-          ],
-          "out": "high"
-        },
-        "after": {
-          "conditions": [
-            "high",
-            "high",
-            "high"
-          ],
-          "out": "low"
-        }
-      },
-      {
-        "index": 9,
-        "before": {
-          "conditions": [
-            "high",
-            "high",
-            "high"
-          ],
-          "out": "high"
-        },
-        "after": {
-          "conditions": [
-            "low",
-            "low",
-            "medium"
-          ],
-          "out": "high"
-        }
-      },
-      {
-        "index": 10,
-        "before": {
-          "conditions": [
-            "high",
-            "medium",
-            "high"
-          ],
-          "out": "high"
-        },
-        "after": {
-          "conditions": [
-            "medium",
-            "high",
-            "medium"
-          ],
-          "out": "high"
-        }
-      },
-      {
-        "index": 11,
-        "before": {
-          "conditions": [
-            "medium",
-            "high",
-            "high"
-          ],
-          "out": "high"
-        },
-        "after": {
-          "conditions": [
-            "medium",
-            "low",
-            "high"
-          ],
-          "out": "none"
-        }
-      },
-      {
-        "index": 12,
-        "before": {
-          "conditions": [
-            "low",
-            "high",
-            "low"
-          ],
-          "out": "high"
-        },
-        "after": {
-          "conditions": [
-            "high",
-            "low",
-            "medium"
-          ],
-          "out": "high"
         }
       }
     ],
-    "changedParams": 26,
-    "changedRules": 12
+    "changedParams": 25,
+    "changedRules": 3
   }
 }

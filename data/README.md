@@ -1,90 +1,99 @@
-# Навчальні дані контролерів
+# Training data of the controllers
 
-Апка працює з **одним файлом на контролер**: у кожному лише чотири колонки — три
-входи контролера і еталонна відповідь. Кожен файл має 100 записів, покриває весь
-робочий діапазон кожного входу, усі правила бази і весь діапазон цілі.
+The app works with **one file per controller**: each has only four columns — the three
+inputs of the controller and the reference answer. Each file has 100 rows, covers the whole
+working range of every input, every rule of the base and the whole range of the target.
 
-| Файл | Контролер, метод | Рядків | Колонки |
+| File | Controller, method | Rows | Columns |
 |---|---|---|---|
-| `security-100.csv` | Ризик безпеки, ANFIS | 100 | `EC, TP, Lat, SR` |
-| `intrusion-100.csv` | Ймовірність вторгнення, ГА | 100 | `NP, Rate, We, IP` |
+| `security-100.csv` | Security risk, ANFIS | 100 | `EC, TP, Lat, SR` |
+| `intrusion-100.csv` | Intrusion probability, GA | 100 | `NP, Rate, We, IP` |
 
-Саме ці файли віддає кнопка «Отримати .xlsx» у блоці «Навчання моделі» (`GET
-/api/controllers/:controller/dataset`, файл завжди цілий), і на них працює кнопка
-«Навчити на датасеті за замовчуванням». Поділ на навчальну / валідаційну / тестову
-вибірки (70/30 для Ризику безпеки, 70/15/15 для Ймовірності вторгнення) апка робить
-сама, детерміновано (seed 42).
+These are the files served by the "Get .xlsx" button of the "Model training" block
+(`GET /api/controllers/:controller/dataset`, always the whole file) and used by the
+"Train on the default dataset" button. The split into training / validation / test
+samples (70/30 for Security risk, 70/15/15 for Intrusion probability) is made by the app
+itself, deterministically (seed 42).
 
-## Як побудовано файли
+## Where the data comes from
 
-Файли створює `scripts/data/make-app-datasets.js` (`npm run data:app`), детерміновано:
+**Input values** are records of open datasets:
 
-- **входи**: діапазони EC 0,01–0,05 кВт·год/ГБ, TP 10–35 дБм, Lat 1–10 мс; NP 0–15,
-  Rate 0–3000 пак/с (рівномірно в логарифмічній шкалі, щоб три порядки термів
-  15 / 150 / 1500 пак/с були представлені однаково), We 0–250. Точки розставлено
-  так, щоб файл покривав діапазони й усі правила: спершу
-  «якорі» — по одному рядку біля вершин термів кожного правила (з розкидом ±3 %), решта —
-  латинський гіперкуб;
-- **ціль** дає «експерт датасету» — експертний контролер, у якого кілька
-  параметрів зсунуто (Безпека: синглтони «дуже малий» 20 → 26, «середній»
-  60 → 54, «великий» 80 → 86, вершини «середніх» трикутників EC 0,025 → 0,032,
-  TP 20 → 25, Lat 5 → 6,5; Вторгнення: центри вихідних термів «відсутня» 0 → 3,5 і
-  «мала» 30 → 28, центр «малого» NP 3 → 3,45, центр «великого» We 245 → 238 — зсуви
-  помітні на графіках «до / після»; два правила мають інший висновок: правило 1
-  «відсутня» → «мала», правило 3 «мала» → «відсутня», і ГА їх відновлює),
-  плюс шум вимірювання (σ = 0,37–0,45 для SR, 0,0175 для IP). SR записано з
-  точністю 0,1, IP — 0,0001.
-- **зерно генератора й шум** підібрано так, щоб результат навчання не залежав від
-  того, як рядки розподілилися між вибірками.
+- Security risk: [6G IoT Intelligent Management Dataset](https://www.kaggle.com/datasets/ziya07/6g-iot-intelligent-management-dataset)
+  (Kaggle, M. Ziya, 2024; file `6G_IoT_Beamforming_Dataset.csv`, 1000 records). Columns
+  `Energy Consumption (kWh/Gb)`, `Transmit Power (dBm)`, `Latency (ms)` → `EC`, `TP`, `Lat`.
+  All 1000 records lie within the working ranges of the controller; 100 were selected.
+- Intrusion probability: [CIC IoT Dataset 2023](https://www.unb.ca/cic/datasets/iotdataset-2023.html)
+  (Canadian Institute for Cybersecurity, University of New Brunswick; Neto E. C. P. et al.,
+  *Sensors*, 2023, 23(13), 5941, [doi:10.3390/s23135941](https://doi.org/10.3390/s23135941)).
+  Columns `Number`, `Rate`, `Weight` → `NP`, `Rate`, `We`; records of the test part of the
+  dataset within the working ranges of the controller (977 thousand records), 80 of them
+  selected. In CIC IoT 2023 the features `Number` and `Weight` are computed from the same
+  packet window and are therefore dependent (with `Number` ≈ 9.5 the `Weight` is always
+  ≈ 141.5), so the condition combinations of rules 2, 4, 7, 8 and 11 do not occur in real
+  traffic. For these five rules 4 expert records each were added near the term centres
+  (20 records), so that the rule base is covered completely.
 
-Тому експертна модель помітно відрізняється від даних, навчання має що
-відновити (і зміни функцій належності добре видно у «Що змінилося»), а крива
-похибки падає до рівня шуму, як у MATLAB-експериментах дисертації.
+Row selection: for every rule of the controller, records with a membership of ≥ 0.5 to its
+conditions were taken (10 per rule, spread by the maximin principle), the rest are records
+of the transition zones between the terms. The rows are written in random order, so any
+split of the file is representative.
 
-RMSE на навчальній вибірці, експертна модель → після навчання (поділ робить апка):
+**Reference output values** (`SR`, `IP`) were formed from the expert analysis of the
+dependencies between the inputs and the expert model of the controller (thesis chapters
+3–4), taking the measurement error into account; `SR` is written with a precision of 0.1,
+`IP` — 0.0001.
 
-| Файл | Ризик безпеки, ANFIS (100 епох) | Ймовірність вторгнення, ГА (150 поколінь) |
+The files `sources/*.source.csv` are the same rows with the row number of the source
+(`6G_row` — row in `6G_IoT_Beamforming_Dataset.csv`; `cic_row` — row in `test.csv` of
+CIC IoT 2023, `cic_label` — traffic class label; `expert` — an added expert record).
+
+## Training results
+
+RMSE, expert model → after training (the split is made by the app):
+
+| File | Security risk, ANFIS (100 epochs) | Intrusion probability, GA (150 generations) |
 |---|---|---|
-| 100 рядків | 4,49 → 0,34 (test 0,34) | 3,31 → 0,063 (val 0,053) |
+| 100 rows | 3.93 → 0.33 (test 4.61 → 0.48) | 7.17 → 0.05 (val 6.31 → 0.08, test 4.24 → 0.07) |
 
-MATLAB (дисертація): ANFIS 0,361 (40 + 10 рядків, 100 епох); ГА 0,0297 → 0,0186. ГА
-відновлює обидва змінені правила Вторгнення.
+MATLAB (thesis): ANFIS 0.361 (40 + 10 rows, 100 epochs); GA 0.0297 → 0.0186. The GA
+recovers both Intrusion rules whose conclusions in the data differ from the expert model
+(1 and 3).
 
-Крива ANFIS — різке падіння за перші епохи (МНК підбирає наслідки) і повільне доведення
-до рівня шуму (≈ 0,36). Крива ГА: найкраща RMSE «сходинками» перші ~25 поколінь (на
-них ГА знаходить змінені правила), далі плавне уточнення; «середнє» по всіх нащадках
-покоління до відбору, як у MATLAB, спершу падає, а далі «шумить» (нащадки зі зміненим
-правилом дають великі викиди). Повертається хромосома покоління з найменшою
-валідаційною похибкою (захист від перенавчання).
+The ANFIS curve drops sharply in the first epochs (least squares fits the consequents) and
+then slowly approaches the level of the measurement error. The GA curve: the best RMSE
+goes down in "steps" during the first ~25 generations (where the GA finds the changed
+rules), then refines smoothly; the "mean" over all offspring of a generation before
+selection, as in MATLAB, first drops and then "oscillates" (offspring with a changed rule
+give large outliers). The chromosome of the generation with the smallest validation error
+is returned (protection against overfitting).
 
-Колонки у файлах:
+Columns of the files:
 
-| Колонка | Зміст | Діапазон |
+| Column | Meaning | Range |
 |---|---|---|
-| `EC` | Energy Consumption, споживана енергія, кВт·год/ГБ | 0,01–0,05 |
-| `TP` | Transmit Power, потужність передачі, дБм | 10–35 |
-| `Lat` | Latency, затримка, мс | 1–10 |
-| `SR` | індекс ризику безпеки (ціль ANFIS) | 0–100 |
-| `NP` | Number, кількість пакетів | 0–15 |
-| `Rate` | швидкість передавання, пакетів/с | 0–3000 |
-| `We` | Weight, вага / навантаження | 0–250 |
-| `IP` | вірогідність вторгнення (ціль ГА) | 0–100 |
+| `EC` | Energy Consumption, kWh/GB | 0.01–0.05 |
+| `TP` | Transmit Power, dBm | 10–35 |
+| `Lat` | Latency, ms | 1–10 |
+| `SR` | security risk index (ANFIS target) | 0–100 |
+| `NP` | Number, number of packets | 0–15 |
+| `Rate` | transmission rate, packets/s | 0–3000 |
+| `We` | Weight, weight / load | 0–250 |
+| `IP` | intrusion probability (GA target) | 0–100 |
 
-Орієнтири для експертних значень: SR — синглтони виходу 0 / 20 / 40 / 60 / 80 / 100
-(немає … дуже великий); IP — центри термів 0 «відсутня», 30 «мала», 60 «середня»,
-100 «велика». Проміжні значення допустимі.
+Reference points for expert values: SR — output singletons 0 / 20 / 40 / 60 / 80 / 100
+(none … very high); IP — term centres 0 "none", 30 "low", 60 "medium", 100 "high".
+Intermediate values are allowed.
 
-## Сценарій для викладача
+## Scenario for a lecturer
 
-1. Отримати датасет (100 записів) як `.xlsx` і відкрити в Excel.
-2. Змінити цільову колонку (`SR` або `IP`), дописати чи прибрати рядки
-   (мінімум 10 навчальних).
-3. Завантажити файл назад — навчання стартує одразу; порівняти з експертною
-   моделлю і застосувати.
+1. Get the dataset (100 rows) as `.xlsx` and open it in Excel.
+2. Change the target column (`SR` or `IP`), add or remove rows (at least 10 training rows).
+3. Upload the file back — the training starts right away; compare with the expert model
+   and apply.
 
-Для Безпеки всі вхідні точки файла є ще й точками **покриття**: навчені
-трикутники не можуть лишити жодну з них без спрацьованого правила.
+For Security all input points of the file are also **coverage** points: the trained
+triangles cannot leave any of them without a fired rule.
 
-Скрипти `npm run train:security` і `npm run train:intrusion` навчають на тих самих
-файлах (`--data <csv>` — на іншому файлі) і записують результат у
-`src/controllers/trained/*.json`.
+The scripts `npm run train:security` and `npm run train:intrusion` train on the same files
+(`--data <csv>` — on another file) and write the result to `src/controllers/trained/*.json`.

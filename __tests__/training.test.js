@@ -383,13 +383,13 @@ describe("model variants", () => {
 
   const describeTrained = trainedIntrusion.status === "trained" ? describe : describe.skip;
   describeTrained("trained intrusion model", () => {
-    test("uses the log scale of Rate and 12 rules", () => {
+    test("keeps the linear scale of Rate and 12 rules", () => {
       const model = controllers.intrusion.variant("trained");
-      expect(model.ranges.rate).toEqual({ min: 0, max: 7 });
+      expect(model.ranges.rate).toEqual({ min: 0, max: 3000 });
       expect(intrusionController.variants.trained.rules).toHaveLength(12);
     });
 
-    test("API calculates with ?model=trained and validates the log range", async () => {
+    test("API calculates with ?model=trained and validates the range of Rate", async () => {
       const ok = await request(app)
         .post("/api/controllers/intrusion/calculate?model=trained")
         .send({ packets: 9.5, rate: 4, weight: 141.55 });
@@ -398,7 +398,7 @@ describe("model variants", () => {
       expect(ok.body.value).toBeLessThanOrEqual(100);
       const tooBig = await request(app)
         .post("/api/controllers/intrusion/calculate?model=trained")
-        .send({ packets: 9.5, rate: 1500, weight: 141.55 });
+        .send({ packets: 9.5, rate: 5000, weight: 141.55 });
       expect(tooBig.status).toBe(400);
       const mf = await request(app).get("/api/controllers/intrusion/membership-functions?model=trained");
       expect(mf.body.meta.variant).toBe("trained");
@@ -478,7 +478,7 @@ describe("docs of trained models", () => {
   (trainedFile.status === "trained" ? test : test.skip)("intrusion: trained Gaussians and rules", () => {
     const model = intrusionController.variants.trained;
     const docs = win.buildTrainedDocs("intrusion", model.membershipFunctions().meta.params);
-    expect(docs.inputs[1].domain).toEqual([0, 7]);
+    expect(docs.inputs[1].domain).toEqual([0, 3000]);
     ["NP", "Rate", "We"].forEach((symbol, i) => {
       docs.inputs[i].terms.forEach((docTerm) => {
         const [sigma, center] = model.variables[symbol].terms.find((t) => t.name === docTerm.term).mfParams;
