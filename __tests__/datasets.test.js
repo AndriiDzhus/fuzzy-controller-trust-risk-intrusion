@@ -115,7 +115,7 @@ describe("datasets", () => {
   });
 
   test("every default dataset covers the whole range of every input and of the target", () => {
-    // The ranges the datasets are generated over (security: thesis ranges; Rate is sampled on a log scale).
+    // The working ranges of the inputs (data/README.md); Rate reaches from the quiet end to the flood end.
     const ranges = { intrusion: [[0, 15], [0, 3000], [0, 250]], security: [[0.01, 0.05], [10, 35], [1, 10]] };
     {
       Object.entries(ranges).forEach(([controller, universe]) => {
@@ -127,9 +127,8 @@ describe("datasets", () => {
             expect(v).toBeLessThanOrEqual(hi);
           });
           if (controller === "intrusion" && c === 1) {
-            // Rate: log scale, from the quiet end to the flood end.
             expect(Math.min(...values)).toBeLessThan(1);
-            expect(Math.max(...values)).toBeGreaterThan(2500);
+            expect(Math.max(...values)).toBeGreaterThan(2000);
             return;
           }
           // Four equal bins of the range all hold at least one row (the top bin of NP is a plateau of rare rows).

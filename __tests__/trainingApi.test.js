@@ -133,8 +133,8 @@ describe("custom parameters", () => {
     const mf = await request(app).post("/api/controllers/intrusion/membership-functions").send({ params });
     expect(mf.status).toBe(200);
     expect(mf.body.meta.variant).toBe("custom");
-    expect(mf.body.meta.rateScale).toBe("log10p1");
-    expect(mf.body.meta.inputDomains.rate).toEqual({ min: 0, max: 7 });
+    expect(mf.body.meta.rateScale).toBe("linear");
+    expect(mf.body.meta.inputDomains.rate).toEqual({ min: 0, max: 3000 });
     const surface = await request(app)
       .post("/api/controllers/intrusion/surface")
       .send({ xKey: "packets", yKey: "rate", inputs: { packets: 9, rate: 3, weight: 100 }, points: 5, params });

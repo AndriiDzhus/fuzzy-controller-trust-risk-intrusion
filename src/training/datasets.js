@@ -216,8 +216,8 @@ async function tableFromFile(file) {
 
 /**
  * Every controller that is trained has exactly one default dataset of 100 rows;
- * it covers all the working ranges of the inputs and every rule
- * (scripts/data/make-app-datasets.js).
+ * it covers all the working ranges of the inputs and every rule (data/README.md:
+ * inputs from open datasets, targets from the expert analysis).
  */
 const DEFAULT_DATASET_ROWS = 100;
 
