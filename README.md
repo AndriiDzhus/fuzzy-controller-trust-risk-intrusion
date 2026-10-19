@@ -1,253 +1,255 @@
 # Multi-Controller Fuzzy Inference Platform for System Security Assessment
 
-Навчально-дослідна платформа нечіткого виводу з трьома контролерами для оцінювання
-безпеки пристроїв Інтернету речей. Кожен крок виводу показано окремо: фазифікація,
-оцінка правил, акумуляція (нормалізація для Sugeno), дефазифікація. Мови інтерфейсу:
-українська (за замовчуванням) та англійська.
+A research and teaching platform for fuzzy inference with three controllers that assess
+the security of Internet of Things devices. Every step of the inference is shown
+separately: fuzzification, rule evaluation, accumulation (normalisation for Sugeno),
+defuzzification. Interface languages: Ukrainian (default) and English.
 
-| Контролер | Датасет | Входи | Вихід | Модель | Дефазифікація |
+| Controller | Dataset | Inputs | Output | Model | Defuzzification |
 |---|---|---|---|---|---|
-| Trust | NSL-KDD | ER, CC, BS — трапеції | TI — 5 трикутників | Mamdani, 27 правил, min | точний аналітичний центр тяжіння (ф. 2.22–2.28) |
-| Security | 6G IoT | EC, TP, Lat — трикутники | SR — 6 синглтонів | Sugeno 0-го порядку, 6 правил, добуток; **навчання ANFIS** | зважена сума Σ w̄·c |
-| Intrusion | CICIoT2023 | NP, Rate, We — гаусові | IP — 4 гаусові | Mamdani, 12 правил, min; **оптимізація ГА** | центр тяжіння, сума з кроком 0,2 |
+| Trust | NSL-KDD | ER, CC, BS — trapezoids | TI — 5 triangles | Mamdani, 27 rules, min | exact analytic centre of gravity (eq. 2.22–2.28) |
+| Security | 6G IoT | EC, TP, Lat — triangles | SR — 6 singletons | Sugeno of order 0, 6 rules, product; **ANFIS training** | weighted sum Σ w̄·c |
+| Intrusion | CICIoT2023 | NP, Rate, We — Gaussians | IP — 4 Gaussians | Mamdani, 12 rules, min; **GA optimisation** | centre of gravity, sum with step 0.2 |
 
-Security та Intrusion можна навчити прямо на сторінці: блок **«Навчання моделі»**
-перед кроком «Фазифікація» (див. розділ «Навчання контролерів»). Експертні
-параметри з завдання лишаються без змін, доки навчений результат не застосовано.
+Security and Intrusion can be trained right on the page: the **"Model training"** block
+before the "Fuzzification" step (see "Training the controllers"). The expert parameters
+of the assignment stay unchanged until a trained result is applied.
 
-## Архітектура
+## Architecture
 
 ```
-server.js                         Express: статичний UI + API контролерів
+server.js                         Express: static UI + controller API
 src/
-  engine/                         рушій нечіткого виводу
-    index.js                      публічний інтерфейс рушія
-    membershipFunctions.js        трикутник, трапеція, гаусова; SafeTerm (FuzzyIS Term)
-    model.js                      опис моделі засобами FuzzyIS: змінні, терми, правила, FIS
-    inference.js                  фазифікація, t-норми min / добуток, сила правил
-    mamdani.js                    висоти зрізу, max-min агрегація, центр тяжіння
-    sugeno.js                     нормалізація ваг, зважені наслідки, Σ w̄·c
-    sampling.js                   рівномірні сітки та дискретизація для графіків
+  engine/                         fuzzy inference engine
+    index.js                      public interface of the engine
+    membershipFunctions.js        triangle, trapezoid, Gaussian; SafeTerm (FuzzyIS Term)
+    model.js                      model description with FuzzyIS: variables, terms, rules, FIS
+    inference.js                  fuzzification, t-norms min / product, rule strengths
+    mamdani.js                    clip heights, max-min aggregation, centre of gravity
+    sugeno.js                     weight normalisation, weighted consequents, Σ w̄·c
+    sampling.js                   uniform grids and sampling for the charts
   controllers/
-    index.js                      реєстр контролерів (API і статична збірка)
-    trustController.js            модель і вивід Trust
-    securityController.js         модель і вивід Security
-    intrusionController.js        модель і вивід Intrusion
-    surface.js                    поверхня відгуку: вихід як функція двох входів
-    trained/security.json         параметри навченої моделі Security (ANFIS, npm run train:security)
-    trained/intrusion.json        параметри навченої моделі Intrusion (ГА, npm run train:intrusion)
+    index.js                      controller registry (API and static build)
+    trustController.js            Trust model and inference
+    securityController.js         Security model and inference
+    intrusionController.js        Intrusion model and inference
+    surface.js                    response surface: output as a function of two inputs
+    trained/security.json         parameters of the trained Security model (ANFIS, npm run train:security)
+    trained/intrusion.json        parameters of the trained Intrusion model (GA, npm run train:intrusion)
   training/
-    anfis.js                      гібридне навчання ANFIS: МНК + градієнтний спуск (генератор епох)
-    genetic.js                    генетичний алгоритм: хромосома з 74 генів (генератор поколінь)
-    datasets.js                   формат датасетів, розбір xlsx/csv, поділ на вибірки, датасети за замовчуванням
-    session.js                    сеанс навчання: прогрес, зупинка, метрики до/після, diff параметрів
-    jobs.js, worker-node.js       завдання навчання API у worker_threads, події прогресу
-    utils.js                      seeded random, CSV, метрики, МНК
+    anfis.js                      hybrid ANFIS training: least squares + gradient descent (epoch generator)
+    genetic.js                    genetic algorithm: chromosome of 74 genes (generation generator)
+    datasets.js                   dataset format, xlsx/csv parsing, split into samples, default datasets
+    session.js                    training session: progress, stop, metrics before/after, parameter diff
+    jobs.js, worker-node.js       API training jobs in worker_threads, progress events
+    utils.js                      seeded random, CSV, metrics, least squares
 public/
-  index.html  trust.js            сторінка Trust
-  security.html  security.js      сторінка Security
-  intrusion.html  intrusion.js    сторінка Intrusion
-  fuzzy-page-core.js              спільний UI: входи, графіки, кроки виводу, підказки
-  controller-docs.js              модалки «Формули» та «База правил» (і для навченої моделі)
-  training-panel.js               блок «Навчання моделі»: датасет, живий графік, результати, застосування
-  training-backend.js             де виконується навчання: API (сервер) або Web Worker (статична збірка)
-  xlsx-lite.js                    читання / запис .xlsx без залежностей (Node і браузер)
-  surface-view.js                 модалка «Поверхня відгуку»: 3D-поверхня на canvas
-  i18n.json  i18n-helper.js       переклади uk / en
+  index.html  trust.js            Trust page
+  security.html  security.js      Security page
+  intrusion.html  intrusion.js    Intrusion page
+  fuzzy-page-core.js              shared UI: inputs, charts, inference steps, hints
+  controller-docs.js              "Formulas" and "Rule base" modals (also for the trained model)
+  training-panel.js               "Model training" block: dataset, live chart, results, apply
+  training-backend.js             where the training runs: API (server) or Web Worker (static build)
+  xlsx-lite.js                    reading / writing .xlsx without dependencies (Node and browser)
+  surface-view.js                 "Response surface" modal: 3D surface on canvas
+  i18n.json  i18n-helper.js       uk / en translations
   term-colors.js  style.css  navigation.css
 scripts/
-  data/make-app-datasets.js       датасети апки: data/security-100.csv і data/intrusion-100.csv
-  train-security.js               навчання ANFIS -> src/controllers/trained/security.json
-  train-intrusion.js              оптимізація ГА -> src/controllers/trained/intrusion.json
-  build-pages.js                  статична збірка для GitHub Pages (dist/)
-  training-worker-entry.js        Web Worker навчання для статичної збірки
-  mini-bundle.js                  запасний бандлер, коли esbuild не запускається на цій машині
+  train-security.js               ANFIS training -> src/controllers/trained/security.json
+  train-intrusion.js              GA optimisation -> src/controllers/trained/intrusion.json
+  build-pages.js                  static build for GitHub Pages (dist/)
+  training-worker-entry.js        training Web Worker for the static build
+  mini-bundle.js                  fallback bundler when esbuild cannot run on this machine
   controllers-browser-entry.js    window.fuzzyControllers = src/controllers
 __tests__/                        Jest + supertest
-data/                             security-N.csv, intrusion-N.csv — 8 датасетів апки (4 колонки; data/README.md)
-docs/tasks/                       завдання та теоретичні розділи
+data/                             security-100.csv, intrusion-100.csv — datasets of the app (4 columns; sources
+                                  and row selection — data/README.md; sources/ — row numbers of the sources)
+docs/tasks/                       assignments and theory chapters
 ```
 
-### Рушій і контролери
+### Engine and controllers
 
-Моделі всіх трьох контролерів описано засобами бібліотеки **FuzzyIS**
-(`LinguisticVariable`, `Term`, `Rule`, `FIS`). Кроки виводу реалізовано в `src/engine`
-явно, за формулами дисертації, бо FuzzyIS підтримує лише min як операцію «І», а її
-вбудована дефазифікація (`FIS.getPreciseOutput`) обчислює бісектор, а не центр тяжіння,
-і записує сили правил у спільні об'єкти. Тому `getPreciseOutput` не використовується.
+The models of all three controllers are described with the **FuzzyIS** library
+(`LinguisticVariable`, `Term`, `Rule`, `FIS`). The inference steps are implemented in
+`src/engine` explicitly, by the formulas of the thesis, because FuzzyIS supports only min
+as the "AND" operation, its built-in defuzzification (`FIS.getPreciseOutput`) computes the
+bisector rather than the centre of gravity, and it stores rule strengths in shared
+objects. Therefore `getPreciseOutput` is not used.
 
-Кожен контролер має однаковий інтерфейс:
+Every controller has the same interface:
 
 ```js
 module.exports = { system, variables, ranges, calculate, membershipFunctions };
 ```
 
-і однакову структуру `calculate()`:
+and the same structure of `calculate()`:
 
-| Крок | Mamdani (Trust, Intrusion) | Sugeno (Security) |
+| Step | Mamdani (Trust, Intrusion) | Sugeno (Security) |
 |---|---|---|
 | 1 | `fuzzify` | `fuzzify` |
 | 2 | `evaluateRules(..., "min")` | `evaluateRules(..., "product")` |
-| 3 | `mamdaniActivations` + `aggregatedUnion` | `sugenoWeightedSum`: нормалізація w̄ = w / Σw |
+| 3 | `mamdaniActivations` + `aggregatedUnion` | `sugenoWeightedSum`: normalisation w̄ = w / Σw |
 | 4 | `exactCentroid` / `discreteCentroid` | `sugenoWeightedSum`: SR = Σ w̄·c |
 
 ### API
 
 - `POST /api/controllers/:controller/calculate`
 - `GET /api/controllers/:controller/membership-functions`
-- `POST /api/controllers/:controller/surface` — поверхня відгуку
-  (`{ xKey, yKey, inputs, points }` → `{ x, y, z, fixed }`, `z[j][i]` = вихід у точці `(x[i], y[j])`,
-  `null` там, де жодне правило не спрацювало)
+- `POST /api/controllers/:controller/surface` — response surface
+  (`{ xKey, yKey, inputs, points }` → `{ x, y, z, fixed }`, `z[j][i]` = output at `(x[i], y[j])`,
+  `null` where no rule fired)
 
-де `:controller` — `trust | security | intrusion`. Параметр `?model=trained` вибирає
-модель, навчену скриптом (404, якщо її ще немає); `GET /api/controllers/:controller/models`
-повертає список доступних моделей і підсумок навчання. Якщо тіло POST-запиту містить
-`params` (результат навчання, застосований на сторінці), модель будується з них;
-`membership-functions` для цього приймає і POST.
+where `:controller` is `trust | security | intrusion`. The `?model=trained` parameter
+selects the model trained by the script (404 if there is none yet);
+`GET /api/controllers/:controller/models` returns the list of available models and a
+training summary. If the body of a POST request contains `params` (a training result
+applied on the page), the model is built from them; `membership-functions` accepts POST
+for that purpose.
 
-Навчання на сторінці:
+Training on the page:
 
-- `GET /api/controllers/:controller/dataset?rows=N|all` — датасет за замовчуванням (.xlsx);
-  N ≥ 10, N не менше за розмір датасету дає всі рядки (заголовки `X-Row-Count`, `X-Row-Total`)
-- `GET /api/controllers/:controller/dataset/info` — розмір і колонки датасету за замовчуванням
-- `POST /api/training/:controller/jobs?name=<файл>&generations=…` — тіло запиту: файл .xlsx або .csv;
-  відповідь — завдання (`id`, поділ на вибірки, параметри)
-- `GET /api/training/jobs/:id/events` — прогрес як server-sent events (`snapshot`, `progress`, `done`, `error`, `end`)
-- `GET /api/training/jobs/:id`, `POST /api/training/jobs/:id/stop` Статична збірка для GitHub Pages
-рахує те саме в браузері через `window.fuzzyControllers`.
+- `GET /api/controllers/:controller/dataset?rows=N|all` — the default dataset (.xlsx);
+  N ≥ 10, N not smaller than the dataset gives all rows (headers `X-Row-Count`, `X-Row-Total`)
+- `GET /api/controllers/:controller/dataset/info` — size and columns of the default dataset
+- `POST /api/training/:controller/jobs?name=<file>&generations=…` — request body: an .xlsx or .csv file;
+  response — the job (`id`, split into samples, parameters)
+- `GET /api/training/jobs/:id/events` — progress as server-sent events (`snapshot`, `progress`, `done`, `error`, `end`)
+- `GET /api/training/jobs/:id`, `POST /api/training/jobs/:id/stop`
+
+The static build for GitHub Pages computes the same in the browser through
+`window.fuzzyControllers`.
 
 ### Frontend
 
-- `public/fuzzy-page-core.js` — спільний модуль сторінок: синхронізація повзунків,
-  виклики API або локальних контролерів, графіки, картки правил, підказки, стікі-хедер.
-- `public/trust.js`, `public/security.js`, `public/intrusion.js` — конфігурація сторінок.
-- `public/controller-docs.js` — формули та бази правил для модалок; тест
-  `__tests__/docsConsistency.test.js` звіряє їх із моделями контролерів.
-- `public/i18n.json`, `public/i18n-helper.js` — переклади (uk за замовчуванням, en).
+- `public/fuzzy-page-core.js` — shared module of the pages: slider synchronisation,
+  calls of the API or of the local controllers, charts, rule cards, hints, sticky header.
+- `public/trust.js`, `public/security.js`, `public/intrusion.js` — page configuration.
+- `public/controller-docs.js` — formulas and rule bases for the modals; the test
+  `__tests__/docsConsistency.test.js` checks them against the controller models.
+- `public/i18n.json`, `public/i18n-helper.js` — translations (uk by default, en).
 
-## Навчання контролерів
+## Training the controllers
 
-Докладно про дані та експертну розмітку — у [data/README.md](data/README.md).
+The data and the expert labelling are described in [data/README.md](data/README.md).
 
 ```bash
-npm run data:app           # 2 датасети апки (по 100 рядків на контролер) -> data/*.csv
-npm run train:security     # ANFIS на data/security-100.csv (--data <csv> — на іншому файлі)
-npm run train:intrusion    # ГА на data/intrusion-100.csv (--data <csv> — на іншому файлі; ≈ 10 с)
+npm run train:security     # ANFIS on data/security-100.csv (--data <csv> — another file)
+npm run train:intrusion    # GA on data/intrusion-100.csv (--data <csv> — another file; ≈ 10 s)
 ```
 
-**Security, ANFIS** (Adaptive Neuro-Fuzzy Inference System — адаптивна нейро-нечітка система виводу; розділ 3.4.4). База з 6 правил не змінюється (маска правил).
-У кожній епосі спершу 6 наслідків обчислюються методом найменших квадратів,
-C = (AᵀA)⁻¹Aᵀy, за нормованими вагами правил. Потім 18 точок зламу трикутників
-(L: c; M: a, b, c; H: a, b для кожного входу) зсуваються градієнтним спуском із
-субградієнтами в точках зламу. Точки зламу нормуються на [0, 1]; кожна рухається
-вздовж своєї компоненти градієнта з власним кроком: крок, що не зменшує похибку
-або лишає якийсь рядок без спрацьованого правила, відкидається і зменшується вдвічі. Зберігається епоха з найменшою похибкою, за умови що
-жоден рядок не лишився без спрацьованого правила.
+**Security, ANFIS** (Adaptive Neuro-Fuzzy Inference System; thesis section 3.4.4). The base
+of 6 rules does not change (rule mask). In every epoch the 6 consequents are first computed
+by least squares, C = (AᵀA)⁻¹Aᵀy, from the normalised rule weights. Then the 18 break
+points of the triangles (L: c; M: a, b, c; H: a, b for every input) are moved by gradient
+descent with subgradients at the break points. The break points are normalised to [0, 1];
+each one moves along its own gradient component with its own step: a step that does not
+reduce the error, or leaves some row without a fired rule, is rejected and halved. The
+epoch with the smallest error is kept, provided that no row is left without a fired rule.
 
-**Intrusion, генетичний алгоритм** (розділ 4.3.4–4.3.5). Хромосома з 74 генів:
-18 параметрів (c, σ) вхідних гаусоїд, 8 параметрів вихідних гаусоїд і 48 цілих
-генів структури 12 правил. Пристосованість F = 1 / (1 + RMSE), селекція
-турнірна. Кросовер арифметичний для дійсних генів і двоточковий (на межах правил)
-для генів правил. Мутація гаусова для дійсних генів і перепризначення індексу
-терму для генів правил. Валідація забезпечує σ ≥ ε, центри в межах універсуму,
-впорядковані терми (мала < середня < велика) з мінімальною відстанню 10 % між
-центрами, а також відсутність двох правил з однаковими передумовами. Наступне
-покоління — найкращі N з батьків і нащадків.
+**Intrusion, genetic algorithm** (sections 4.3.4–4.3.5). A chromosome of 74 genes:
+18 parameters (c, σ) of the input Gaussians, 8 parameters of the output Gaussians and
+48 integer genes of the structure of the 12 rules. Fitness F = 1 / (1 + RMSE), tournament
+selection. Arithmetic crossover for the real genes and two-point crossover (on rule
+boundaries) for the rule genes. Gaussian mutation for the real genes and re-assignment of
+the term index for the rule genes. Validation keeps σ ≥ ε, the centres inside the universe,
+ordered terms (low < medium < high) with a minimum distance of 10 % between the centres,
+and no two rules with the same premises. The next generation is the best N of parents
+and offspring.
 
-Параметри за замовчуванням (`METHODS` у `src/training/session.js`; теорія задає їх
-символами, числа взято з MATLAB-експериментів дисертації): ANFIS — 100 епох (із
-зупинкою, коли похибка не спадає 25 епох поспіль); ГА — N₀ = 150, N = 100, 150
-поколінь, цільова RMSE 0 (вимкнено), seed 42; зупинка також після 60 поколінь без
-покращення. Центр ваги в ГА рахується сумою з кроком 0,2, як у контролері, тому
-експертна хромосома дає ту саму RMSE, що й експертна модель.
+Default parameters (`METHODS` in `src/training/session.js`; the theory gives them as
+symbols, the numbers are taken from the MATLAB experiments of the thesis): ANFIS — 100
+epochs (stopping when the error has not decreased for 25 epochs in a row); GA — N₀ = 150,
+N = 100, 150 generations, target RMSE 0 (off), seed 42; it also stops after 60 generations
+without improvement. The centre of gravity in the GA is computed as a sum with step 0.2,
+as in the controller, so the expert chromosome gives the same RMSE as the expert model.
 
-Датасетів за замовчуванням два — по одному на контролер (`data/security-100.csv` і
-`data/intrusion-100.csv`, по 100 рядків). Кожен файл покриває весь робочий
-діапазон кожного входу й усі правила; вхід — у
-плануванні «заповнення простору» (по одному рядку біля вершин термів кожного правила
-+ латинський гіперкуб; Rate — рівномірно в логарифмічній шкалі), ціль — вихід експертного
-контролера з кількома зсунутими параметрами й шумом вимірювання. Поділ на вибірки
-застосунок робить сам. Орієнтовні результати (RMSE на навчальній вибірці, до → після):
-ANFIS — 4,5 → 0,34 (MATLAB 0,361 на 40 + 10 рядках); ГА — 3,3 → 0,063,
-відновлено обидва змінені правила (MATLAB 0,0297 → 0,0186). Докладніше в
+There are two default datasets, one per controller (`data/security-100.csv` and
+`data/intrusion-100.csv`, 100 rows each). The input values are taken from open datasets
+(6G IoT Intelligent Management Dataset and CIC IoT Dataset 2023); the rows were selected so
+that the file covers the working range of every input and every rule; the reference output
+values were formed from the expert analysis and the expert model of the controller. The
+app splits the data into samples itself. Indicative results (RMSE on the training sample,
+before → after): ANFIS — 3.9 → 0.33 (MATLAB 0.361 on 40 + 10 rows); GA — 7.2 → 0.05, both
+changed rules recovered (MATLAB 0.0297 → 0.0186). Details in
 [data/README.md](data/README.md).
-Решта констант (ймовірності кросоверу 0,5 і мутації 0,04 / 0,003, σ мутації 2 % → 0,03 %
-розмаху гена — діапазону змінної або 8 ширин терму, якщо терм вузький, — турнір із 3)
-зафіксована в коді. Крок градієнта ANFIS — свій для кожної з
-18 точок зламу (backtracking по параметру). ГА повертає хромосому
-покоління з найменшою валідаційною похибкою; «середнє RMSE» на графіку — по всіх
-нащадках покоління до відбору, як у MATLAB.
+The other constants (crossover probability 0.5 and mutation 0.04 / 0.003, mutation σ
+2 % → 0.03 % of the gene span — the range of the variable, or 8 term widths if the term is
+narrow — tournament of 3) are fixed in the code. The ANFIS gradient step is separate for
+each of the 18 break points (backtracking per parameter). The GA returns the chromosome of
+the generation with the smallest validation error; the "mean RMSE" on the chart is over
+all offspring of the generation before selection, as in MATLAB.
 
-### Блок «Навчання моделі» на сторінці
+### The "Model training" block on the page
 
-На сторінках Security та Intrusion перед кроком «Фазифікація» є акордеон
-«Навчання моделі» (бейдж ANFIS або ГА):
+On the Security and Intrusion pages, before the "Fuzzification" step, there is a
+"Model training" accordion (badge ANFIS or GA):
 
-Блок поділено на три кроки: **1 Дані → 2 Навчання → 3 Результат**; теорія і опис даних
-сховані в розкривному «Як працює навчання і які дані потрібні».
+The block has three steps: **1 Data → 2 Training → 3 Result**; the theory and the data
+description are hidden in the expandable "How the training works and what data it needs".
 
-1. **Дані** — датасет за замовчуванням (100 записів: `security-100.csv` або
-   `intrusion-100.csv`) як `.xlsx`; файл завжди цілий.
-   Назва файла і посилання на нього показані й у кроці 2, поки результату немає.
-   Колонки: Intrusion — NP, Rate, We, IP; Security — EC, TP, Lat, SR. Поруч — власний файл `.xlsx` / `.csv` з такими самими колонками;
-   навчання стартує одразу після вибору. Поділ на вибірки (70/15/15 або 70/30)
-   робиться автоматично. Параметри алгоритму (покоління, N, N₀, цільова RMSE, seed;
-   епохи) — у розкривному блоці; біля кожного поля значок «?» з поясненням.
-2. **Навчання** — у порожньому стані кнопка «Навчити на датасеті за замовчуванням» з
-   вибраним розміром датасету; під час навчання — плитки (покоління / епоха, RMSE кожної
-   серії, F), прогрес, живий графік RMSE (ГА: найкраще / середнє по популяції /
-   валідаційна; ANFIS: навчальна / тестова, починаючи з епохи 0 — експертної моделі),
-   кнопка «Зупинити».
-3. **Результат** — RMSE і R² до → після на всіх вибірках, збалансована точність виявлення
-   (Intrusion), «Що змінилося»: графіки функцій належності до / після, таблиця параметрів,
-   змінені правила.
-4. **«Застосувати до контролера»** — усі кроки, графіки, модалки «Формули» / «База правил»
-   і поверхня відгуку переходять на навчені параметри (стан зберігається в браузері між
-   перезавантаженнями); **«Повернути експертні параметри»** скасовує це.
+1. **Data** — the default dataset (100 rows: `security-100.csv` or `intrusion-100.csv`)
+   as `.xlsx`; the file is always complete. The file name and a link to it are also shown
+   in step 2 while there is no result. Columns: Intrusion — NP, Rate, We, IP; Security —
+   EC, TP, Lat, SR. Next to it — the user's own `.xlsx` / `.csv` file with the same columns;
+   the training starts right after the file is chosen. The split into samples (70/15/15 or
+   70/30) is automatic. The algorithm parameters (generations, N, N₀, target RMSE, seed;
+   epochs) are in an expandable block; every field has a "?" icon with an explanation.
+2. **Training** — in the empty state, the button "Train on the default dataset" with the
+   chosen dataset size; during the training — tiles (generation / epoch, RMSE of every
+   series, F), progress, a live RMSE chart (GA: best / population mean / validation;
+   ANFIS: training / test, starting from epoch 0 — the expert model), the "Stop" button.
+3. **Result** — RMSE and R² before → after on all samples, balanced detection accuracy
+   (Intrusion), "What changed": membership function charts before / after, a parameter
+   table, the changed rules.
+4. **"Apply to the controller"** — all steps, charts, the "Formulas" / "Rule base" modals
+   and the response surface switch to the trained parameters (the state is kept in the
+   browser between reloads); **"Restore the expert parameters"** undoes it.
 
-З локальним сервером навчання виконується на сервері в окремому потоці, прогрес іде
-через server-sent events; у статичній збірці — у Web Worker прямо в браузері
-(`dist/training-worker.js`). Результати однакові (seed фіксовано).
+With the local server the training runs on the server in a separate thread and the
+progress is streamed as server-sent events; in the static build it runs in a Web Worker
+right in the browser (`dist/training-worker.js`). The results are identical (fixed seed).
 
-Скрипти `npm run train:*` навчають на `data/*.csv` і зберігають результат у
-`src/controllers/trained/*.json` (доступний через API як `?model=trained`).
+The `npm run train:*` scripts train on `data/*.csv` and save the result in
+`src/controllers/trained/*.json` (available through the API as `?model=trained`).
 
-## Запуск
+## Running
 
 ```bash
 npm install
 npm start      # http://localhost:3002
-npm run dev    # з автоперезапуском (nodemon)
+npm run dev    # with auto-restart (nodemon)
 ```
 
-## Розгортання на GitHub Pages
+## Deployment on GitHub Pages
 
-GitHub Pages обслуговує лише статичні файли, тому для публічного демо використовується
-статична збірка з локальними обчисленнями контролерів у браузері.
+GitHub Pages serves static files only, so the public demo uses a static build with the
+controllers computed locally in the browser.
 
-### 1. Увімкнути GitHub Pages
+### 1. Enable GitHub Pages
 
-1. Відкрийте репозиторій на GitHub: `AndriiDzhus/fuzzy-logic-security-risk`
-2. Перейдіть у **Settings → Pages**
-3. У полі **Build and deployment → Source** оберіть **GitHub Actions**
+1. Open the repository on GitHub: `AndriiDzhus/fuzzy-logic-security-risk`
+2. Go to **Settings → Pages**
+3. In **Build and deployment → Source** choose **GitHub Actions**
 
-### 2. Запустити деплой
+### 2. Run the deployment
 
-Після push у гілку `main` або `master` workflow **Deploy to GitHub Pages** автоматично:
+After a push to the `main` or `master` branch the **Deploy to GitHub Pages** workflow
+automatically:
 
-- запускає тести;
-- збирає статичну версію (`npm run build:pages`);
-- публікує її на GitHub Pages.
+- runs the tests;
+- builds the static version (`npm run build:pages`);
+- publishes it on GitHub Pages.
 
-Також можна запустити деплой вручну: **Actions → Deploy to GitHub Pages → Run workflow**.
+The deployment can also be started by hand: **Actions → Deploy to GitHub Pages → Run workflow**.
 
-### 3. Посилання на демо
+### 3. Demo link
 
-Після успішного деплою додаток буде доступний за адресою:
+After a successful deployment the app is available at:
 
 `https://andriidzhus.github.io/fuzzy-logic-security-risk/`
 
-### Локальна перевірка статичної версії
+### Checking the static version locally
 
 ```bash
 npm install
@@ -255,7 +257,7 @@ npm run build:pages
 npx serve dist
 ```
 
-Локальний запуск через `npm start` як і раніше використовує Express API.
+A local run with `npm start` still uses the Express API.
 
 ## API
 
@@ -267,7 +269,7 @@ npx serve dist
 { "errors": 0.25, "connections": 50, "bytes": 7.5 }
 ```
 
-Відповідь (скорочено):
+Response (abridged):
 
 ```json
 {
@@ -299,8 +301,8 @@ npx serve dist
 }
 ```
 
-`ruleEvaluations` містить усі 27 правил, `aggregatedOutput` — акумульовану множину
-разом із точками зламу многокутника.
+`ruleEvaluations` contains all 27 rules, `aggregatedOutput` — the accumulated set together
+with the break points of the polygon.
 
 ### Security
 
@@ -310,7 +312,7 @@ npx serve dist
 { "energy": 0.03, "strength": 25, "response": 6 }
 ```
 
-`energy`, `strength`, `response` — це EC, TP і Lat. Відповідь (скорочено):
+`energy`, `strength`, `response` are EC, TP and Lat. Response (abridged):
 
 ```json
 {
@@ -327,8 +329,8 @@ npx serve dist
 }
 ```
 
-Якщо жодне з 6 правил не спрацювало (наприклад, `{ "energy": 0.025, "strength": 0, "response": 0 }`),
-повертається `"value": null`, `"dominantTerm": null`, `"noRuleFired": true`.
+If none of the 6 rules fired (for example `{ "energy": 0.025, "strength": 0, "response": 0 }`),
+the response is `"value": null`, `"dominantTerm": null`, `"noRuleFired": true`.
 
 ### Intrusion
 
@@ -338,7 +340,7 @@ npx serve dist
 { "packets": 14, "rate": 1500, "weight": 240 }
 ```
 
-Відповідь (скорочено):
+Response (abridged):
 
 ```json
 {
@@ -349,12 +351,13 @@ npx serve dist
 }
 ```
 
-`aggregatedOutput` — 501 точка сітки [0, 100] з кроком 0,2, за якими рахується центр тяжіння.
+`aggregatedOutput` — 501 points of the grid [0, 100] with step 0.2 over which the centre of
+gravity is computed.
 
-### Функції належності
+### Membership functions
 
-`GET /api/controllers/:controller/membership-functions` повертає дискретизовані криві
-термів для графіків:
+`GET /api/controllers/:controller/membership-functions` returns the sampled curves of the
+terms for the charts:
 
 ```json
 {
@@ -364,38 +367,38 @@ npx serve dist
 }
 ```
 
-Для Security `output.risk` порожній, а `meta.singletonValues` містить положення синглтонів
-і `meta.tnorm = "product"`.
+For Security `output.risk` is empty and `meta.singletonValues` holds the positions of the
+singletons; `meta.tnorm = "product"`.
 
-### Валідація
+### Validation
 
-Кожен вхід має бути числом у своїй області визначення:
+Every input must be a number within its domain:
 
-| Контролер | Входи |
+| Controller | Inputs |
 |---|---|
 | trust | `errors` [0, 1], `connections` [0, 200], `bytes` [0, 12] |
 | security | `energy` [0, 0.05], `strength` [0, 40], `response` [0, 10] |
 | intrusion | `packets` [0, 15], `rate` [0, 3000], `weight` [0, 250] |
 
-Інакше повертається `400`:
+Otherwise `400` is returned:
 
 ```json
 { "error": "Invalid input values. All values must be within the allowed range." }
 ```
 
-## Тести
+## Tests
 
 ```bash
 npm test
 ```
 
-| Файл | Що перевіряє |
+| File | What it checks |
 |---|---|
-| `engine.test.js` | моделі як об'єкти FuzzyIS, чистота виводу, t-норми, центроїди, Sugeno |
-| `trustController.test.js` | Trust: терми, правила, точний центр тяжіння |
-| `securityController.test.js` | Security: функції належності завдання, добуток, Σ w̄·c, дірки бази правил, назви термів |
-| `intrusionController.test.js` | Intrusion: піки правил, агрегована множина, сітка |
-| `docsConsistency.test.js` | модалки формул і правил збігаються з моделями |
-| `surface.test.js` | поверхня відгуку збігається з `calculate`, дірки Security, API |
-| `controllerDocs.test.js`, `termColors.test.js` | модалки та кольори термів |
-| `integration.test.js`, `e2e.smoke.test.js` | API та сторінки |
+| `engine.test.js` | models as FuzzyIS objects, purity of the inference, t-norms, centroids, Sugeno |
+| `trustController.test.js` | Trust: terms, rules, exact centre of gravity |
+| `securityController.test.js` | Security: membership functions of the assignment, product, Σ w̄·c, holes of the rule base, term names |
+| `intrusionController.test.js` | Intrusion: rule peaks, aggregated set, grid |
+| `docsConsistency.test.js` | the formula and rule modals match the models |
+| `surface.test.js` | the response surface matches `calculate`, Security holes, API |
+| `controllerDocs.test.js`, `termColors.test.js` | modals and term colours |
+| `integration.test.js`, `e2e.smoke.test.js` | API and pages |
