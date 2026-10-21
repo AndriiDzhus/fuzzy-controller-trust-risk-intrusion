@@ -36,8 +36,6 @@
         { key: "generations", min: 1, max: 2000, step: 1 },
         { key: "populationSize", min: 4, max: 500, step: 1 },
         { key: "initialPopulation", min: 4, max: 2000, step: 1 },
-        { key: "targetRmse", min: 0, max: 100, step: 0.1 },
-        { key: "seed", min: 0, max: 1e9, step: 1 },
       ],
       series: [
         { key: "bestRmse", nameKey: "common.training.series.best", cls: "s1" },
@@ -244,11 +242,12 @@
       .replaceAll("{parts}", labels);
   }
 
-  // Same values as METHODS[*].defaultOptions in src/training/session.js
-  // (the API and the worker apply them when a field is left empty).
+  // Same values as METHODS[*].defaultOptions in src/training/session.js (the API and the
+  // worker apply them when a field is left empty). The target RMSE (0 = off) and the seed
+  // (42) are not shown in the UI: the session always uses their defaults.
   const DEFAULT_OPTIONS = {
     security: { epochs: 100 },
-    intrusion: { generations: 150, populationSize: 100, initialPopulation: 150, targetRmse: 0, seed: 42 },
+    intrusion: { generations: 150, populationSize: 100, initialPopulation: 150 },
   };
 
   function readOptions() {
