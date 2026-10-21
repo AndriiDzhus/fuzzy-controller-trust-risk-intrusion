@@ -53,7 +53,7 @@
         }
       },
       "noRuleFired": "Жодне правило не спрацювало",
-      "noRuleFiredHint": "База правил безпеки має лише 6 комбінацій EC, TP і Lat. Поточні входи не активують жодне правило, тому індекс ризику SR не можна обчислити — немає активних сінглтонів для дефазифікації.",
+      "noRuleFiredHint": "База правил контролера ризику безпеки має лише 6 комбінацій EC, TP і Lat. Поточні входи не активують жодне правило, тому ризик безпеки SR не можна обчислити — немає активних синглтонів для дефазифікації.",
       "sticky": {
         "result": "Результат"
       },
@@ -389,7 +389,7 @@
     },
     "security": {
       "pageTitle": "Ризик безпеки | Платформа нечіткого виводу",
-      "headline": "Платформа нечіткого виводу для оцінки безпеки систем",
+      "headline": "Платформа нечіткого виводу для оцінки ризику безпеки",
       "title": "Ризик безпеки системи зв'язку",
       "stickyTitle": "Оцінка ризику безпеки (SR)",
       "docs": {
@@ -408,7 +408,7 @@
           "risk": "Sugeno 0-го порядку: кожен терм SR — синглтон {0, 20, 40, 60, 80, 100}."
         }
       },
-      "description": "Оцінка індексу ризику безпеки (SR) на основі споживаної енергії (EC), потужності передачі (TP) та затримки (Lat).",
+      "description": "Оцінка ризику безпеки (SR) на основі споживаної енергії (EC), потужності передачі (TP) та затримки (Lat).",
       "inputs": {
         "energy": "Споживана енергія (EC) (0–0,05 кВт·год/ГБ):",
         "strength": "Потужність передачі (TP) (0–40 дБм):",
@@ -416,15 +416,15 @@
       },
       "results": {
         "title": "Результат обчислення",
-        "value": "Значення ризику (SR):",
-        "level": "Рівень ризику:"
+        "value": "Значення ризику безпеки (SR):",
+        "level": "Рівень ризику безпеки:"
       },
       "membership": {
         "title": "Значення приналежності",
         "energy": "Споживана енергія (EC)",
         "strength": "Потужність передачі (TP)",
         "response": "Затримка (Lat)",
-        "risk": "Індекс ризику безпеки (SR)"
+        "risk": "Ризик безпеки (SR)"
       },
       "graphs": {
         "title": "Функції приналежності",
@@ -443,12 +443,12 @@
         "title": "Інтерпретація",
         "description": "Система використовує 6 правил нечіткого виводу Sugeno 0-го порядку: EC (кВт·год/ГБ), TP (дБм), Lat (мс) → SR. База покриває лише 6 комбінацій термів; інші входи не активують правил.",
         "category1": "Мала споживана енергія (EC): мінімальний ризик за малої потужності передачі та малої затримки.",
-        "category2": "Середня споживана енергія (EC): рівень ризику залежить від потужності передачі та затримки.",
+        "category2": "Середня споживана енергія (EC): рівень ризику безпеки залежить від потужності передачі та затримки.",
         "category3": "Велика споживана енергія (EC): підвищений ризик, особливо за великої потужності передачі та великої затримки."
       },
       "training": {
         "badge": "ANFIS",
-        "hint": "ANFIS (Adaptive Neuro-Fuzzy Inference System — адаптивна нейро-нечітка система виводу) налаштовує за датасетом з еталонним індексом SR значення синглтонів-наслідків і точки зламу трикутних функцій належності. База з 6 правил не змінюється.",
+        "hint": "ANFIS (Adaptive Neuro-Fuzzy Inference System — адаптивна нейро-нечітка система виводу) налаштовує за датасетом з еталонним ризиком безпеки SR значення синглтонів-наслідків і точки зламу трикутних функцій належності. База з 6 правил не змінюється.",
         "datasetNote": "Датасет за замовчуванням — security-100.csv: 100 записів, сформованих експертно, з колонками EC, TP, Lat та еталонним індексом SR. Записи охоплюють усі робочі діапазони входів (EC 0,01–0,05 кВт·год/ГБ, TP 10–35 дБм, Lat 1–10 мс) і всі 6 правил бази, тож навчання налаштовує кожну функцію належності та кожен наслідок.",
         "uploadNote": "Колонки EC, TP, Lat, SR. Поділ на навчальну й тестову вибірки (70/30) робиться автоматично і відтворювано.",
         "changesNote": "Трикутники входів задано точками зламу a, b, c; вихід — значення синглтонів.",
@@ -491,8 +491,8 @@
       },
       "results": {
         "title": "Результат обчислення",
-        "value": "Значення вторгнення (IP):",
-        "level": "Рівень вторгнення:"
+        "value": "Значення ймовірності вторгнення (IP):",
+        "level": "Рівень ймовірності вторгнення:"
       },
       "membership": {
         "title": "Значення приналежності",
@@ -592,7 +592,7 @@
         }
       },
       "noRuleFired": "No rule fired",
-      "noRuleFiredHint": "The security rule base has only 6 combinations of EC, TP and Lat. The current inputs do not activate any rule, so risk SR cannot be calculated — there are no active singletons to defuzzify.",
+      "noRuleFiredHint": "The rule base of the security risk controller has only 6 combinations of EC, TP and Lat. The current inputs do not activate any rule, so the security risk SR cannot be calculated — there are no active singletons to defuzzify.",
       "sticky": {
         "result": "Result"
       },
@@ -909,7 +909,7 @@
     },
     "security": {
       "pageTitle": "Security Risk | Fuzzy Security Platform",
-      "headline": "Fuzzy inference platform for system security assessment",
+      "headline": "Fuzzy inference platform for security risk assessment",
       "title": "Communication security risk",
       "stickyTitle": "Security risk assessment (SR)",
       "docs": {
@@ -937,7 +937,7 @@
       "results": {
         "title": "Calculation Result",
         "value": "Security risk value (SR):",
-        "level": "Risk level:"
+        "level": "Security risk level:"
       },
       "membership": {
         "title": "Membership Values",
@@ -963,12 +963,12 @@
         "title": "Interpretation",
         "description": "The system uses 6 zero-order Sugeno rules: EC (kWh/GB), TP (dBm), Lat (ms) → SR. The base covers only 6 term combinations; other inputs fire no rules.",
         "category1": "Low energy consumption (EC): minimal risk when transmit power and latency are low.",
-        "category2": "Medium energy consumption (EC): risk level depends on transmit power and latency.",
+        "category2": "Medium energy consumption (EC): the security risk level depends on transmit power and latency.",
         "category3": "High energy consumption (EC): elevated risk, especially with high transmit power and high latency."
       },
       "training": {
         "badge": "ANFIS",
-        "hint": "ANFIS (Adaptive Neuro-Fuzzy Inference System) fits the singleton consequents and the break points of the triangular membership functions to a dataset with a reference SR index. The 6-rule base stays unchanged.",
+        "hint": "ANFIS (Adaptive Neuro-Fuzzy Inference System) fits the singleton consequents and the break points of the triangular membership functions to a dataset with a reference security risk SR. The 6-rule base stays unchanged.",
         "datasetNote": "The default dataset is security-100.csv: 100 expert-made rows with the columns EC, TP, Lat and the reference SR index. The rows cover all the working input ranges (EC 0.01–0.05 kWh/GB, TP 10–35 dBm, Lat 1–10 ms) and all 6 rules of the base, so the training adjusts every membership function and every consequent.",
         "uploadNote": "Columns EC, TP, Lat, SR. The training / test split (70/30) is made automatically and reproducibly.",
         "changesNote": "Input triangles are given by their break points a, b, c; the output by the singleton values.",
@@ -1011,8 +1011,8 @@
       },
       "results": {
         "title": "Calculation Result",
-        "value": "Intrusion value (IP):",
-        "level": "Intrusion level:"
+        "value": "Intrusion probability value (IP):",
+        "level": "Intrusion probability level:"
       },
       "membership": {
         "title": "Membership Values",
