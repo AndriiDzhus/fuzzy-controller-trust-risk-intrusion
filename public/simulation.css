@@ -340,3 +340,117 @@
   .sim-card-level, .sim-card-radar { grid-column: 1 / -1; }
   .sim-fieldset .input-group { grid-template-columns: 1fr auto; grid-template-areas: "label number" "slider slider"; }
 }
+
+/* ---- data-source switch (simulation vs real device) --------------------- */
+.device-only { display: none; }
+.is-device-mode .sim-only { display: none; }
+.is-device-mode .device-only { display: block; }
+.is-device-mode fieldset.sim-only { display: none; }
+
+.sim-source {
+  display: grid;
+  grid-template-columns: auto auto;
+  align-items: center;
+  gap: 10px 14px;
+  margin-bottom: clamp(12px, 2.5vw, 18px);
+}
+.sim-source-label { font-size: 0.9rem; font-weight: 700; color: #2c3e50; }
+.sim-source-toggle {
+  display: inline-flex;
+  border: 1px solid #d9e1e8;
+  border-radius: 999px;
+  background: #eef2f6;
+  padding: 3px;
+}
+.sim-source-btn {
+  border: none;
+  background: transparent;
+  padding: 6px 16px;
+  border-radius: 999px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #5d6d7e;
+  cursor: pointer;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+.sim-source-btn.is-active { background: #2f80ed; color: #fff; }
+.sim-source-hint { grid-column: 1 / -1; margin: 0; }
+
+/* ---- live readouts (device mode) ---------------------------------------- */
+.sim-live { display: grid; gap: 10px; }
+.sim-live-group {
+  border: 1px solid #e3e8ec;
+  border-left-width: 4px;
+  border-radius: 8px;
+  padding: 8px 12px 10px;
+  min-width: 0;
+}
+.sim-live-group legend, .sim-live-group .sim-live-legend {
+  font-size: 0.78rem; font-weight: 700; color: #2c3e50; margin-bottom: 6px;
+}
+.sim-live-group-trust { border-left-color: #2f80ed; }
+.sim-live-group-security { border-left-color: #8e44ad; }
+.sim-live-group-intrusion { border-left-color: #16a085; }
+.sim-readout {
+  display: grid;
+  grid-template-columns: 3.2rem minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  padding: 5px 0;
+}
+.sim-readout + .sim-readout { border-top: 1px solid #f0f3f6; }
+.sim-readout-sym {
+  display: inline-block;
+  padding: 2px 6px;
+  border-radius: 6px;
+  background: #eef2f6;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #5d6d7e;
+  text-align: center;
+}
+.sim-readout-main { min-width: 0; }
+.sim-readout-label {
+  font-size: 0.8rem; color: #2c3e50; display: block;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.sim-readout-bar {
+  margin-top: 4px; height: 6px; border-radius: 999px; background: #eef2f6; overflow: hidden;
+}
+.sim-readout-fill {
+  height: 100%; width: 0; border-radius: 999px; background: #9fb3c8;
+  transition: width 0.3s ease;
+}
+.sim-live-group-trust .sim-readout-fill { background: #2f80ed; }
+.sim-live-group-security .sim-readout-fill { background: #8e44ad; }
+.sim-live-group-intrusion .sim-readout-fill { background: #16a085; }
+.sim-readout-val {
+  font-variant-numeric: tabular-nums;
+  font-size: 0.92rem; font-weight: 700; color: #2c3e50; text-align: right; min-width: 4.5rem;
+}
+.sim-readout-unit { font-size: 0.72rem; font-weight: 500; color: #95a5a6; margin-left: 2px; }
+.sim-live.is-waiting { opacity: 0.5; }
+
+/* ---- device panel ------------------------------------------------------- */
+.sim-device-row { display: flex; align-items: center; gap: 8px; margin: 6px 0; }
+.sim-device-dot {
+  width: 10px; height: 10px; border-radius: 50%; background: #bdc3c7; flex: none;
+  transition: background-color 0.2s ease;
+}
+.sim-device-dot.is-connecting { background: #f2994a; }
+.sim-device-dot.is-connected { background: #27ae60; }
+.sim-device-dot.is-error { background: #eb5757; }
+.sim-device-status { font-size: 0.85rem; font-weight: 600; color: #2c3e50; }
+.sim-cmd-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.sim-cmd.is-active { background: #2f80ed; border-color: #2f80ed; color: #fff; }
+.sim-cmd[disabled] { opacity: 0.5; cursor: default; }
+
+/* Read-only readouts show in device mode and in scenario mode; hidden only for manual input. */
+.readouts-section { display: block; }
+:root.is-manual-mode:not(.is-device-mode) .readouts-section { display: none; }
+.scenario-only { display: none; }
+:root:not(.is-device-mode):not(.is-manual-mode) .scenario-only { display: block; }
+
+/* Manual inputs show only in simulation mode while the "Manual" scenario is picked. */
+.manual-only { display: none; }
+:root.is-manual-mode:not(.is-device-mode) .manual-only { display: block; }

@@ -89,10 +89,29 @@
         </div>
       </section>
 
+      <!-- Data-source switch: generated scenario vs real device -->
+      <div class="sim-source" role="group" aria-label="data source">
+        <span class="sim-source-label" data-i18n="simulation.source.title"></span>
+        <div class="sim-source-toggle">
+          <button type="button" class="sim-source-btn is-active" id="sim-source-sim" data-source="sim" data-i18n="simulation.source.sim"></button>
+          <button type="button" class="sim-source-btn" id="sim-source-device" data-source="device" data-i18n="simulation.source.device"></button>
+        </div>
+        <p class="sim-hint sim-source-hint" data-i18n="simulation.source.hint"></p>
+      </div>
+
       <!-- Inputs and scenario -->
       <div class="workspace sim-workspace">
-        <div class="input-section">
+        <!-- Read-only readouts: scenario values (simulation) or device telemetry (device mode) -->
+        <div class="input-section readouts-section">
           <h2 class="workspace-heading" data-i18n="simulation.inputsTitle"></h2>
+          <p class="sim-hint device-only" data-i18n="simulation.device.liveHint"></p>
+          <p class="sim-hint scenario-only" data-i18n="simulation.scenarioReadHint"></p>
+          <div class="sim-live" id="sim-live"></div>
+        </div>
+
+        <!-- Manual inputs (simulation mode, only while the "Manual" scenario is selected) -->
+        <div class="input-section manual-only" id="sim-manual">
+          <h2 class="workspace-heading" data-i18n="simulation.manualTitle"></h2>
           <p class="sim-hint" data-i18n="simulation.inputsHint"></p>
 
           <fieldset class="sim-fieldset sim-fieldset-trust">
@@ -154,6 +173,39 @@
         </div>
 
         <div class="output-section sim-controls">
+          <!-- Device panel (device mode) -->
+          <div class="device-only sim-device">
+            <h2 class="workspace-heading" data-i18n="simulation.device.title"></h2>
+            <label class="sim-control">
+              <span data-i18n="simulation.device.picker"></span>
+              <select id="sim-device"></select>
+            </label>
+            <div class="sim-device-row">
+              <span class="sim-device-dot" id="sim-device-dot"></span>
+              <span class="sim-device-status" id="sim-device-status"></span>
+            </div>
+            <p class="sim-hint" id="sim-device-note"></p>
+            <div class="sim-buttons">
+              <button type="button" class="docs-btn sim-btn-primary" id="sim-connect"><span data-i18n="simulation.device.connect"></span></button>
+              <button type="button" class="docs-btn docs-btn-alt" id="sim-refresh"><span data-i18n="simulation.device.refresh"></span></button>
+            </div>
+            <div class="sim-buttons">
+              <button type="button" class="docs-btn sim-btn-primary" id="sim-listen" disabled><svg class="btn-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 4l14 8-14 8z"/></svg><span data-i18n="simulation.device.listen"></span></button>
+              <button type="button" class="docs-btn docs-btn-alt" id="sim-liststop" hidden><svg class="btn-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4h4v16H7zM13 4h4v16h-4z"/></svg><span data-i18n="simulation.device.stop"></span></button>
+            </div>
+
+            <h2 class="workspace-heading sim-heading-gap" data-i18n="simulation.device.commandTitle"></h2>
+            <p class="sim-hint" data-i18n="simulation.device.commandHint"></p>
+            <div class="sim-cmd-grid">
+              <button type="button" class="docs-btn docs-btn-alt sim-cmd" data-cmd="normal" disabled data-i18n="simulation.commands.normal"></button>
+              <button type="button" class="docs-btn docs-btn-alt sim-cmd" data-cmd="ddos" disabled data-i18n="simulation.commands.ddos"></button>
+              <button type="button" class="docs-btn docs-btn-alt sim-cmd" data-cmd="scan" disabled data-i18n="simulation.commands.scan"></button>
+              <button type="button" class="docs-btn docs-btn-alt sim-cmd" data-cmd="exhaustion" disabled data-i18n="simulation.commands.exhaustion"></button>
+            </div>
+          </div>
+
+          <!-- Scenario controls (simulation mode) -->
+          <div class="sim-only">
           <h2 class="workspace-heading" data-i18n="simulation.scenarioTitle"></h2>
           <label class="sim-control">
             <span data-i18n="simulation.scenario"></span>
@@ -194,6 +246,7 @@
             <button type="button" class="docs-btn sim-btn-primary" id="sim-pause" hidden><svg class="btn-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4h4v16H7zM13 4h4v16h-4z"/></svg><span data-i18n="simulation.pause"></span></button>
             <button type="button" class="docs-btn docs-btn-alt" id="sim-stepbtn"><svg class="btn-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4l10 8-10 8z"/><path d="M18 4v16"/></svg><span data-i18n="simulation.stepBtn"></span></button>
             <button type="button" class="docs-btn docs-btn-alt" id="sim-reset"><svg class="btn-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12a8 8 0 1 0 3-6.2"/><path d="M4 4v5h5"/></svg><span data-i18n="simulation.reset"></span></button>
+          </div>
           </div>
 
           <h2 class="workspace-heading sim-heading-gap" data-i18n="simulation.modelTitle"></h2>
