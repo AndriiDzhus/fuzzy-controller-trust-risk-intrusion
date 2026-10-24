@@ -231,13 +231,13 @@
       return { value: result.value, term: result.dominantTerm, noRuleFired: Boolean(result.noRuleFired) };
     }
     const query = state.model === "trained" ? "?model=trained" : "";
-    let response = await fetch(`/api/controllers/${name}/calculate${query}`, {
+    let response = await fetch(`api/controllers/${name}/calculate${query}`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
     });
     if (response.status === 404 && query) {
-      response = await fetch(`/api/controllers/${name}/calculate`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
+      response = await fetch(`api/controllers/${name}/calculate`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
     }
     if (!response.ok) return null;
     const result = await response.json();
@@ -766,7 +766,7 @@
   /** API source: real device served by the gateway backend (HA add-on). */
   function apiSource(id) {
     let es = null, poll = null;
-    const url = (suffix) => `/api/devices/${encodeURIComponent(id)}${suffix}`;
+    const url = (suffix) => `api/devices/${encodeURIComponent(id)}${suffix}`;
     return {
       id, isDemo: false,
       async connect() { const r = await fetch(url("")).catch(() => null); return Boolean(r && r.ok); },
@@ -854,7 +854,7 @@
     const select = $("sim-device");
     select.innerHTML = "";
     let real = [];
-    try { const r = await fetch("/api/devices"); if (r.ok) { const d = await r.json(); if (Array.isArray(d)) real = d; } } catch (_) { /* no backend */ }
+    try { const r = await fetch("api/devices"); if (r.ok) { const d = await r.json(); if (Array.isArray(d)) real = d; } } catch (_) { /* no backend */ }
     real.forEach((dev) => { const o = document.createElement("option"); o.value = dev.id; o.textContent = dev.name || dev.id; select.appendChild(o); });
     const demo = document.createElement("option"); demo.value = "demo"; demo.textContent = t("simulation.device.demo"); select.appendChild(demo);
     $("sim-device-note").textContent = real.length ? "" : t("simulation.device.noDevices");
