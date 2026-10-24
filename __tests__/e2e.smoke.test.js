@@ -10,6 +10,7 @@ describe("E2E smoke: navigation and i18n", () => {
       expect(res.status).toBe(200);
       expect(res.text).toContain('href="index.html"');
       expect(res.text).toContain('href="security.html"');
+      expect(res.text).toContain('href="simulation.html"');
       expect(res.text).toContain('class="result-term"');
       expect(res.text).not.toContain("result-explanation");
     }
@@ -25,6 +26,21 @@ describe("E2E smoke: navigation and i18n", () => {
       expect(res.text).toContain('value="uk"');
       expect(res.text).toContain('value="en"');
     }
+  });
+
+  test("the simulation page links the controllers, has the language switcher and the joint assessment", async () => {
+    const res = await request(app).get("/simulation.html");
+    expect(res.status).toBe(200);
+    ["index.html", "security.html", "intrusion.html", "simulation.html"].forEach((page) => expect(res.text).toContain(`href="${page}"`));
+    expect(res.text).toContain('id="languageSwitcher"');
+    expect(res.text).toContain('id="sim-level"');
+    expect(res.text).toContain('id="sim-timeline"');
+    expect(res.text).toContain('src="simulation.js"');
+    expect(res.text).not.toContain("controllers-bundle.js");
+    const i18n = await request(app).get("/i18n.json");
+    expect(i18n.body.uk.navigation.simulation).toBeTruthy();
+    expect(i18n.body.en.simulation.levelTitle).toBeTruthy();
+    expect(i18n.body.uk.simulation.status.critical).toBeTruthy();
   });
 
   test("i18n dictionary has docs popup labels", async () => {

@@ -1,0 +1,342 @@
+/* Simulation page: joint assessment of the three controllers. */
+
+.sim-summary {
+  margin-bottom: clamp(16px, 3vw, 24px);
+}
+
+.sim-cards {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr)) minmax(0, 1.7fr);
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.sim-card {
+  border: 1px solid #ecf0f1;
+  border-radius: 10px;
+  background: #f8f9fa;
+  padding: 12px 14px;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.sim-card h3 {
+  margin: 0 0 6px;
+  font-size: 0.86rem;
+  font-weight: 700;
+  color: #2c3e50;
+  line-height: 1.25;
+}
+
+.sim-symbol {
+  display: inline-block;
+  margin-left: 4px;
+  padding: 1px 6px;
+  border-radius: 6px;
+  background: #e8edf2;
+  font-size: 0.72rem;
+  color: #5d6d7e;
+}
+
+.sim-gauge {
+  width: 100%;
+  max-width: 150px;
+  height: 76px;
+  display: block;
+}
+
+.sim-card-value {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #2c3e50;
+  line-height: 1.1;
+  margin-top: 4px;
+}
+
+.sim-card-term {
+  font-size: 0.8rem;
+  color: #5d6d7e;
+}
+
+.sim-card-trust .sim-card-value { color: #2f80ed; }
+.sim-card-security .sim-card-value { color: #8e44ad; }
+.sim-card-intrusion .sim-card-value { color: #16a085; }
+
+.sim-card-level {
+  align-items: stretch;
+  text-align: left;
+  background: #f3f7fb;
+  border-color: #d9e4ef;
+}
+
+.sim-level-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.sim-level-value {
+  font-size: 2.4rem;
+  font-weight: 700;
+  color: #2c3e50;
+  line-height: 1;
+}
+
+.sim-level-term {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #2c3e50;
+}
+
+.sim-status {
+  display: inline-block;
+  margin-top: 4px;
+  padding: 2px 10px;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #fff;
+  background: #27ae60;
+}
+
+.sim-status.is-warning { background: #f2994a; }
+.sim-status.is-critical { background: #eb5757; }
+.sim-status.is-unknown { background: #95a5a6; }
+
+/* The track shows the policy zones in pale colours (gradient set from the script), the fill is
+   clipped to the current level and coloured by the status; ::after draws the zone dividers. */
+.sim-level-bar {
+  --sim-dividers: none;
+  position: relative;
+  margin-top: 10px;
+  height: 10px;
+  border-radius: 999px;
+  background: #e6ebf0;
+  overflow: hidden;
+}
+
+.sim-level-bar::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image: var(--sim-dividers);
+  pointer-events: none;
+}
+
+.sim-level-bar-fill {
+  height: 100%;
+  width: 100%;
+  background: #27ae60;
+  clip-path: inset(0 100% 0 0);
+  transition: clip-path 0.25s ease, background-color 0.25s ease;
+}
+
+.sim-level-bar-fill.is-warning { background: #f2994a; }
+.sim-level-bar-fill.is-critical { background: #eb5757; }
+.sim-level-bar-fill.is-unknown { background: #95a5a6; }
+
+.sim-level-meta {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: 8px;
+  font-size: 0.78rem;
+  color: #5d6d7e;
+}
+
+.sim-charts {
+  display: grid;
+  grid-template-columns: minmax(0, 2.6fr) minmax(250px, 1fr);
+  gap: 12px;
+}
+
+.sim-card-radar { padding-bottom: 6px; justify-content: center; }
+
+.sim-radar {
+  width: 100%;
+  max-width: 300px;
+  height: 220px;
+  display: block;
+}
+
+.sim-timeline-wrap {
+  border: 1px solid #ecf0f1;
+  border-radius: 10px;
+  background: #f8f9fa;
+  padding: 12px 14px;
+}
+
+.sim-timeline-wrap h3 {
+  margin: 0 0 6px;
+  font-size: 0.86rem;
+  font-weight: 700;
+  color: #2c3e50;
+}
+
+.sim-timeline {
+  width: 100%;
+  height: 220px;
+  display: block;
+  cursor: crosshair;
+}
+
+.graph-tooltip.is-sim { min-width: 330px; }
+
+.graph-tooltip .tt-foot {
+  margin-top: 6px;
+  padding-top: 6px;
+  border-top: 1px solid rgba(255, 255, 255, 0.2);
+  color: #d6e0ea;
+}
+
+/* inputs and scenario */
+.sim-workspace {
+  grid-template-columns: minmax(0, 1.5fr) minmax(260px, 0.8fr);
+}
+
+.sim-hint {
+  margin: 0 0 10px;
+  font-size: 0.8rem;
+  color: #5d6d7e;
+  line-height: 1.4;
+}
+
+.sim-fieldset {
+  border: 1px solid #e3e8ec;
+  border-left-width: 4px;
+  border-radius: 8px;
+  padding: 8px 12px 10px;
+  margin: 0 0 10px;
+  min-width: 0;
+}
+
+.sim-fieldset legend {
+  padding: 0 6px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #2c3e50;
+}
+
+.sim-fieldset-trust { border-left-color: #2f80ed; }
+.sim-fieldset-security { border-left-color: #8e44ad; }
+.sim-fieldset-intrusion { border-left-color: #16a085; }
+
+.sim-fieldset .input-group {
+  grid-template-columns: minmax(120px, 190px) minmax(0, 1fr) auto;
+}
+
+.sim-controls .sim-control {
+  display: grid;
+  gap: 4px;
+  margin-bottom: 10px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #2c3e50;
+}
+
+.sim-controls select,
+.sim-policy input {
+  padding: 6px 8px;
+  border: 2px solid #bdc3c7;
+  border-radius: 7px;
+  font-size: 0.85rem;
+  background: #fff;
+}
+
+.sim-control-range input[type="range"] {
+  width: 100%;
+  accent-color: #3498db;
+  margin: 0;
+}
+
+.sim-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.sim-btn-primary {
+  background: #2f80ed;
+  border-color: #2f80ed;
+  color: #fff;
+}
+
+.sim-btn-primary:hover { background: #1f6fd8; }
+.sim-btn-primary[disabled] { opacity: 0.5; cursor: default; }
+
+.sim-heading-gap { margin-top: 18px; }
+
+.sim-policy label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 8px;
+  font-size: 0.82rem;
+  color: #2c3e50;
+}
+
+.sim-policy input.value-input { width: 4rem; }
+
+.sim-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #f2994a;
+  flex: none;
+}
+
+.sim-dot.is-critical { background: #eb5757; }
+
+/* log */
+.sim-log {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 6px;
+  max-height: 220px;
+  overflow: auto;
+}
+
+.sim-log li {
+  padding: 6px 10px;
+  border-radius: 8px;
+  border-left: 4px solid #27ae60;
+  background: #fff;
+  font-size: 0.82rem;
+  color: #2c3e50;
+}
+
+.sim-log li.is-warning { border-left-color: #f2994a; }
+.sim-log li.is-critical { border-left-color: #eb5757; }
+.sim-log li.sim-log-empty { border-left-color: #bdc3c7; color: #7f8c8d; }
+
+.sim-log-step {
+  display: inline-block;
+  min-width: 5.5em;
+  color: #7f8c8d;
+}
+
+.sim-about p {
+  margin: 0 0 8px;
+  font-size: 0.86rem;
+  line-height: 1.5;
+  color: #2c3e50;
+}
+
+@media (max-width: 960px) {
+  .sim-cards { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .sim-card-level { grid-column: 1 / -1; }
+  .sim-charts { grid-template-columns: 1fr; }
+  .sim-workspace { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 560px) {
+  .sim-cards { grid-template-columns: 1fr 1fr; }
+  .sim-card-level, .sim-card-radar { grid-column: 1 / -1; }
+  .sim-fieldset .input-group { grid-template-columns: 1fr auto; grid-template-areas: "label number" "slider slider"; }
+}
