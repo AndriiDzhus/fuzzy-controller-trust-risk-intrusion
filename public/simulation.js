@@ -201,8 +201,9 @@
     duration: 60,
     noise: 1,
     speed: 1,
-    model: "base",
+    model: "trained",
     policy: { ...DEFAULT_POLICY },
+    source: "sim",
     step: 0,
     playing: false,
     timer: null,
@@ -307,6 +308,7 @@
       if (state.history.length > 600) state.history.shift();
       logTransition(entry);
       render(entry);
+      renderLive(inputs); // keep the read-only readouts in sync (scenario and device modes)
       state.step += 1;
     } finally {
       state.busy = false;
@@ -376,6 +378,7 @@
     $("sim-scenario-params").hidden = manual;
     $("sim-play").disabled = manual;
     $("sim-scenario-note").textContent = t(`simulation.scenarios.${state.scenario}Note`);
+    document.documentElement.classList.toggle("is-manual-mode", manual && state.source === "sim");
   }
 
   // --- rendering -------------------------------------------------------------
@@ -690,7 +693,12 @@
     $("sim-warn").value = state.policy.warn;
     $("sim-critical").value = state.policy.critical;
     root.addEventListener("resize", () => { const last = state.history[state.history.length - 1]; if (last) render(last); });
-    root.addEventListener("languageChanged", () => { const last = state.history[state.history.length - 1]; if (last) render(last); renderLog(); updateScenarioControls(); });
+    root.addEventListener("languageChanged", () => {
+      const last = state.history[state.history.length - 1]; if (last) render(last); renderLog(); updateScenarioControls();
+      updateConnectBtn();
+      if (device.connected) { setDeviceStatus("connected"); if (device.source && device.source.isDemo) $("sim-device-note").textContent = t("simulation.device.demoNote"); }
+      else { setDeviceStatus("idle"); $("sim-device-note").textContent = $("sim-device").options.length <= 1 ? t("simulation.device.noDevices") : ""; }
+    });
   }
 
   /** Recompute the recorded history (after a change of model or policy). */
@@ -706,6 +714,220 @@
     if (!inputsList.length) reset();
   }
 
+  // ---------------------------------------------------------------------------
+  // Data source: generated scenario (simulation) vs real device (ESP32)
+  // ---------------------------------------------------------------------------
+  // In device mode the nine inputs are not set by hand but received, window by
+  // window, from a connected IoT device through the gateway. The source is an
+  // object with connect()/start(onReading)/stop()/command(name); two are
+  // provided: a demo source (readings produced locally, so the interface is
+  // usable before a real device exists) and an API source that talks to the
+  // gateway backend (the Home Assistant add-on) at /api/devices/...
+  const LABEL_KEYS = {
+    errors: "index.inputs.errors", connections: "index.inputs.connections", bytes: "index.inputs.bytes",
+    energy: "security.inputs.energy", strength: "security.inputs.strength", response: "security.inputs.response",
+    packets: "intrusion.inputs.packets", rate: "intrusion.inputs.rate", weight: "intrusion.inputs.weight",
+  };
+  const UNITS = { bytes: "log₁₀", energy: "kWh/GB", strength: "dBm", response: "ms", rate: "п/с" };
+
+  const device = { source: null, connected: false, listening: false, mode: "normal" };
+
+  /** Demo source: free-running readings generated in the browser. */
+  function demoSource() {
+    const rnd = createRandom(1234);
+    const current = { ...BASELINE };
+    let mode = "normal", timer = null;
+    const targetFor = (name) => {
+      const base = { ...BASELINE };
+      const sc = SCENARIOS[name];
+      if (sc && sc.phases) sc.phases.forEach((ph) => Object.assign(base, ph.target));
+      return base;
+    };
+    const reading = () => {
+      const tgt = targetFor(mode);
+      INPUTS.forEach((input) => {
+        const k = input.key;
+        const want = tgt[k] !== undefined ? tgt[k] : BASELINE[k];
+        current[k] += (want - current[k]) * 0.25;
+        const span = input.max - input.min;
+        current[k] = clamp(current[k] + rnd.normal() * span * 0.015, input.min, input.max);
+      });
+      return { ...current };
+    };
+    return {
+      id: "demo", isDemo: true,
+      async connect() { return true; },
+      start(onReading) { timer = setInterval(() => onReading(reading()), 1000); },
+      stop() { clearInterval(timer); timer = null; },
+      async command(name) { mode = name; },
+    };
+  }
+
+  /** API source: real device served by the gateway backend (HA add-on). */
+  function apiSource(id) {
+    let es = null, poll = null;
+    const url = (suffix) => `/api/devices/${encodeURIComponent(id)}${suffix}`;
+    return {
+      id, isDemo: false,
+      async connect() { const r = await fetch(url("")).catch(() => null); return Boolean(r && r.ok); },
+      start(onReading) {
+        try {
+          es = new EventSource(url("/stream"));
+          es.onmessage = (ev) => { try { const d = JSON.parse(ev.data); if (d && d.inputs) onReading(d.inputs); } catch (_) { /* skip */ } };
+        } catch (_) {
+          poll = setInterval(async () => {
+            const r = await fetch(url("/reading")).catch(() => null);
+            if (r && r.ok) { const d = await r.json(); if (d && d.inputs) onReading(d.inputs); }
+          }, 1000);
+        }
+      },
+      stop() { if (es) { es.close(); es = null; } if (poll) { clearInterval(poll); poll = null; } },
+      async command(name) {
+        await fetch(url("/command"), { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ scenario: name }) }).catch(() => { /* ignore */ });
+      },
+    };
+  }
+
+  function buildLive() {
+    const host = $("sim-live");
+    host.innerHTML = "";
+    CONTROLLERS.forEach((name) => {
+      const group = document.createElement("div");
+      group.className = `sim-live-group sim-live-group-${name}`;
+      const legend = document.createElement("div");
+      legend.className = "sim-live-legend";
+      legend.innerHTML = `<span data-i18n="simulation.controllers.${name}"></span> · <span data-i18n="simulation.inputGroups.${name}"></span>`;
+      group.appendChild(legend);
+      INPUTS.filter((i) => i.controller === name).forEach((input) => {
+        const row = document.createElement("div");
+        row.className = "sim-readout";
+        row.innerHTML =
+          `<span class="sim-readout-sym">${input.symbol}</span>` +
+          `<span class="sim-readout-main"><span class="sim-readout-label" data-i18n="${LABEL_KEYS[input.key]}"></span>` +
+          `<span class="sim-readout-bar"><span class="sim-readout-fill" id="live-fill-${input.key}"></span></span></span>` +
+          `<span class="sim-readout-val"><span id="live-val-${input.key}">—</span>` +
+          (UNITS[input.key] ? `<span class="sim-readout-unit">${UNITS[input.key]}</span>` : "") + `</span>`;
+        group.appendChild(row);
+      });
+      host.appendChild(group);
+    });
+    if (root.i18nHelper) root.i18nHelper.applyTranslations(host);
+  }
+
+  function renderLive(inputs) {
+    const host = $("sim-live");
+    host.classList.toggle("is-waiting", !inputs);
+    INPUTS.forEach((input) => {
+      const val = $(`live-val-${input.key}`), fill = $(`live-fill-${input.key}`);
+      if (!val || !fill) return;
+      if (!inputs) { val.textContent = "—"; fill.style.width = "0"; return; }
+      val.textContent = fmt(inputs[input.key], input.digits);
+      fill.style.width = `${clamp((inputs[input.key] - input.min) / (input.max - input.min || 1), 0, 1) * 100}%`;
+    });
+  }
+
+  function blankRender() {
+    CONTROLLERS.forEach((name) => {
+      $(`sim-out-${name}`).textContent = "—"; $(`sim-term-${name}`).textContent = "—";
+      drawGauge($(`sim-gauge-${name}`), null, name);
+    });
+    $("sim-level").textContent = "—"; $("sim-level-term").textContent = "—";
+    $("sim-status").textContent = t("simulation.device.waiting", ""); $("sim-status").className = "sim-status is-unknown";
+    styleLevelBar($("sim-level-bar"), null, "unknown");
+    $("sim-weakest").textContent = "—"; $("sim-step").textContent = "0";
+    drawTimeline($("sim-timeline"));
+    drawRadar($("sim-radar"), { partial: { trust: null, security: null, intrusion: null }, level: null });
+  }
+
+  function setDeviceStatus(s) {
+    const dot = $("sim-device-dot"), label = $("sim-device-status");
+    dot.className = "sim-device-dot" + (s === "idle" ? "" : ` is-${s}`);
+    const key = { idle: "statusIdle", connecting: "statusConnecting", connected: "statusConnected", error: "statusError" }[s];
+    label.textContent = t(`simulation.device.${key}`);
+  }
+  function setCmdEnabled(on) { document.querySelectorAll(".sim-cmd").forEach((b) => { b.disabled = !on; }); }
+  function updateConnectBtn() {
+    $("sim-connect").querySelector("span").textContent = t(device.connected ? "simulation.device.disconnect" : "simulation.device.connect");
+  }
+
+  async function loadDevices() {
+    const select = $("sim-device");
+    select.innerHTML = "";
+    let real = [];
+    try { const r = await fetch("/api/devices"); if (r.ok) { const d = await r.json(); if (Array.isArray(d)) real = d; } } catch (_) { /* no backend */ }
+    real.forEach((dev) => { const o = document.createElement("option"); o.value = dev.id; o.textContent = dev.name || dev.id; select.appendChild(o); });
+    const demo = document.createElement("option"); demo.value = "demo"; demo.textContent = t("simulation.device.demo"); select.appendChild(demo);
+    $("sim-device-note").textContent = real.length ? "" : t("simulation.device.noDevices");
+  }
+
+  async function connectDevice() {
+    disconnectDevice();
+    const id = $("sim-device").value;
+    setDeviceStatus("connecting");
+    const src = id === "demo" ? demoSource() : apiSource(id);
+    const ok = await src.connect();
+    if (!ok) { setDeviceStatus("error"); device.source = null; return; }
+    device.source = src; device.connected = true;
+    setDeviceStatus("connected");
+    $("sim-device-note").textContent = src.isDemo ? t("simulation.device.demoNote") : "";
+    $("sim-listen").disabled = false;
+    setCmdEnabled(true);
+    updateConnectBtn();
+    setActiveCmd(device.mode);
+  }
+  function disconnectDevice() {
+    stopListening();
+    if (device.source) device.source.stop();
+    device.source = null; device.connected = false;
+    $("sim-listen").disabled = true; setCmdEnabled(false);
+    setDeviceStatus("idle"); updateConnectBtn();
+  }
+  function startListening() {
+    if (!device.source || device.listening) return;
+    device.listening = true;
+    $("sim-listen").hidden = true; $("sim-liststop").hidden = false;
+    device.source.start((inputs) => { recordStep(inputs, false); });
+  }
+  function stopListening() {
+    if (device.source && device.listening) device.source.stop();
+    device.listening = false;
+    if ($("sim-listen")) $("sim-listen").hidden = false;
+    if ($("sim-liststop")) $("sim-liststop").hidden = true;
+  }
+  function setActiveCmd(name) {
+    document.querySelectorAll(".sim-cmd").forEach((b) => b.classList.toggle("is-active", b.dataset.cmd === name));
+  }
+  async function sendCommand(name) {
+    if (!device.source) return;
+    device.mode = name; setActiveCmd(name);
+    await device.source.command(name);
+  }
+
+  function setSource(src) {
+    if (src === state.source) return;
+    pause(); disconnectDevice();
+    state.source = src;
+    document.documentElement.classList.toggle("is-device-mode", src === "device");
+    $("sim-source-sim").classList.toggle("is-active", src === "sim");
+    $("sim-source-device").classList.toggle("is-active", src === "device");
+    state.step = 0; state.history = []; state.log = []; state.lastStatus = null;
+    renderLog();
+    updateScenarioControls(); // keeps is-manual-mode in sync with the active source
+    if (src === "sim") { reset(); }
+    else { renderLive(null); blankRender(); }
+  }
+
+  function bindDevice() {
+    $("sim-source-sim").addEventListener("click", () => setSource("sim"));
+    $("sim-source-device").addEventListener("click", () => setSource("device"));
+    $("sim-connect").addEventListener("click", () => { if (device.connected) disconnectDevice(); else connectDevice(); });
+    $("sim-refresh").addEventListener("click", loadDevices);
+    $("sim-device").addEventListener("change", () => { if (device.connected) disconnectDevice(); });
+    $("sim-listen").addEventListener("click", startListening);
+    $("sim-liststop").addEventListener("click", stopListening);
+    document.querySelectorAll(".sim-cmd").forEach((b) => b.addEventListener("click", () => sendCommand(b.dataset.cmd)));
+  }
+
   async function init() {
     if (root.i18nHelper) {
       await root.i18nHelper.init();
@@ -713,11 +935,20 @@
     }
     bindInputs();
     bindControls();
+    buildLive();
+    bindDevice();
     bindTimelineTooltip($("sim-timeline"));
     $("sim-scenario").value = state.scenario;
     updateScenarioControls();
+    setDeviceStatus("idle");
+    updateConnectBtn();
+    await loadDevices();
     const trainedAvailable = Boolean(root.fuzzyControllers?.security?.variant?.("trained") || !root.fuzzyControllers);
-    if (!trainedAvailable) $("sim-model").querySelector('option[value="trained"]').disabled = true;
+    if (!trainedAvailable) {
+      $("sim-model").querySelector('option[value="trained"]').disabled = true;
+      state.model = "base"; // fall back to expert parameters if trained ones are unavailable
+    }
+    $("sim-model").value = state.model;
     await reset();
     document.documentElement.classList.remove("is-loading");
   }

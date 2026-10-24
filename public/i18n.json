@@ -541,7 +541,7 @@
     "simulation": {
       "pageTitle": "Комплексна оцінка | Платформа нечіткого виводу",
       "headline": "Комплексне оцінювання інформаційної безпеки пристрою Інтернету речей",
-      "description": "Безпеку IoT-пристрою неможливо охарактеризувати одним показником, тому три контролери працюють разом на одному потоці спостережень: індекс довіри характеризує пристрій як учасника мережі, ризик безпеки – небезпечність умов його функціонування, ймовірність вторгнення – наявність атаки тут і зараз. Їх поєднання дає рівень інформаційної безпеки пристрою. Запустіть сценарій атаки або змінюйте входи вручну.",
+      "description": "Безпеку IoT-пристрою неможливо охарактеризувати одним показником, тому три контролери працюють разом на одному потоці спостережень: індекс довіри характеризує пристрій як учасника мережі, ризик безпеки – небезпечність умов його функціонування, ймовірність вторгнення – наявність атаки тут і зараз. Їх поєднання дає рівень інформаційної безпеки пристрою. У режимі «Симуляція» запустіть сценарій атаки; у режимі «Реальний пристрій» підключіть пристрій і почніть прослуховування показників.",
       "controllers": {
         "trust": "Індекс довіри",
         "security": "Ризик безпеки",
@@ -633,7 +633,44 @@
       },
       "tooltip": {
         "outputs": "Оцінки на цьому кроці (0–100)"
-      }
+      },
+      "source": {
+        "title": "Джерело даних",
+        "sim": "Симуляція",
+        "device": "Реальний пристрій",
+        "hint": "Режим «Симуляція» генерує спостереження за сценаріями. Режим «Реальний пристрій» отримує показники з підключеного пристрою IoT (ESP32) через шлюз."
+      },
+      "device": {
+        "title": "Підключення пристрою",
+        "picker": "Пристрій",
+        "refresh": "Оновити список",
+        "demo": "Демонстраційний пристрій",
+        "noDevices": "Реальних пристроїв не знайдено — доступний лише демонстраційний. Пристрої з’являться тут після розгортання застосунку на шлюзі (Home Assistant).",
+        "demoNote": "Демонстраційний пристрій формує показники локально у браузері — щоб побачити роботу інтерфейсу до підключення реального ESP32.",
+        "connect": "Підключити",
+        "disconnect": "Відключити",
+        "statusIdle": "Не підключено",
+        "statusConnecting": "Підключення…",
+        "statusConnected": "Підключено",
+        "statusError": "Пристрій недоступний",
+        "listen": "Почати прослуховування",
+        "stop": "Зупинити",
+        "listening": "Прослуховування активне",
+        "reading": "Отримано показників",
+        "commandTitle": "Команди пристрою",
+        "commandHint": "Надіслати пристрою команду переходу в режим трафіку (на ізольованому стенді). У демонстраційному режимі команда змінює показники локально.",
+        "liveTitle": "Показники пристрою",
+        "liveHint": "Поточні значення дев’яти вхідних величин, отримані з пристрою за останнє вікно спостереження (лише для перегляду).",
+        "waiting": "Очікування показників…"
+      },
+      "commands": {
+        "normal": "Норма",
+        "ddos": "DDoS",
+        "scan": "Сканування",
+        "exhaustion": "Вичерпання"
+      },
+      "manualTitle": "Вхідні параметри (ручне керування)",
+      "scenarioReadHint": "Поточні значення дев’яти вхідних величин за сценарієм (лише для перегляду) — видно, як вони змінюються під час атаки."
     }
   },
   "en": {
@@ -1159,7 +1196,7 @@
     "simulation": {
       "pageTitle": "Joint Assessment | Fuzzy Security Platform",
       "headline": "Joint information-security assessment of an IoT device",
-      "description": "The security of an IoT device cannot be described by a single indicator, so the three controllers work together on one stream of observations: the trust index characterises the device as a participant of the network, the security risk the danger of its operating conditions, the intrusion probability the presence of an attack here and now. Their combination gives the information-security level of the device. Run an attack scenario or change the inputs by hand.",
+      "description": "The security of an IoT device cannot be described by a single indicator, so the three controllers work together on one stream of observations: the trust index characterises the device as a participant of the network, the security risk the danger of its operating conditions, the intrusion probability the presence of an attack here and now. Their combination gives the information-security level of the device. In Simulation mode run an attack scenario; in Real-device mode connect a device and start listening to its readings.",
       "controllers": {
         "trust": "Trust index",
         "security": "Security risk",
@@ -1251,7 +1288,44 @@
       },
       "tooltip": {
         "outputs": "Assessments at this step (0–100)"
-      }
+      },
+      "source": {
+        "title": "Data source",
+        "sim": "Simulation",
+        "device": "Real device",
+        "hint": "“Simulation” generates observations from scenarios. “Real device” receives features from a connected IoT device (ESP32) through the gateway."
+      },
+      "device": {
+        "title": "Device connection",
+        "picker": "Device",
+        "refresh": "Refresh list",
+        "demo": "Demo device",
+        "noDevices": "No real devices found — only the demo device is available. Devices appear here once the app is deployed on the gateway (Home Assistant).",
+        "demoNote": "The demo device produces readings locally in the browser, so the interface can be shown before a real ESP32 is connected.",
+        "connect": "Connect",
+        "disconnect": "Disconnect",
+        "statusIdle": "Not connected",
+        "statusConnecting": "Connecting…",
+        "statusConnected": "Connected",
+        "statusError": "Device unavailable",
+        "listen": "Start listening",
+        "stop": "Stop",
+        "listening": "Listening",
+        "reading": "Readings received",
+        "commandTitle": "Device commands",
+        "commandHint": "Send the device a command to enter a traffic mode (on the isolated test bench). In demo mode the command changes the readings locally.",
+        "liveTitle": "Device readings",
+        "liveHint": "Current values of the nine inputs received from the device for the last observation window (read-only).",
+        "waiting": "Waiting for readings…"
+      },
+      "commands": {
+        "normal": "Normal",
+        "ddos": "DDoS",
+        "scan": "Scan",
+        "exhaustion": "Exhaustion"
+      },
+      "manualTitle": "Input parameters (manual control)",
+      "scenarioReadHint": "Current values of the nine inputs produced by the scenario (read-only) — you can see them change during the attack."
     }
   }
 }
