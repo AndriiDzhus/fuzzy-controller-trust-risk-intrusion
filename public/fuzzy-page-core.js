@@ -2315,7 +2315,7 @@ async function calculateController(controller, payload) {
     return normalizeCalculateResult(local.calculate(values), values);
   }
 
-  const response = await fetch(`/api/controllers/${controller}/calculate`, {
+  const response = await fetch(`api/controllers/${controller}/calculate`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(withModelParams(payload)),
@@ -2332,12 +2332,12 @@ async function loadMembershipFunctions(controller) {
   }
 
   const response = activeModel.params
-    ? await fetch(`/api/controllers/${controller}/membership-functions`, {
+    ? await fetch(`api/controllers/${controller}/membership-functions`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(withModelParams({})),
       })
-    : await fetch(`/api/controllers/${controller}/membership-functions`);
+    : await fetch(`api/controllers/${controller}/membership-functions`);
   if (!response.ok) return null;
   return response.json();
 }

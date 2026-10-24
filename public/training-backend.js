@@ -30,13 +30,13 @@
     mode: "remote",
 
     async datasetInfo(controller) {
-      const response = await fetch(`/api/controllers/${controller}/dataset/info`);
+      const response = await fetch(`api/controllers/${controller}/dataset/info`);
       if (!response.ok) throw new Error(`dataset info: HTTP ${response.status}`);
       return response.json();
     },
 
     async downloadDataset(controller) {
-      const response = await fetch(`/api/controllers/${controller}/dataset`);
+      const response = await fetch(`api/controllers/${controller}/dataset`);
       if (!response.ok) throw new Error(`dataset: HTTP ${response.status}`);
       const blob = await response.blob();
       return { blob, filename: `${controller}-100.xlsx`, rows: Number(response.headers.get("X-Row-Count")) || null };
@@ -48,7 +48,7 @@
         if (value !== undefined && value !== null && value !== "") query.set(key, String(value));
       });
       const bytes = await readFileBytes(file);
-      const response = await fetch(`/api/training/${controller}/jobs?${query}`, {
+      const response = await fetch(`api/training/${controller}/jobs?${query}`, {
         method: "POST",
         headers: { "Content-Type": "application/octet-stream" },
         body: bytes,
@@ -61,7 +61,7 @@
         throw error;
       }
       const job = body;
-      const events = new EventSource(`/api/training/jobs/${job.id}/events`);
+      const events = new EventSource(`api/training/jobs/${job.id}/events`);
       let finished = false;
       events.addEventListener("progress", (event) => {
         const { entry, step } = JSON.parse(event.data);
@@ -88,7 +88,7 @@
       return {
         dataset: job.dataset,
         options: job.options,
-        stop: () => fetch(`/api/training/jobs/${job.id}/stop`, { method: "POST" }).catch(() => {}),
+        stop: () => fetch(`api/training/jobs/${job.id}/stop`, { method: "POST" }).catch(() => {}),
       };
     },
   };
