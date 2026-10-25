@@ -27,6 +27,7 @@ const path = require("path");
 const pkg = require("./package.json");
 const fs = require("fs");
 const { controllers } = require("./src/controllers");
+const devices = require("./src/devices");
 const xlsx = require("./public/xlsx-lite");
 const datasets = require("./src/training/datasets");
 const jobs = require("./src/training/jobs");
@@ -38,6 +39,9 @@ app.use("/vendor/katex", express.static(path.join(__dirname, "node_modules/katex
 app.use(express.static(path.join(__dirname, "public")));
 app.use("/data", express.static(path.join(__dirname, "data")));
 app.use(express.json({ limit: "25mb" }));
+
+// Real-device backend (Variant A): gateway measures the ESP32 traffic it exchanges.
+app.use("/api/devices", devices.buildRouter());
 
 function findController(req, res) {
   const entry = controllers[req.params.controller];
