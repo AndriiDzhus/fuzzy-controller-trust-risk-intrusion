@@ -1,0 +1,224 @@
+/**
+ * Real-device backend (Variant A, gateway as endpoint).
+ *
+ * The gateway (this server) exchanges real HTTP traffic with an ESP32 test
+ * node and measures, over a fixed observation window, the quantities a flow
+ * monitor would see — request/response counts, byte volume, round-trip
+ * latency and error rate — then maps them to the nine controller inputs.
+ * Three inputs come from the node's own telemetry (TX power, latency, and
+ * energy from an INA219 when fitted). Under an "attack" command the gateway
+ * really floods / scans / holds connections against the node, so the measured
+ * features reflect real network behaviour, not a generated profile.
+ *
+ * Mapping from measured quantities to the controller ranges is linear with the
+ * named constants below (calibratable); the attack patterns are tuned so the
+ * mapped values land in the attack zones.
+ *
+ * Endpoints (mounted at /api/devices):
+ *   GET  /                 list of configured devices
+ *   GET  /:id              reachability check (pings the node)
+ *   GET  /:id/stream       SSE of readings, one per window: { inputs, telemetry, flow }
+ *   GET  /:id/reading      latest reading (polling fallback)
+ *   POST /:id/command      { scenario: normal|ddos|scan|exhaustion } sets the mode
+ */
+const http = require("http");
+const express = require("express");
+
+const WINDOW_MS = 2000; // one observation window (CC is "per 2 s" in the dataset)
+const REQ_TIMEOUT_MS = 800;
+
+const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
+
+// --- configured devices (from environment) --------------------------------
+function configuredDevices() {
+  const host = process.env.DEVICE_HOST;
+  if (!host) return [];
+  return [{ id: process.env.DEVICE_ID || "esp32", name: process.env.DEVICE_NAME || "ESP32 node", host }];
+}
+
+function parseHost(host) {
+  const clean = String(host).replace(/^https?:\/\//, "");
+  const [h, p] = clean.split(":");
+  return { host: h, port: Number(p) || 80 };
+}
+
+/** One HTTP GET to the node. Resolves with {ok, ms, bytes, status}. Never rejects. */
+function hit(host, path, timeoutMs = REQ_TIMEOUT_MS) {
+  return new Promise((resolve) => {
+    const { host: h, port } = parseHost(host);
+    const start = Date.now();
+    const req = http.get({ host: h, port, path, timeout: timeoutMs, agent: false }, (res) => {
+      let bytes = 0;
+      res.on("data", (c) => { bytes += c.length; });
+      res.on("end", () => resolve({ ok: res.statusCode >= 200 && res.statusCode < 400, ms: Date.now() - start, bytes, status: res.statusCode }));
+    });
+    req.on("timeout", () => { req.destroy(); resolve({ ok: false, ms: Date.now() - start, bytes: 0, status: 0, timeout: true }); });
+    req.on("error", () => resolve({ ok: false, ms: Date.now() - start, bytes: 0, status: 0, error: true }));
+  });
+}
+
+/** Fetch and parse /status telemetry. Resolves with the object or null. */
+function fetchStatus(host, timeoutMs = REQ_TIMEOUT_MS) {
+  return new Promise((resolve) => {
+    const { host: h, port } = parseHost(host);
+    const req = http.get({ host: h, port, path: "/status", timeout: timeoutMs, agent: false }, (res) => {
+      let body = "";
+      res.on("data", (c) => { body += c; });
+      res.on("end", () => { try { resolve(JSON.parse(body)); } catch (_) { resolve(null); } });
+    });
+    req.on("timeout", () => { req.destroy(); resolve(null); });
+    req.on("error", () => resolve(null));
+  });
+}
+
+// --- traffic patterns per mode --------------------------------------------
+// rps: requests/second, conc: concurrency, bytes: payload size via /load,
+// paths: endpoints hit (scan mixes non-existent paths -> 404 -> errors).
+const MODES = {
+  normal: { rps: 3, conc: 1, bytes: 0, paths: ["/status"] },
+  ddos: { rps: 120, conc: 24, bytes: 1200, paths: ["/load"] },
+  scan: { rps: 50, conc: 10, bytes: 0, paths: ["/status", "/a", "/b", "/cfg", "/x1", "/y2", "/admin"] },
+  exhaustion: { rps: 12, conc: 20, bytes: 6000, paths: ["/load"] },
+};
+const DEFAULT_MODE = "normal";
+
+/** Run the traffic pattern of `mode` for ~WINDOW_MS, collecting flow stats. */
+async function runWindow(host, mode) {
+  const m = MODES[mode] || MODES[DEFAULT_MODE];
+  const deadline = Date.now() + WINDOW_MS;
+  const pathFor = (i) => {
+    const base = m.paths[i % m.paths.length];
+    return m.bytes ? `${base}?n=${m.bytes}` : base;
+  };
+  let issued = 0, ok = 0, err = 0, bytesIn = 0, rttSum = 0, rttMax = 0, i = 0;
+  const target = Math.max(1, Math.round((m.rps * WINDOW_MS) / 1000));
+
+  async function worker() {
+    while (Date.now() < deadline && issued < target) {
+      const idx = i++; issued += 1;
+      // eslint-disable-next-line no-await-in-loop
+      const r = await hit(host, pathFor(idx));
+      if (r.ok) { ok += 1; bytesIn += r.bytes; rttSum += r.ms; rttMax = Math.max(rttMax, r.ms); }
+      else err += 1;
+      // pace each worker to approximate the target rate
+      const perReq = (1000 / m.rps) * m.conc;
+      const wait = perReq - 5;
+      if (wait > 0 && Date.now() < deadline) await new Promise((res) => setTimeout(res, wait));
+    }
+  }
+  await Promise.all(Array.from({ length: m.conc }, worker));
+
+  const elapsed = Math.max(1, WINDOW_MS) / 1000;
+  const reqPerSec = issued / elapsed;
+  const rttMean = ok ? rttSum / ok : REQ_TIMEOUT_MS; // no success -> treat as max latency
+  return { issued, ok, err, bytesIn, reqPerSec, rttMean, rttMax, conc: m.conc };
+}
+
+// --- mapping measured flow + telemetry to the nine inputs -----------------
+function toInputs(flow, tele) {
+  const { issued, err, bytesIn, reqPerSec, rttMean, conc } = flow;
+  const txPower = tele && tele.tx_power_dbm != null ? Number(tele.tx_power_dbm) : 18;
+  const powerMw = tele && tele.power_mw != null ? Number(tele.power_mw) : null;
+
+  return {
+    // Trust controller — behaviour of the connection
+    errors: clamp(issued ? err / issued : 0, 0, 1),            // ER: real error fraction
+    connections: clamp(issued, 0, 200),                        // CC: requests (~connections) per window
+    bytes: clamp(Math.log10(bytesIn + 1), 0, 12),              // BS: log10 of bytes from the node
+    // Security controller — resources and channel
+    energy: powerMw != null
+      ? clamp(0.01 + powerMw / 20000, 0.01, 0.05)              // EC: real, from INA219 power
+      : clamp(0.015 + reqPerSec * 0.00025, 0.01, 0.05),        // EC: estimate from activity until INA219 is fitted
+    strength: clamp(txPower, 0, 40),                           // TP: real Wi-Fi TX power from the node
+    response: clamp(rttMean / 12, 0, 10),                      // Lat: round-trip latency (ms -> 0..10)
+    // Intrusion controller — traffic intensity
+    packets: clamp(issued / 16, 0, 15),                        // NP
+    rate: clamp(reqPerSec * 20, 0, 3000),                      // Rate
+    weight: clamp((issued * conc) / 20, 0, 250),               // We
+  };
+}
+
+// --- per-device monitor ----------------------------------------------------
+class Monitor {
+  constructor(dev) {
+    this.dev = dev;
+    this.mode = DEFAULT_MODE;
+    this.subs = new Set();
+    this.last = null;
+    this.running = false;
+    this.busy = false;
+  }
+  setMode(m) { if (MODES[m]) this.mode = m; }
+  addSub(res) { this.subs.add(res); if (!this.running) this.start(); }
+  removeSub(res) { this.subs.delete(res); if (this.subs.size === 0) this.stop(); }
+  start() { if (this.running) return; this.running = true; this.loop(); }
+  stop() { this.running = false; this.mode = DEFAULT_MODE; }
+
+  async loop() {
+    if (!this.running || this.busy) return;
+    this.busy = true;
+    try {
+      const flow = await runWindow(this.dev.host, this.mode);
+      const tele = await fetchStatus(this.dev.host);
+      const reading = { deviceId: this.dev.id, mode: this.mode, ts: Date.now(), inputs: toInputs(flow, tele), telemetry: tele, flow };
+      this.last = reading;
+      this.broadcast(reading);
+    } catch (_) { /* keep looping */ }
+    finally { this.busy = false; }
+    if (this.running) setTimeout(() => this.loop(), 50);
+  }
+  broadcast(reading) {
+    const line = `data: ${JSON.stringify(reading)}\n\n`;
+    for (const res of this.subs) { try { res.write(line); } catch (_) { /* dropped */ } }
+  }
+}
+
+// --- router ----------------------------------------------------------------
+function buildRouter() {
+  const router = express.Router();
+  const devices = configuredDevices();
+  const monitors = new Map(devices.map((d) => [d.id, new Monitor(d)]));
+
+  router.get("/", (req, res) => {
+    res.json(devices.map((d) => ({ id: d.id, name: d.name, host: d.host })));
+  });
+
+  router.get("/:id", async (req, res) => {
+    const m = monitors.get(req.params.id);
+    if (!m) return res.status(404).json({ error: "Unknown device" });
+    const r = await hit(m.dev.host, "/ping", 1200);
+    if (!r.ok) return res.status(502).json({ error: "Device unreachable", host: m.dev.host });
+    return res.json({ id: m.dev.id, name: m.dev.name, host: m.dev.host, reachable: true, latencyMs: r.ms });
+  });
+
+  router.get("/:id/reading", (req, res) => {
+    const m = monitors.get(req.params.id);
+    if (!m) return res.status(404).json({ error: "Unknown device" });
+    if (!m.last) return res.status(503).json({ error: "No reading yet" });
+    return res.json(m.last);
+  });
+
+  router.post("/:id/command", (req, res) => {
+    const m = monitors.get(req.params.id);
+    if (!m) return res.status(404).json({ error: "Unknown device" });
+    const scenario = req.body && req.body.scenario;
+    if (!MODES[scenario]) return res.status(400).json({ error: "Unknown scenario", allowed: Object.keys(MODES) });
+    m.setMode(scenario);
+    return res.json({ ok: true, mode: scenario });
+  });
+
+  router.get("/:id/stream", (req, res) => {
+    const m = monitors.get(req.params.id);
+    if (!m) return res.status(404).end();
+    res.writeHead(200, { "Content-Type": "text/event-stream", "Cache-Control": "no-cache", Connection: "keep-alive" });
+    res.write(": connected\n\n");
+    if (m.last) res.write(`data: ${JSON.stringify(m.last)}\n\n`);
+    m.addSub(res);
+    req.on("close", () => m.removeSub(res));
+    return undefined;
+  });
+
+  return router;
+}
+
+module.exports = { buildRouter, toInputs, runWindow, MODES, configuredDevices };

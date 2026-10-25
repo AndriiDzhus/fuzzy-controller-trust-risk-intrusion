@@ -1,0 +1,43 @@
+# Home Assistant local add-on: Fuzzy Controller — Security Assessment.
+# Deploys the Node.js app (three fuzzy controllers + joint assessment page)
+# on the IoT gateway. The app itself is cloned from GitHub at start-up, so
+# this folder stays a thin deployment wrapper that can live in the repo.
+name: Fuzzy Controller — Security Assessment
+version: "1.1.0"
+slug: fuzzy_controller
+description: >-
+  Three fuzzy controllers (trust index, security risk, intrusion probability)
+  with joint assessment and real-device mode, served on the IoT gateway.
+url: https://github.com/AndriiDzhus/fuzzy-logic-security-risk
+arch:
+  - aarch64
+  - amd64
+startup: application
+boot: manual
+init: false
+
+# Opens as a page in the Home Assistant sidebar (ingress), and is also
+# reachable directly at http://<home-assistant-ip>:3002
+ingress: true
+ingress_port: 3002
+panel_icon: mdi:shield-check
+panel_title: Fuzzy Security
+ports:
+  3002/tcp: 3002
+ports_description:
+  3002/tcp: Web UI and REST API (direct access, optional)
+
+# The app is pulled from this repository at start-up; change the branch here
+# and restart the add-on to update, without rebuilding the image.
+options:
+  repo: https://github.com/AndriiDzhus/fuzzy-logic-security-risk.git
+  ref: main
+  device_host: ""
+  device_name: ESP32 node
+  device_id: esp32
+schema:
+  repo: str
+  ref: str
+  device_host: str?
+  device_name: str?
+  device_id: str?
