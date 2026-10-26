@@ -511,3 +511,10 @@
 .sim-wifi i:nth-child(2) { height: 8px; }
 .sim-wifi i:nth-child(3) { height: 11px; }
 .sim-wifi i:nth-child(4) { height: 14px; }
+
+/* Applied-model indicator (read-only): which model each controller uses. */
+.sim-models { list-style: none; margin: 6px 0 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+.sim-models li { font-size: 13px; line-height: 1.4; }
+.sim-model-name { color: #5a6472; }
+.sim-model-state { color: #7a828f; }
+.sim-model-state.is-trained { color: #2f80ed; font-weight: 600; }

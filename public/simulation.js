@@ -201,14 +201,13 @@
     duration: 60,
     noise: 1,
     speed: 1,
-    model: "trained",
+    applied: {}, // per-controller applied model: { params, meta } or null
     policy: { ...DEFAULT_POLICY },
     source: "sim",
     step: 0,
     playing: false,
     timer: null,
     rnd: createRandom(7),
-    trainedSet: new Set(), // controllers that actually have a trained model
     history: [], // { step, inputs, outputs, terms, assessment }
     lastStatus: null,
     log: [],
@@ -219,7 +218,17 @@
   function localController(name) {
     const entry = root.fuzzyControllers?.[name];
     if (!entry) return null;
-    if (state.model === "trained" && typeof entry.variant === "function") return entry.variant("trained") || entry;
+    // Mirror the controller page: build the model from the parameters applied
+    // to this controller, or fall back to the expert (base) model.
+    const applied = state.applied[name];
+    if (applied && applied.params && typeof entry.withParams === "function") {
+      try {
+        return entry.withParams(applied.params);
+      } catch (error) {
+        console.error(`invalid trained parameters for ${name}, using the expert model`, error);
+        return entry;
+      }
+    }
     return entry;
   }
 
@@ -231,47 +240,69 @@
       const result = local.calculate(values);
       return { value: result.value, term: result.dominantTerm, noRuleFired: Boolean(result.noRuleFired) };
     }
-    // Only the controllers that actually have a trained model (security, intrusion)
-    // are asked for it; trust is Mamdani-only, so requesting ?model=trained would 404.
-    const query = state.model === "trained" && state.trainedSet.has(name) ? "?model=trained" : "";
-    let response = await fetch(`api/controllers/${name}/calculate${query}`, {
+    // The API builds the model from the applied parameters (same as the
+    // controller page); without them it uses the expert model. No ?model flag,
+    // so a controller without a trained model (trust) never 404s.
+    const applied = state.applied[name];
+    const body = applied && applied.params ? { ...payload, params: applied.params } : payload;
+    const response = await fetch(`api/controllers/${name}/calculate`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
+      body: JSON.stringify(body),
     });
-    if (response.status === 404 && query) {
-      state.trainedSet.delete(name); // stop asking for a trained model that vanished
-      response = await fetch(`api/controllers/${name}/calculate`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
-    }
     if (!response.ok) return null;
     const result = await response.json();
     return { value: result.value, term: result.dominantTerm, noRuleFired: Boolean(result.noRuleFired) };
   }
 
-  // Learn which controllers offer a trained model, so we never request one that
-  // does not exist (trust has none). Local (client-side) controllers are checked
-  // in memory; the rest are asked via /models. Silent on failure: the set simply
-  // stays empty and the UI falls back to the base model.
-  async function refreshTrainedAvailability() {
-    state.trainedSet = new Set();
-    await Promise.all(
-      CONTROLLERS.map(async (name) => {
-        const local = localController(name);
-        if (local && root.fuzzyControllers) {
-          const entry = root.fuzzyControllers[name];
-          if (entry && typeof entry.variant === "function" && entry.variant("trained")) state.trainedSet.add(name);
-          return;
-        }
-        try {
-          const res = await fetch(`api/controllers/${name}/models`);
-          if (!res.ok) return;
-          const info = await res.json();
-          if (Array.isArray(info.available) && info.available.includes("trained")) state.trainedSet.add(name);
-        } catch (_) {
-          /* leave it out of the trained set */
-        }
-      })
-    );
+  // The model applied to a controller is stored per controller in localStorage
+  // by the controller page (key "fuzzyActiveModel:<name>"): { params, meta }.
+  // The integral assessment uses exactly that model, so both pages agree.
+  function readAppliedModel(name) {
+    try {
+      const raw = localStorage.getItem(`fuzzyActiveModel:${name}`);
+      const parsed = raw ? JSON.parse(raw) : null;
+      return parsed && parsed.params && typeof parsed.params === "object" ? parsed : null;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  function refreshAppliedModels() {
+    state.applied = {};
+    CONTROLLERS.forEach((name) => { state.applied[name] = readAppliedModel(name); });
+    renderModelIndicator();
+  }
+
+  // Read-only indicator: which model each controller currently uses.
+  function methodLabel(method) {
+    if (!method) return "";
+    const key = `simulation.method.${method}`;
+    const label = t(key, method.toUpperCase());
+    return label === key ? method.toUpperCase() : label;
+  }
+  function renderModelIndicator() {
+    const host = $("sim-models");
+    if (!host) return;
+    host.innerHTML = "";
+    CONTROLLERS.forEach((name) => {
+      const applied = state.applied[name];
+      const li = document.createElement("li");
+      const label = document.createElement("span");
+      label.className = "sim-model-name";
+      label.textContent = `${t(`simulation.controllers.${name}`, name)} —`;
+      const value = document.createElement("span");
+      if (applied) {
+        const suffix = methodLabel(applied.meta && applied.meta.method);
+        value.className = "sim-model-state is-trained";
+        value.textContent = `${t("simulation.modelTrained")}${suffix ? ` (${suffix})` : ""}`;
+      } else {
+        value.className = "sim-model-state";
+        value.textContent = t("simulation.modelExpert");
+      }
+      li.append(label, document.createTextNode(" "), value);
+      host.appendChild(li);
+    });
   }
 
   async function evaluate(inputs) {
@@ -713,7 +744,6 @@
     $("sim-duration").addEventListener("input", (e) => { state.duration = Number(e.target.value); $("sim-duration-val").textContent = String(state.duration); });
     $("sim-noise").addEventListener("input", (e) => { state.noise = Number(e.target.value); $("sim-noise-val").textContent = `${Math.round(state.noise * 100)} %`; });
     $("sim-speed").addEventListener("input", (e) => { state.speed = Number(e.target.value); $("sim-speed-val").textContent = `×${state.speed}`; });
-    $("sim-model").addEventListener("change", (e) => { state.model = e.target.value; replay(); });
     $("sim-warn").addEventListener("change", (e) => { state.policy.warn = clamp(Number(e.target.value) || 0, 0, 100); replay(); });
     $("sim-critical").addEventListener("change", (e) => { state.policy.critical = clamp(Number(e.target.value) || 0, 0, 100); replay(); });
     $("sim-play").addEventListener("click", play);
@@ -723,8 +753,14 @@
     $("sim-warn").value = state.policy.warn;
     $("sim-critical").value = state.policy.critical;
     root.addEventListener("resize", () => { const last = state.history[state.history.length - 1]; if (last) render(last); });
+    // A model applied or reverted on a controller tab updates the indicator and
+    // recomputes the assessment with the new model.
+    root.addEventListener("storage", (e) => {
+      if (e.key && e.key.indexOf("fuzzyActiveModel:") === 0) { refreshAppliedModels(); replay(); }
+    });
     root.addEventListener("languageChanged", () => {
       const last = state.history[state.history.length - 1]; if (last) render(last); renderLog(); updateScenarioControls();
+      renderModelIndicator();
       updateConnectBtn();
       if (device.connected) { setDeviceStatus("connected", device.name); if (device.source && device.source.isDemo) $("sim-device-note").textContent = t("simulation.device.demoNote"); }
       else { setDeviceStatus("idle"); $("sim-device-note").textContent = $("sim-device").options.length <= 1 ? t("simulation.device.noDevices") : ""; }
@@ -1086,12 +1122,7 @@
     setDeviceStatus("idle");
     updateConnectBtn();
     await loadDevices();
-    await refreshTrainedAvailability();
-    if (state.trainedSet.size === 0) {
-      $("sim-model").querySelector('option[value="trained"]').disabled = true;
-      state.model = "base"; // fall back to expert parameters if trained ones are unavailable
-    }
-    $("sim-model").value = state.model;
+    refreshAppliedModels();
     await reset();
     document.documentElement.classList.remove("is-loading");
   }
