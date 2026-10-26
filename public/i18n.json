@@ -664,7 +664,8 @@
         "waiting": "Очікування показників…",
         "scan": "Пошук у мережі",
         "scanning": "Сканування мережі…",
-        "scanFound": "Знайдено пристроїв: {n}"
+        "scanFound": "Знайдено пристроїв: {n}",
+        "connectedTo": "Підключено до {name}"
       },
       "commands": {
         "normal": "Норма",
@@ -1335,7 +1336,8 @@
         "waiting": "Waiting for readings…",
         "scan": "Scan network",
         "scanning": "Scanning the network…",
-        "scanFound": "Devices found: {n}"
+        "scanFound": "Devices found: {n}",
+        "connectedTo": "Connected to {name}"
       },
       "commands": {
         "normal": "Normal",
