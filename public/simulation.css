@@ -499,3 +499,15 @@
 .sim-metric-val strong { font-size: 1.5rem; font-weight: 700; }
 .sim-metric-unit { font-size: 0.8rem; color: #95a5a6; font-weight: 500; }
 .sim-sensors-meta { margin: 10px 0 0; }
+
+/* Sensor panel: only for a real connected device (not the demo). */
+.sim-sensors { display: none; }
+:root.is-realdevice .sim-sensors { display: block; }
+
+/* Wi-Fi signal quality bars (coloured from RSSI in the script). */
+.sim-wifi { display: inline-flex; align-items: flex-end; gap: 2px; height: 14px; margin-left: 2px; }
+.sim-wifi i { width: 3px; background: #d6dce2; border-radius: 1px; }
+.sim-wifi i:nth-child(1) { height: 5px; }
+.sim-wifi i:nth-child(2) { height: 8px; }
+.sim-wifi i:nth-child(3) { height: 11px; }
+.sim-wifi i:nth-child(4) { height: 14px; }

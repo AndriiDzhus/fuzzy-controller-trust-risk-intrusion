@@ -696,7 +696,7 @@
     root.addEventListener("languageChanged", () => {
       const last = state.history[state.history.length - 1]; if (last) render(last); renderLog(); updateScenarioControls();
       updateConnectBtn();
-      if (device.connected) { setDeviceStatus("connected"); if (device.source && device.source.isDemo) $("sim-device-note").textContent = t("simulation.device.demoNote"); }
+      if (device.connected) { setDeviceStatus("connected", device.name); if (device.source && device.source.isDemo) $("sim-device-note").textContent = t("simulation.device.demoNote"); }
       else { setDeviceStatus("idle"); $("sim-device-note").textContent = $("sim-device").options.length <= 1 ? t("simulation.device.noDevices") : ""; }
     });
   }
@@ -853,11 +853,35 @@
     drawRadar($("sim-radar"), { partial: { trust: null, security: null, intrusion: null }, level: null });
   }
 
-  function setDeviceStatus(s) {
+  function setDeviceStatus(s, detail) {
     const dot = $("sim-device-dot"), label = $("sim-device-status");
     dot.className = "sim-device-dot" + (s === "idle" ? "" : ` is-${s}`);
+    if (s === "connected" && detail) {
+      label.textContent = t("simulation.device.connectedTo").replace("{name}", detail);
+      return;
+    }
     const key = { idle: "statusIdle", connecting: "statusConnecting", connected: "statusConnected", error: "statusError" }[s];
     label.textContent = t(`simulation.device.${key}`);
+  }
+
+  // Wi-Fi signal quality (bars) from RSSI dBm.
+  function wifiLevel(rssi) {
+    if (rssi == null) return 0;
+    if (rssi >= -60) return 4;
+    if (rssi >= -70) return 3;
+    if (rssi >= -80) return 2;
+    if (rssi >= -90) return 1;
+    return 0;
+  }
+  function updateWifi(rssi) {
+    const el = $("sim-wifi");
+    if (!el) return;
+    if (rssi == null) { el.hidden = true; return; }
+    const lvl = wifiLevel(rssi);
+    const color = lvl >= 3 ? "#27ae60" : lvl === 2 ? "#f2994a" : "#eb5757";
+    el.hidden = false;
+    el.title = `RSSI ${rssi} dBm`;
+    [...el.children].forEach((bar, i) => { bar.style.background = i < lvl ? color : "#d6dce2"; });
   }
   function setCmdEnabled(on) { document.querySelectorAll(".sim-cmd").forEach((b) => { b.disabled = !on; }); }
   function updateConnectBtn() {
@@ -889,7 +913,12 @@
     try { const r = await fetch("api/devices/discover"); if (r.ok) { const d = await r.json(); if (Array.isArray(d)) real = d; } } catch (_) { /* no backend */ }
     const n = populateDevices(real);
     btn.disabled = false;
-    if (n) $("sim-device-note").textContent = t("simulation.device.scanFound").replace("{n}", String(n));
+    if (n) {
+      const names = real.map((d) => d.name || d.id).join(", ");
+      $("sim-device-note").textContent = `${t("simulation.device.scanFound").replace("{n}", String(n))} (${names})`;
+    } else {
+      $("sim-device-note").textContent = t("simulation.device.noDevices");
+    }
   }
 
   async function connectDevice() {
@@ -900,19 +929,24 @@
     const ok = await src.connect();
     if (!ok) { setDeviceStatus("error"); device.source = null; return; }
     device.source = src; device.connected = true;
-    setDeviceStatus("connected");
+    const opt = $("sim-device").selectedOptions[0];
+    device.name = opt ? opt.textContent : id;
+    setDeviceStatus("connected", device.name);
     $("sim-device-note").textContent = src.isDemo ? t("simulation.device.demoNote") : "";
     $("sim-listen").disabled = false;
     setCmdEnabled(true);
     updateConnectBtn();
     setActiveCmd(device.mode);
-    startSensors();
+    // Sensor panel and Wi-Fi quality only for a real device (not the demo).
+    document.documentElement.classList.toggle("is-realdevice", !src.isDemo);
+    if (src.isDemo) { stopSensors(); updateWifi(null); } else { startSensors(); }
   }
   function disconnectDevice() {
     stopListening();
-    stopSensors(); resetSensors();
+    stopSensors(); resetSensors(); updateWifi(null);
+    document.documentElement.classList.remove("is-realdevice");
     if (device.source) device.source.stop();
-    device.source = null; device.connected = false;
+    device.source = null; device.connected = false; device.name = null;
     $("sim-listen").disabled = true; setCmdEnabled(false);
     setDeviceStatus("idle"); updateConnectBtn();
   }
@@ -929,8 +963,10 @@
     const set = (id, v) => { const el = $(id); if (el) el.textContent = v; };
     if (!tele) {
       ["sim-m-temp", "sim-m-hum", "sim-m-press", "sim-m-lux"].forEach((id) => set(id, "—"));
+      updateWifi(null);
       return;
     }
+    updateWifi(tele.rssi_dbm != null ? Number(tele.rssi_dbm) : null);
     set("sim-m-temp", metricText(tele.temperature_c, 1));
     set("sim-m-hum", metricText(tele.humidity_pct, 1));
     set("sim-m-press", tele.pressure_hpa != null ? (tele.pressure_hpa * HPA_TO_MMHG).toFixed(1) : "—");
