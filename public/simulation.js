@@ -798,6 +798,29 @@
 
   const device = { source: null, connected: false, listening: false, mode: "normal" };
 
+  // The chosen source tab, the selected device and whether it was connected are
+  // remembered so navigating away and back keeps the same device and tab.
+  const DEVICE_SESSION_KEY = "simDeviceSession";
+  function saveDeviceSession() {
+    try {
+      const sel = $("sim-device");
+      localStorage.setItem(
+        DEVICE_SESSION_KEY,
+        JSON.stringify({ source: state.source, deviceId: sel ? sel.value : null, connected: device.connected })
+      );
+    } catch (_) {
+      /* ignore quota / private-mode failures */
+    }
+  }
+  function readDeviceSession() {
+    try {
+      const raw = localStorage.getItem(DEVICE_SESSION_KEY);
+      return raw ? JSON.parse(raw) : null;
+    } catch (_) {
+      return null;
+    }
+  }
+
   /** Demo source: free-running readings generated in the browser. */
   function demoSource() {
     const rnd = createRandom(1234);
@@ -1006,6 +1029,7 @@
     // Sensor panel and Wi-Fi quality only for a real device (not the demo).
     document.documentElement.classList.toggle("is-realdevice", !src.isDemo);
     if (src.isDemo) { stopSensors(); updateWifi(null); } else { startSensors(); }
+    saveDeviceSession();
   }
   function disconnectDevice() {
     stopListening();
@@ -1015,6 +1039,7 @@
     device.source = null; device.connected = false; device.name = null;
     $("sim-listen").disabled = true; setCmdEnabled(false);
     setDeviceStatus("idle"); updateConnectBtn();
+    saveDeviceSession();
   }
 
   // --- device sensor readings (physical telemetry, independent of monitoring) ---
@@ -1092,6 +1117,23 @@
     updateScenarioControls(); // keeps is-manual-mode in sync with the active source
     if (src === "sim") { reset(); }
     else { renderLive(null); blankRender(); }
+    saveDeviceSession();
+  }
+
+  // Restore the tab, device selection and connection from the previous visit.
+  function restoreDeviceSession() {
+    const saved = readDeviceSession();
+    if (!saved) return false;
+    if (saved.deviceId) {
+      const sel = $("sim-device");
+      if (sel && [...sel.options].some((o) => o.value === saved.deviceId)) sel.value = saved.deviceId;
+    }
+    if (saved.source === "device") {
+      setSource("device"); // switch to the real-device tab (empty live state)
+      if (saved.connected) connectDevice(); // reconnect in the background
+      return true; // rendering handled by setSource / connectDevice
+    }
+    return false;
   }
 
   function bindDevice() {
@@ -1101,7 +1143,7 @@
     $("sim-refresh").addEventListener("click", loadDevices);
     $("sim-scan").addEventListener("click", scanDevices);
     $("sim-sensor-refresh").addEventListener("click", refreshSensors);
-    $("sim-device").addEventListener("change", () => { if (device.connected) disconnectDevice(); });
+    $("sim-device").addEventListener("change", () => { if (device.connected) disconnectDevice(); else saveDeviceSession(); });
     $("sim-listen").addEventListener("click", startListening);
     $("sim-liststop").addEventListener("click", stopListening);
     document.querySelectorAll(".sim-cmd").forEach((b) => b.addEventListener("click", () => sendCommand(b.dataset.cmd)));
@@ -1123,7 +1165,8 @@
     updateConnectBtn();
     await loadDevices();
     refreshAppliedModels();
-    await reset();
+    const restored = restoreDeviceSession();
+    if (!restored) await reset();
     document.documentElement.classList.remove("is-loading");
   }
 
