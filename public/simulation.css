@@ -454,3 +454,48 @@
 /* Manual inputs show only in simulation mode while the "Manual" scenario is picked. */
 .manual-only { display: none; }
 :root.is-manual-mode:not(.is-device-mode) .manual-only { display: block; }
+
+/* ---- device sensor readings panel --------------------------------------- */
+.sim-sensors-head {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+  margin-bottom: 10px;
+}
+.sim-sensors-name { font-size: 0.95rem; font-weight: 700; color: #2c3e50; }
+.sim-sensors-chips { display: inline-flex; gap: 6px; flex-wrap: wrap; }
+.sim-chip {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+.sim-chip.is-on { background: #e5f6ec; color: #1e8f52; }
+.sim-chip.is-off { background: #eef0f2; color: #9aa6b2; }
+.sim-sensors-refresh { margin-left: auto; }
+.sim-metrics {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: 10px;
+}
+.sim-metric {
+  border: 1px solid #e8edf2;
+  border-left-width: 4px;
+  border-radius: 10px;
+  background: #f8fafc;
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.sim-metric-temp { border-left-color: #eb5757; }
+.sim-metric-hum { border-left-color: #2f80ed; }
+.sim-metric-press { border-left-color: #8e44ad; }
+.sim-metric-lux { border-left-color: #f2c94c; }
+.sim-metric-label { font-size: 0.78rem; color: #5d6d7e; }
+.sim-metric-val { font-size: 1.05rem; color: #2c3e50; font-variant-numeric: tabular-nums; }
+.sim-metric-val strong { font-size: 1.5rem; font-weight: 700; }
+.sim-metric-unit { font-size: 0.8rem; color: #95a5a6; font-weight: 500; }
+.sim-sensors-meta { margin: 10px 0 0; }

@@ -3,7 +3,7 @@
 # on the IoT gateway. The app itself is cloned from GitHub at start-up, so
 # this folder stays a thin deployment wrapper that can live in the repo.
 name: Fuzzy Controller — Security Assessment
-version: "1.2.0"
+version: "1.3.0"
 slug: fuzzy_controller
 description: >-
   Three fuzzy controllers (trust index, security risk, intrusion probability)
