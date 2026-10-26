@@ -645,7 +645,7 @@
         "picker": "Пристрій",
         "refresh": "Оновити список",
         "demo": "Демонстраційний пристрій",
-        "noDevices": "Реальних пристроїв не знайдено — доступний лише демонстраційний. Пристрої з’являться тут після розгортання застосунку на шлюзі (Home Assistant).",
+        "noDevices": "Пристроїв не знайдено. Натисніть «Пошук у мережі», щоб просканувати локальну мережу на наявність вузлів ESP32, або задайте адресу вручну в налаштуваннях add-on.",
         "demoNote": "Демонстраційний пристрій формує показники локально у браузері — щоб побачити роботу інтерфейсу до підключення реального ESP32.",
         "connect": "Підключити",
         "disconnect": "Відключити",
@@ -661,7 +661,10 @@
         "commandHint": "Надіслати пристрою команду переходу в режим трафіку (на ізольованому стенді). У демонстраційному режимі команда змінює показники локально.",
         "liveTitle": "Показники пристрою",
         "liveHint": "Поточні значення дев’яти вхідних величин, отримані з пристрою за останнє вікно спостереження (лише для перегляду).",
-        "waiting": "Очікування показників…"
+        "waiting": "Очікування показників…",
+        "scan": "Пошук у мережі",
+        "scanning": "Сканування мережі…",
+        "scanFound": "Знайдено пристроїв: {n}"
       },
       "commands": {
         "normal": "Норма",
@@ -1300,7 +1303,7 @@
         "picker": "Device",
         "refresh": "Refresh list",
         "demo": "Demo device",
-        "noDevices": "No real devices found — only the demo device is available. Devices appear here once the app is deployed on the gateway (Home Assistant).",
+        "noDevices": "No devices found. Press \"Scan network\" to scan the local network for ESP32 nodes, or set the address manually in the add-on options.",
         "demoNote": "The demo device produces readings locally in the browser, so the interface can be shown before a real ESP32 is connected.",
         "connect": "Connect",
         "disconnect": "Disconnect",
@@ -1316,7 +1319,10 @@
         "commandHint": "Send the device a command to enter a traffic mode (on the isolated test bench). In demo mode the command changes the readings locally.",
         "liveTitle": "Device readings",
         "liveHint": "Current values of the nine inputs received from the device for the last observation window (read-only).",
-        "waiting": "Waiting for readings…"
+        "waiting": "Waiting for readings…",
+        "scan": "Scan network",
+        "scanning": "Scanning the network…",
+        "scanFound": "Devices found: {n}"
       },
       "commands": {
         "normal": "Normal",
