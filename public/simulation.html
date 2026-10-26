@@ -268,6 +268,40 @@
         </div>
       </div>
 
+      <details class="process-step device-only sim-sensors" open>
+        <summary>
+          <span class="process-step-num">◉</span>
+          <span class="process-step-title" data-i18n="simulation.sensors.title"></span>
+        </summary>
+        <div class="process-step-body">
+          <p class="sim-hint" data-i18n="simulation.sensors.hint"></p>
+          <div class="sim-sensors-head">
+            <span class="sim-sensors-name" id="sim-sensor-name">—</span>
+            <div class="sim-sensors-chips" id="sim-sensor-chips"></div>
+            <button type="button" class="docs-btn docs-btn-alt sim-sensors-refresh" id="sim-sensor-refresh"><svg class="btn-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12a8 8 0 1 0 3-6.2"/><path d="M4 4v5h5"/></svg><span data-i18n="simulation.sensors.refresh"></span></button>
+          </div>
+          <div class="sim-metrics">
+            <div class="sim-metric sim-metric-temp">
+              <span class="sim-metric-label" data-i18n="simulation.sensors.temperature"></span>
+              <span class="sim-metric-val"><strong id="sim-m-temp">—</strong> <span class="sim-metric-unit">°C</span></span>
+            </div>
+            <div class="sim-metric sim-metric-hum">
+              <span class="sim-metric-label" data-i18n="simulation.sensors.humidity"></span>
+              <span class="sim-metric-val"><strong id="sim-m-hum">—</strong> <span class="sim-metric-unit">%</span></span>
+            </div>
+            <div class="sim-metric sim-metric-press">
+              <span class="sim-metric-label" data-i18n="simulation.sensors.pressure"></span>
+              <span class="sim-metric-val"><strong id="sim-m-press">—</strong> <span class="sim-metric-unit" data-i18n="simulation.sensors.mmhg"></span></span>
+            </div>
+            <div class="sim-metric sim-metric-lux">
+              <span class="sim-metric-label" data-i18n="simulation.sensors.lux"></span>
+              <span class="sim-metric-val"><strong id="sim-m-lux">—</strong> <span class="sim-metric-unit" data-i18n="simulation.sensors.lx"></span></span>
+            </div>
+          </div>
+          <p class="sim-hint sim-sensors-meta" id="sim-sensor-meta"></p>
+        </div>
+      </details>
+
       <details class="process-step" open>
         <summary>
           <span class="process-step-num">!</span>

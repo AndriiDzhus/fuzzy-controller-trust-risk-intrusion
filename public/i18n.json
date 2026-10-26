@@ -673,7 +673,20 @@
         "exhaustion": "Вичерпання"
       },
       "manualTitle": "Вхідні параметри (ручне керування)",
-      "scenarioReadHint": "Поточні значення дев’яти вхідних величин за сценарієм (лише для перегляду) — видно, як вони змінюються під час атаки."
+      "scenarioReadHint": "Поточні значення дев’яти вхідних величин за сценарієм (лише для перегляду) — видно, як вони змінюються під час атаки.",
+      "sensors": {
+        "title": "Показники датчика",
+        "hint": "Поточні фізичні вимірювання пристрою. Оновлюються автоматично; кнопка «Оновити» — негайно.",
+        "refresh": "Оновити",
+        "temperature": "Температура",
+        "humidity": "Вологість",
+        "pressure": "Тиск",
+        "lux": "Освітлення",
+        "mmhg": "мм рт. ст.",
+        "lx": "лк",
+        "updated": "оновлено",
+        "unreachable": "Пристрій недоступний"
+      }
     }
   },
   "en": {
@@ -1331,7 +1344,20 @@
         "exhaustion": "Exhaustion"
       },
       "manualTitle": "Input parameters (manual control)",
-      "scenarioReadHint": "Current values of the nine inputs produced by the scenario (read-only) — you can see them change during the attack."
+      "scenarioReadHint": "Current values of the nine inputs produced by the scenario (read-only) — you can see them change during the attack.",
+      "sensors": {
+        "title": "Sensor readings",
+        "hint": "Current physical measurements from the device. Updated automatically; \"Refresh\" updates now.",
+        "refresh": "Refresh",
+        "temperature": "Temperature",
+        "humidity": "Humidity",
+        "pressure": "Pressure",
+        "lux": "Illuminance",
+        "mmhg": "mmHg",
+        "lx": "lx",
+        "updated": "updated",
+        "unreachable": "Device unreachable"
+      }
     }
   }
 }

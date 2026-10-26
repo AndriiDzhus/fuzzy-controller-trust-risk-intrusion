@@ -760,6 +760,15 @@
       start(onReading) { timer = setInterval(() => onReading(reading()), 1000); },
       stop() { clearInterval(timer); timer = null; },
       async command(name) { mode = name; },
+      async telemetry() {
+        return {
+          node: "demo", sensors: { bme280: true, ina219: false, bh1750: false },
+          temperature_c: 23.5 + rnd.normal() * 0.6,
+          humidity_pct: 41 + rnd.normal() * 1.5,
+          pressure_hpa: 1013 + rnd.normal() * 0.8,
+          lux: null, rssi_dbm: -58, tx_power_dbm: 19.5,
+        };
+      },
     };
   }
 
@@ -784,6 +793,11 @@
       stop() { if (es) { es.close(); es = null; } if (poll) { clearInterval(poll); poll = null; } },
       async command(name) {
         await fetch(url("/command"), { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ scenario: name }) }).catch(() => { /* ignore */ });
+      },
+      async telemetry() {
+        const r = await fetch(url("/telemetry")).catch(() => null);
+        if (!r || !r.ok) return null;
+        return r.json().catch(() => null);
       },
     };
   }
@@ -892,13 +906,56 @@
     setCmdEnabled(true);
     updateConnectBtn();
     setActiveCmd(device.mode);
+    startSensors();
   }
   function disconnectDevice() {
     stopListening();
+    stopSensors(); resetSensors();
     if (device.source) device.source.stop();
     device.source = null; device.connected = false;
     $("sim-listen").disabled = true; setCmdEnabled(false);
     setDeviceStatus("idle"); updateConnectBtn();
+  }
+
+  // --- device sensor readings (physical telemetry, independent of monitoring) ---
+  const SENSOR_POLL_MS = 5000;
+  const HPA_TO_MMHG = 0.750062;
+  let sensorTimer = null;
+
+  const metricText = (v, d) => (v === null || v === undefined || Number.isNaN(Number(v)) ? "—" : Number(v).toFixed(d));
+  const sensorChip = (label, on) => `<span class="sim-chip ${on ? "is-on" : "is-off"}">${label}</span>`;
+
+  function renderSensors(tele) {
+    const set = (id, v) => { const el = $(id); if (el) el.textContent = v; };
+    if (!tele) {
+      ["sim-m-temp", "sim-m-hum", "sim-m-press", "sim-m-lux"].forEach((id) => set(id, "—"));
+      return;
+    }
+    set("sim-m-temp", metricText(tele.temperature_c, 1));
+    set("sim-m-hum", metricText(tele.humidity_pct, 1));
+    set("sim-m-press", tele.pressure_hpa != null ? (tele.pressure_hpa * HPA_TO_MMHG).toFixed(1) : "—");
+    set("sim-m-lux", metricText(tele.lux, 0));
+    set("sim-sensor-name", tele.node || "—");
+    const s = tele.sensors || {};
+    $("sim-sensor-chips").innerHTML = sensorChip("BME280", s.bme280) + sensorChip("BH1750", s.bh1750) + sensorChip("INA219", s.ina219);
+    const meta = [];
+    if (tele.rssi_dbm != null) meta.push(`RSSI ${tele.rssi_dbm} dBm`);
+    if (tele.tx_power_dbm != null) meta.push(`TX ${tele.tx_power_dbm} dBm`);
+    meta.push(`${t("simulation.sensors.updated")}: ${new Date().toLocaleTimeString()}`);
+    $("sim-sensor-meta").textContent = meta.join(" · ");
+  }
+  async function refreshSensors() {
+    if (!device.source || typeof device.source.telemetry !== "function") { renderSensors(null); return; }
+    const tele = await device.source.telemetry();
+    renderSensors(tele);
+  }
+  function startSensors() { stopSensors(); refreshSensors(); sensorTimer = setInterval(refreshSensors, SENSOR_POLL_MS); }
+  function stopSensors() { if (sensorTimer) { clearInterval(sensorTimer); sensorTimer = null; } }
+  function resetSensors() {
+    renderSensors(null);
+    $("sim-sensor-name").textContent = "—";
+    $("sim-sensor-chips").innerHTML = "";
+    $("sim-sensor-meta").textContent = "";
   }
   function startListening() {
     if (!device.source || device.listening) return;
@@ -941,6 +998,7 @@
     $("sim-connect").addEventListener("click", () => { if (device.connected) disconnectDevice(); else connectDevice(); });
     $("sim-refresh").addEventListener("click", loadDevices);
     $("sim-scan").addEventListener("click", scanDevices);
+    $("sim-sensor-refresh").addEventListener("click", refreshSensors);
     $("sim-device").addEventListener("change", () => { if (device.connected) disconnectDevice(); });
     $("sim-listen").addEventListener("click", startListening);
     $("sim-liststop").addEventListener("click", stopListening);

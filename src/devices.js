@@ -284,6 +284,14 @@ function buildRouter() {
     return res.json(m.last);
   });
 
+  router.get("/:id/telemetry", async (req, res) => {
+    const m = getMonitor(req.params.id);
+    if (!m) return res.status(404).json({ error: "Unknown device" });
+    const tele = await fetchStatus(m.dev.host, 1500);
+    if (!tele) return res.status(502).json({ error: "Device unreachable", host: m.dev.host });
+    return res.json(tele);
+  });
+
   router.post("/:id/command", (req, res) => {
     const m = getMonitor(req.params.id);
     if (!m) return res.status(404).json({ error: "Unknown device" });
