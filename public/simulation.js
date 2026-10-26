@@ -202,6 +202,11 @@
     noise: 1,
     speed: 1,
     applied: {}, // per-controller applied model: { params, meta } or null
+    deviceDataset: null, // { file, rows, label } of the ESP32 test-bed dataset, if the API offers one
+    deviceTraining: false,
+    deviceTrainError: null,
+    deviceInfoOpen: false,
+    cmdInfoOpen: false,
     policy: { ...DEFAULT_POLICY },
     source: "sim",
     step: 0,
@@ -274,6 +279,69 @@
     renderModelIndicator();
   }
 
+  // --- device-adapted dataset (ESP32 test bed) ---------------------------------
+  // The thesis model of the Intrusion controller is trained on CIC IoT 2023 and
+  // rates the quiet traffic of a simple ESP32 node as elevated. For a real device
+  // the user can train the controller on the test-bed dataset right here; the
+  // applied model remembers the dataset name, so the prompt shows only while the
+  // applied model is not the one trained on the current test-bed dataset file.
+  const DEVICE_DATASET_VARIANT = "esp32";
+  const deviceDatasetUrl = (suffix = "", extra = "") =>
+    `api/controllers/intrusion/dataset${suffix}?variant=${DEVICE_DATASET_VARIANT}${extra}`;
+
+  async function loadDeviceDataset() {
+    state.deviceDataset = null;
+    try {
+      const r = await fetch(deviceDatasetUrl("/info"));
+      if (r.ok) {
+        const info = await r.json();
+        if (info && info.file) state.deviceDataset = { file: info.file, rows: info.rows, label: info.label || "ESP32" };
+      }
+    } catch (_) { /* no backend or no device dataset: the prompt is simply not shown */ }
+  }
+
+  const isRealDeviceActive = () => document.documentElement.classList.contains("is-realdevice");
+  function isTrainedOnDeviceDataset() {
+    const applied = state.applied.intrusion;
+    return Boolean(applied && applied.meta && state.deviceDataset && applied.meta.datasetName === state.deviceDataset.file);
+  }
+
+  /** Trains the Intrusion controller on the device dataset through the training API and applies the result. */
+  async function trainOnDeviceDataset() {
+    if (state.deviceTraining || !state.deviceDataset) return;
+    state.deviceTraining = true; state.deviceTrainError = null; state.deviceInfoOpen = false;
+    renderModelIndicator();
+    try {
+      const ds = state.deviceDataset;
+      const csv = await fetch(deviceDatasetUrl("", "&format=csv")).then((r) => (r.ok ? r.text() : Promise.reject(new Error(`dataset ${r.status}`))));
+      const started = await fetch(`api/training/intrusion/jobs?name=${encodeURIComponent(ds.file)}`, {
+        method: "POST", headers: { "Content-Type": "application/octet-stream" }, body: new TextEncoder().encode(csv),
+      });
+      if (!started.ok) throw new Error(`job ${started.status}`);
+      const job = await started.json();
+      const result = await new Promise((resolve, reject) => {
+        const es = new EventSource(`api/training/jobs/${encodeURIComponent(job.id)}/events`);
+        const fail = (msg) => { es.close(); reject(new Error(msg)); };
+        es.addEventListener("done", (ev) => { try { es.close(); resolve(JSON.parse(ev.data).result); } catch (e) { fail(e.message); } });
+        es.addEventListener("error", (ev) => { let m = "training error"; try { m = JSON.parse(ev.data).message || m; } catch (_) { /* keep */ } fail(m); });
+        es.onerror = () => fail("connection lost");
+      });
+      if (!result || !result.params) throw new Error("no result");
+      const tr = result.training || {};
+      // Apply exactly as the controller page does (same storage key and meta shape).
+      localStorage.setItem("fuzzyActiveModel:intrusion", JSON.stringify({
+        params: result.params,
+        meta: { source: "training", method: "ga", createdAt: tr.createdAt || new Date().toISOString(), datasetName: tr.datasetName || ds.file, steps: tr.steps },
+      }));
+    } catch (error) {
+      state.deviceTrainError = error.message || String(error);
+    } finally {
+      state.deviceTraining = false;
+    }
+    refreshAppliedModels(); // the storage event does not fire in the tab that wrote the key
+    if (!state.deviceTrainError) replay();
+  }
+
   // Read-only indicator: which model each controller currently uses.
   function methodLabel(method) {
     if (!method) return "";
@@ -301,8 +369,83 @@
         value.textContent = t("simulation.modelExpert");
       }
       li.append(label, document.createTextNode(" "), value);
+      if (name === "intrusion") appendDeviceModelBlock(li, value);
       host.appendChild(li);
     });
+  }
+
+  /** The ESP32-dataset block of the Intrusion row: trained state, or the train / get prompt. */
+  function appendDeviceModelBlock(li, value) {
+    const ds = state.deviceDataset;
+    if (!ds || !isRealDeviceActive()) return;
+    const bench = t("simulation.deviceModel.bench").replace("{label}", ds.label);
+    const getLink = document.createElement("a");
+    getLink.className = "docs-btn docs-btn-alt sim-devmodel-btn";
+    getLink.href = deviceDatasetUrl();
+    getLink.setAttribute("download", "");
+    getLink.textContent = t("simulation.deviceModel.get");
+    getLink.title = `${ds.file} · ${ds.rows}`;
+
+    if (isTrainedOnDeviceDataset()) {
+      value.className = "sim-model-state is-trained is-device";
+      value.textContent = `${t("simulation.modelTrained")} (${bench}) ✓`;
+      const block = document.createElement("span");
+      block.className = "sim-devmodel";
+      block.append(getLink);
+      li.append(document.createTextNode(" "), block);
+      return;
+    }
+
+    const block = document.createElement("span");
+    block.className = "sim-devmodel";
+    // "i" toggles a short explanation (click / Enter); click outside or Esc closes it.
+    const help = document.createElement("button");
+    help.type = "button";
+    help.className = "sim-info";
+    help.textContent = "i";
+    help.setAttribute("aria-label", t("simulation.deviceModel.infoTitle"));
+    help.setAttribute("aria-expanded", state.deviceInfoOpen ? "true" : "false");
+    help.addEventListener("click", (e) => { e.stopPropagation(); state.deviceInfoOpen = !state.deviceInfoOpen; if (state.cmdInfoOpen) { state.cmdInfoOpen = false; renderCmdInfo(); } renderModelIndicator(); });
+    const infoWrap = document.createElement("span");
+    infoWrap.className = "sim-info-wrap";
+    infoWrap.append(help);
+    if (state.deviceInfoOpen) {
+      const pop = document.createElement("div");
+      pop.className = "sim-info-pop";
+      pop.setAttribute("role", "dialog");
+      pop.addEventListener("click", (e) => e.stopPropagation());
+      const title = document.createElement("strong");
+      title.textContent = t("simulation.deviceModel.infoTitle");
+      const why = document.createElement("p");
+      why.textContent = t("simulation.deviceModel.infoWhy");
+      const file = document.createElement("p");
+      const code = document.createElement("code");
+      code.textContent = ds.file;
+      file.append(`${t("simulation.deviceModel.infoFile")} `, code, ` · ${t("simulation.deviceModel.infoRows").replace("{rows}", String(ds.rows))}`);
+      const get = document.createElement("p");
+      get.className = "sim-info-hint";
+      get.textContent = t("simulation.deviceModel.infoGet");
+      pop.append(title, why, file, get);
+      infoWrap.append(pop);
+    }
+    const trainBtn = document.createElement("button");
+    trainBtn.type = "button";
+    trainBtn.className = "docs-btn docs-btn-primary sim-devmodel-btn";
+    if (state.deviceTraining) {
+      trainBtn.disabled = true;
+      trainBtn.innerHTML = `<span class="sim-spinner" aria-hidden="true"></span>${t("simulation.deviceModel.training")}`;
+    } else {
+      trainBtn.textContent = t("simulation.deviceModel.train");
+      trainBtn.addEventListener("click", trainOnDeviceDataset);
+    }
+    block.append(infoWrap, trainBtn, getLink);
+    if (state.deviceTrainError) {
+      const err = document.createElement("span");
+      err.className = "sim-devmodel-error";
+      err.textContent = `${t("simulation.deviceModel.error")}: ${state.deviceTrainError}`;
+      block.append(err);
+    }
+    li.append(document.createTextNode(" "), block);
   }
 
   async function evaluate(inputs) {
@@ -761,6 +904,7 @@
     root.addEventListener("languageChanged", () => {
       const last = state.history[state.history.length - 1]; if (last) render(last); renderLog(); updateScenarioControls();
       renderModelIndicator();
+      renderCmdInfo();
       updateConnectBtn();
       if (device.connected) { setDeviceStatus("connected", device.name); if (device.source && device.source.isDemo) $("sim-device-note").textContent = t("simulation.device.demoNote"); }
       else { setDeviceStatus("idle"); $("sim-device-note").textContent = $("sim-device").options.length <= 1 ? t("simulation.device.noDevices") : ""; }
@@ -1028,6 +1172,7 @@
     setActiveCmd(device.mode);
     // Sensor panel and Wi-Fi quality only for a real device (not the demo).
     document.documentElement.classList.toggle("is-realdevice", !src.isDemo);
+    renderModelIndicator(); // the ESP32-dataset block depends on the active device
     if (src.isDemo) { stopSensors(); updateWifi(null); } else { startSensors(); }
     saveDeviceSession();
   }
@@ -1035,6 +1180,7 @@
     stopListening();
     stopSensors(); resetSensors(); updateWifi(null);
     document.documentElement.classList.remove("is-realdevice");
+    renderModelIndicator();
     if (device.source) device.source.stop();
     device.source = null; device.connected = false; device.name = null;
     $("sim-listen").disabled = true; setCmdEnabled(false);
@@ -1098,6 +1244,51 @@
   }
   function setActiveCmd(name) {
     document.querySelectorAll(".sim-cmd").forEach((b) => b.classList.toggle("is-active", b.dataset.cmd === name));
+    renderCmdInfo();
+  }
+
+  // --- "i" of the device commands: what the active command sends and what it changes ---
+  // What each device command sends and how it shows in the inputs (request parameters
+  // follow the MODES of src/devices.js; "on the test bed" values were measured with the ESP32).
+  const COMMAND_MODES = ["normal", "ddos", "scan", "exhaustion"];
+  function renderCmdInfo() {
+    const host = $("sim-cmd-info");
+    if (!host) return;
+    host.innerHTML = "";
+    const mode = COMMAND_MODES.includes(device.mode) ? device.mode : "normal";
+    const k = (key) => t(`simulation.commandInfo.${mode}.${key}`);
+    const wrap = document.createElement("span");
+    wrap.className = "sim-info-wrap";
+    const btn = document.createElement("button");
+    btn.type = "button"; btn.className = "sim-info"; btn.textContent = "i";
+    btn.setAttribute("aria-label", t("simulation.commandInfo.aria"));
+    btn.setAttribute("aria-expanded", state.cmdInfoOpen ? "true" : "false");
+    btn.addEventListener("click", (e) => { e.stopPropagation(); state.cmdInfoOpen = !state.cmdInfoOpen; state.deviceInfoOpen = false; renderCmdInfo(); renderModelIndicator(); });
+    wrap.append(btn);
+    if (state.cmdInfoOpen) {
+      const pop = document.createElement("div");
+      pop.className = "sim-info-pop is-right is-wide is-up";
+      pop.setAttribute("role", "dialog");
+      pop.addEventListener("click", (e) => e.stopPropagation());
+      const labelled = (labelKey, text, cls) => {
+        const el = document.createElement("p");
+        if (cls) el.className = cls;
+        const b = document.createElement("b"); b.textContent = `${t(`simulation.commandInfo.${labelKey}`)} `;
+        el.append(b, text);
+        return el;
+      };
+      const title = document.createElement("strong"); title.textContent = k("title");
+      const what = document.createElement("p"); what.textContent = k("what");
+      pop.append(
+        title,
+        what,
+        labelled("requestsLabel", k("requests")),
+        labelled("actualLabel", k("actual")),
+        labelled("effectLabel", k("signal"), "sim-info-signal"),
+      );
+      wrap.append(pop);
+    }
+    host.append(wrap);
   }
   async function sendCommand(name) {
     if (!device.source) return;
@@ -1140,8 +1331,15 @@
     $("sim-source-sim").addEventListener("click", () => setSource("sim"));
     $("sim-source-device").addEventListener("click", () => setSource("device"));
     $("sim-connect").addEventListener("click", () => { if (device.connected) disconnectDevice(); else connectDevice(); });
-    $("sim-refresh").addEventListener("click", loadDevices);
     $("sim-scan").addEventListener("click", scanDevices);
+    const closeDeviceInfo = (e) => {
+      if (state.deviceInfoOpen) { state.deviceInfoOpen = false; renderModelIndicator(); }
+      // A click on a command button keeps the command info open: it only switches its content.
+      const onCommand = e && e.target && e.target.closest && e.target.closest(".sim-cmd");
+      if (state.cmdInfoOpen && !onCommand) { state.cmdInfoOpen = false; renderCmdInfo(); }
+    };
+    document.addEventListener("click", closeDeviceInfo);
+    document.addEventListener("keydown", (e) => { if (e.key === "Escape") closeDeviceInfo(); });
     $("sim-sensor-refresh").addEventListener("click", refreshSensors);
     $("sim-device").addEventListener("change", () => { if (device.connected) disconnectDevice(); else saveDeviceSession(); });
     $("sim-listen").addEventListener("click", startListening);
@@ -1164,7 +1362,9 @@
     setDeviceStatus("idle");
     updateConnectBtn();
     await loadDevices();
+    await loadDeviceDataset();
     refreshAppliedModels();
+    renderCmdInfo();
     const restored = restoreDeviceSession();
     if (!restored) await reset();
     document.documentElement.classList.remove("is-loading");

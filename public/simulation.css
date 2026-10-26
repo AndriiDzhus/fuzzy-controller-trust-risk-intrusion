@@ -518,3 +518,35 @@
 .sim-model-name { color: #5a6472; }
 .sim-model-state { color: #7a828f; }
 .sim-model-state.is-trained { color: #2f80ed; font-weight: 600; }
+
+/* ESP32 test-bed dataset block in the "Applied models" Intrusion row. */
+.sim-devmodel { display: inline-flex; align-items: center; flex-wrap: wrap; gap: 6px; margin-left: 6px; vertical-align: middle; }
+.sim-devmodel .training-help { margin: 0; }
+.sim-devmodel-btn { padding: 2px 10px; font-size: 12px; line-height: 1.6; min-height: 0; text-decoration: none; }
+.sim-devmodel-error { color: #eb5757; font-size: 12px; }
+.sim-model-state.is-device { color: #27ae60; }
+.sim-spinner { display: inline-block; width: 11px; height: 11px; margin-right: 6px; border: 2px solid rgba(255,255,255,0.45); border-top-color: #fff; border-radius: 50%; vertical-align: -1px; animation: sim-spin 0.8s linear infinite; }
+@keyframes sim-spin { to { transform: rotate(360deg); } }
+
+/* "i" button of the ESP32-dataset block and its click popover. */
+.sim-info-wrap { position: relative; display: inline-flex; }
+.sim-info { display: inline-flex; align-items: center; justify-content: center; width: 1.15rem; height: 1.15rem; padding: 0; border: 1px solid #c3ced8; border-radius: 50%; background: #fff; color: #7f8c8d; font: 700 0.7rem/1 Georgia, serif; font-style: italic; cursor: pointer; }
+.sim-info:hover, .sim-info:focus-visible, .sim-info[aria-expanded="true"] { border-color: #2a78d6; color: #2a78d6; outline: none; }
+.sim-info-pop { position: absolute; left: -2px; top: calc(100% + 7px); z-index: 30; width: min(290px, 80vw); padding: 10px 12px; border-radius: 8px; background: #2c3e50; color: #fff; font-size: 12.5px; line-height: 1.45; box-shadow: 0 6px 18px rgba(0,0,0,0.18); }
+.sim-info-pop::before { content: ""; position: absolute; left: 4px; top: -5px; border: 5px solid transparent; border-top: 0; border-bottom-color: #2c3e50; }
+.sim-info-pop strong { display: block; margin-bottom: 4px; font-size: 13px; }
+.sim-info-pop p { margin: 4px 0 0; }
+.sim-info-pop code { padding: 1px 4px; border-radius: 4px; background: rgba(255,255,255,0.14); font-size: 12px; }
+.sim-info-hint { color: #c9d6e2; }
+
+/* "i" above the device command buttons (right-aligned, above "DDoS"). */
+.sim-cmd-info { display: flex; justify-content: flex-end; margin: -4px 0 4px; }
+.sim-info-pop.is-right { left: auto; right: -2px; }
+.sim-info-pop.is-right::before { left: auto; right: 4px; }
+.sim-info-pop.is-wide { width: min(330px, 86vw); }
+.sim-info-pop b { font-weight: 600; color: #fff; }
+.sim-info-signal { margin-top: 6px; color: #ffd36e; }
+/* Opens upward so the command buttons below stay clickable (content follows the active command). */
+.sim-info-pop.is-up { top: auto; bottom: calc(100% + 7px); }
+.sim-info-pop.is-up::before { top: auto; bottom: -5px; border-bottom: 0; border-top: 5px solid #2c3e50; }
+.sim-info-pop.is-wide { width: min(300px, 86vw); }
