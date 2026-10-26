@@ -208,6 +208,7 @@
     playing: false,
     timer: null,
     rnd: createRandom(7),
+    trainedSet: new Set(), // controllers that actually have a trained model
     history: [], // { step, inputs, outputs, terms, assessment }
     lastStatus: null,
     log: [],
@@ -230,18 +231,47 @@
       const result = local.calculate(values);
       return { value: result.value, term: result.dominantTerm, noRuleFired: Boolean(result.noRuleFired) };
     }
-    const query = state.model === "trained" ? "?model=trained" : "";
+    // Only the controllers that actually have a trained model (security, intrusion)
+    // are asked for it; trust is Mamdani-only, so requesting ?model=trained would 404.
+    const query = state.model === "trained" && state.trainedSet.has(name) ? "?model=trained" : "";
     let response = await fetch(`api/controllers/${name}/calculate${query}`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
     });
     if (response.status === 404 && query) {
+      state.trainedSet.delete(name); // stop asking for a trained model that vanished
       response = await fetch(`api/controllers/${name}/calculate`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
     }
     if (!response.ok) return null;
     const result = await response.json();
     return { value: result.value, term: result.dominantTerm, noRuleFired: Boolean(result.noRuleFired) };
+  }
+
+  // Learn which controllers offer a trained model, so we never request one that
+  // does not exist (trust has none). Local (client-side) controllers are checked
+  // in memory; the rest are asked via /models. Silent on failure: the set simply
+  // stays empty and the UI falls back to the base model.
+  async function refreshTrainedAvailability() {
+    state.trainedSet = new Set();
+    await Promise.all(
+      CONTROLLERS.map(async (name) => {
+        const local = localController(name);
+        if (local && root.fuzzyControllers) {
+          const entry = root.fuzzyControllers[name];
+          if (entry && typeof entry.variant === "function" && entry.variant("trained")) state.trainedSet.add(name);
+          return;
+        }
+        try {
+          const res = await fetch(`api/controllers/${name}/models`);
+          if (!res.ok) return;
+          const info = await res.json();
+          if (Array.isArray(info.available) && info.available.includes("trained")) state.trainedSet.add(name);
+        } catch (_) {
+          /* leave it out of the trained set */
+        }
+      })
+    );
   }
 
   async function evaluate(inputs) {
@@ -1056,8 +1086,8 @@
     setDeviceStatus("idle");
     updateConnectBtn();
     await loadDevices();
-    const trainedAvailable = Boolean(root.fuzzyControllers?.security?.variant?.("trained") || !root.fuzzyControllers);
-    if (!trainedAvailable) {
+    await refreshTrainedAvailability();
+    if (state.trainedSet.size === 0) {
       $("sim-model").querySelector('option[value="trained"]').disabled = true;
       state.model = "base"; // fall back to expert parameters if trained ones are unavailable
     }
