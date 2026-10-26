@@ -592,12 +592,7 @@
       "pause": "Пауза",
       "stepBtn": "Крок",
       "reset": "Скинути",
-      "modelTitle": "Модель контролерів",
-      "model": "Параметри контролерів ризику та вторгнення",
-      "models": {
-        "base": "Експертні",
-        "trained": "Навчені (ANFIS / ГА)"
-      },
+      "modelTitle": "Застосовані моделі",
       "policyTitle": "Політика реагування",
       "policyHint": "Стан пристрою визначається за рівнем безпеки; пороги можна змінити.",
       "policyBelow": "якщо рівень нижчий за",
@@ -687,6 +682,13 @@
         "lx": "лк",
         "updated": "оновлено",
         "unreachable": "Пристрій недоступний"
+      },
+      "modelHint": "Інтегральна оцінка використовує модель, застосовану до кожного контролера (на його сторінці).",
+      "modelExpert": "експертна",
+      "modelTrained": "навчена",
+      "method": {
+        "anfis": "ANFIS",
+        "ga": "ГА"
       }
     }
   },
@@ -1264,12 +1266,7 @@
       "pause": "Pause",
       "stepBtn": "Step",
       "reset": "Reset",
-      "modelTitle": "Controller models",
-      "model": "Parameters of the risk and intrusion controllers",
-      "models": {
-        "base": "Expert",
-        "trained": "Trained (ANFIS / GA)"
-      },
+      "modelTitle": "Applied models",
       "policyTitle": "Response policy",
       "policyHint": "The state of the device follows the security level; the thresholds can be changed.",
       "policyBelow": "if the level is below",
@@ -1359,6 +1356,13 @@
         "lx": "lx",
         "updated": "updated",
         "unreachable": "Device unreachable"
+      },
+      "modelHint": "The integral assessment uses the model applied to each controller (on its page).",
+      "modelExpert": "expert",
+      "modelTrained": "trained",
+      "method": {
+        "anfis": "ANFIS",
+        "ga": "GA"
       }
     }
   }
