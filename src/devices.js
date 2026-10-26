@@ -22,6 +22,7 @@
  *   POST /:id/command      { scenario: normal|ddos|scan|exhaustion } sets the mode
  */
 const http = require("http");
+const os = require("os");
 const express = require("express");
 
 const WINDOW_MS = 2000; // one observation window (CC is "per 2 s" in the dataset)
@@ -173,18 +174,103 @@ class Monitor {
   }
 }
 
+// --- network discovery -----------------------------------------------------
+// Find ESP32 nodes running our firmware by probing /status on the LAN /24 and
+// matching the firmware signature (a `node` name and a `sensors` object).
+function localSubnets() {
+  const out = [];
+  const ifs = os.networkInterfaces();
+  for (const name of Object.keys(ifs)) {
+    for (const a of ifs[name] || []) {
+      if (a.family === "IPv4" && !a.internal) out.push(a.address.split(".").slice(0, 3).join("."));
+    }
+  }
+  return [...new Set(out)];
+}
+
+/** Probe one host for our firmware signature. Resolves with device info or null. */
+function probe(host, timeoutMs = 500) {
+  return new Promise((resolve) => {
+    const { host: h, port } = parseHost(host);
+    const req = http.get({ host: h, port, path: "/status", timeout: timeoutMs, agent: false }, (res) => {
+      let b = "";
+      res.on("data", (c) => { b += c; });
+      res.on("end", () => {
+        try {
+          const j = JSON.parse(b);
+          if (j && typeof j.node === "string" && j.sensors && j.tx_power_dbm != null) {
+            resolve({ host, node: j.node, rssi: j.rssi_dbm, tx: j.tx_power_dbm, sensors: j.sensors });
+          } else resolve(null);
+        } catch (_) { resolve(null); }
+      });
+    });
+    req.on("timeout", () => { req.destroy(); resolve(null); });
+    req.on("error", () => resolve(null));
+  });
+}
+
+async function discover(subnetArg, extraSubnets = []) {
+  const subnets = [...new Set([...(subnetArg ? [subnetArg] : localSubnets()), ...extraSubnets])];
+  const found = [];
+  for (const sub of subnets) {
+    if (!/^\d+\.\d+\.\d+$/.test(sub)) continue;
+    const hosts = [];
+    for (let i = 1; i <= 254; i += 1) hosts.push(`${sub}.${i}`);
+    let idx = 0;
+    const worker = async () => {
+      while (idx < hosts.length) {
+        const h = hosts[idx]; idx += 1;
+        // eslint-disable-next-line no-await-in-loop
+        const r = await probe(h);
+        if (r) found.push(r);
+      }
+    };
+    // eslint-disable-next-line no-await-in-loop
+    await Promise.all(Array.from({ length: 48 }, worker));
+  }
+  return found;
+}
+
 // --- router ----------------------------------------------------------------
 function buildRouter() {
   const router = express.Router();
-  const devices = configuredDevices();
-  const monitors = new Map(devices.map((d) => [d.id, new Monitor(d)]));
+  const configured = configuredDevices();           // manual device(s) from options
+  const dynamic = new Map();                         // discovered devices: id(host) -> {id,name,host}
+  const monitors = new Map();                        // id -> Monitor
 
-  router.get("/", (req, res) => {
-    res.json(devices.map((d) => ({ id: d.id, name: d.name, host: d.host })));
+  function deviceById(id) {
+    return configured.find((d) => d.id === id) || dynamic.get(id) || null;
+  }
+  function getMonitor(id) {
+    if (monitors.has(id)) return monitors.get(id);
+    const dev = deviceById(id);
+    if (!dev) return null;
+    const m = new Monitor(dev);
+    monitors.set(id, m);
+    return m;
+  }
+  function deviceList() {
+    const seen = new Set(configured.map((d) => d.host));
+    const list = configured.map((d) => ({ id: d.id, name: d.name, host: d.host }));
+    for (const d of dynamic.values()) if (!seen.has(d.host)) list.push({ id: d.id, name: d.name, host: d.host });
+    return list;
+  }
+
+  router.get("/", (req, res) => res.json(deviceList()));
+
+  router.get("/discover", async (req, res) => {
+    const subnet = typeof req.query.subnet === "string" ? req.query.subnet : null;
+    // also scan the subnet of a manually configured device, if any
+    const extra = configured.map((d) => parseHost(d.host).host.split(".").slice(0, 3).join("."))
+      .filter((s) => /^\d+\.\d+\.\d+$/.test(s));
+    const found = await discover(subnet, extra);
+    dynamic.clear();
+    for (const f of found) dynamic.set(f.host, { id: f.host, name: f.node, host: f.host });
+    res.json(deviceList());
   });
 
   router.get("/:id", async (req, res) => {
-    const m = monitors.get(req.params.id);
+    const m = getMonitor(req.params.id);
     if (!m) return res.status(404).json({ error: "Unknown device" });
     const r = await hit(m.dev.host, "/ping", 1200);
     if (!r.ok) return res.status(502).json({ error: "Device unreachable", host: m.dev.host });
@@ -192,14 +278,14 @@ function buildRouter() {
   });
 
   router.get("/:id/reading", (req, res) => {
-    const m = monitors.get(req.params.id);
+    const m = getMonitor(req.params.id);
     if (!m) return res.status(404).json({ error: "Unknown device" });
     if (!m.last) return res.status(503).json({ error: "No reading yet" });
     return res.json(m.last);
   });
 
   router.post("/:id/command", (req, res) => {
-    const m = monitors.get(req.params.id);
+    const m = getMonitor(req.params.id);
     if (!m) return res.status(404).json({ error: "Unknown device" });
     const scenario = req.body && req.body.scenario;
     if (!MODES[scenario]) return res.status(400).json({ error: "Unknown scenario", allowed: Object.keys(MODES) });
@@ -208,7 +294,7 @@ function buildRouter() {
   });
 
   router.get("/:id/stream", (req, res) => {
-    const m = monitors.get(req.params.id);
+    const m = getMonitor(req.params.id);
     if (!m) return res.status(404).end();
     res.writeHead(200, { "Content-Type": "text/event-stream", "Cache-Control": "no-cache", Connection: "keep-alive" });
     res.write(": connected\n\n");
@@ -221,4 +307,4 @@ function buildRouter() {
   return router;
 }
 
-module.exports = { buildRouter, toInputs, runWindow, MODES, configuredDevices };
+module.exports = { buildRouter, toInputs, runWindow, MODES, configuredDevices, discover, probe, localSubnets };

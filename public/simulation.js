@@ -850,14 +850,32 @@
     $("sim-connect").querySelector("span").textContent = t(device.connected ? "simulation.device.disconnect" : "simulation.device.connect");
   }
 
-  async function loadDevices() {
+  function populateDevices(real) {
     const select = $("sim-device");
+    const keep = select.value;
     select.innerHTML = "";
-    let real = [];
-    try { const r = await fetch("api/devices"); if (r.ok) { const d = await r.json(); if (Array.isArray(d)) real = d; } } catch (_) { /* no backend */ }
     real.forEach((dev) => { const o = document.createElement("option"); o.value = dev.id; o.textContent = dev.name || dev.id; select.appendChild(o); });
     const demo = document.createElement("option"); demo.value = "demo"; demo.textContent = t("simulation.device.demo"); select.appendChild(demo);
+    if (keep && [...select.options].some((o) => o.value === keep)) select.value = keep;
     $("sim-device-note").textContent = real.length ? "" : t("simulation.device.noDevices");
+    return real.length;
+  }
+
+  async function loadDevices() {
+    let real = [];
+    try { const r = await fetch("api/devices"); if (r.ok) { const d = await r.json(); if (Array.isArray(d)) real = d; } } catch (_) { /* no backend */ }
+    populateDevices(real);
+  }
+
+  async function scanDevices() {
+    const btn = $("sim-scan");
+    btn.disabled = true;
+    $("sim-device-note").textContent = t("simulation.device.scanning");
+    let real = [];
+    try { const r = await fetch("api/devices/discover"); if (r.ok) { const d = await r.json(); if (Array.isArray(d)) real = d; } } catch (_) { /* no backend */ }
+    const n = populateDevices(real);
+    btn.disabled = false;
+    if (n) $("sim-device-note").textContent = t("simulation.device.scanFound").replace("{n}", String(n));
   }
 
   async function connectDevice() {
@@ -922,6 +940,7 @@
     $("sim-source-device").addEventListener("click", () => setSource("device"));
     $("sim-connect").addEventListener("click", () => { if (device.connected) disconnectDevice(); else connectDevice(); });
     $("sim-refresh").addEventListener("click", loadDevices);
+    $("sim-scan").addEventListener("click", scanDevices);
     $("sim-device").addEventListener("change", () => { if (device.connected) disconnectDevice(); });
     $("sim-listen").addEventListener("click", startListening);
     $("sim-liststop").addEventListener("click", stopListening);
