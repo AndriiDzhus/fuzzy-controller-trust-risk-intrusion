@@ -150,42 +150,79 @@ app.get("/api/controllers/:controller/models", (req, res) => {
 // Training
 // ---------------------------------------------------------------------------
 
-function readDatasetFile(controller) {
-  return fs.readFileSync(path.join(__dirname, datasets.datasetFile(controller)), "utf8");
+/**
+ * Dataset variants. "default" is data/<controller>-100.csv (the thesis dataset).
+ * "esp32" is the dataset adapted to the ESP32 test-bed device:
+ * data/<controller>-esp32-<rows>.csv — discovered by name, the file with the
+ * largest row count wins, so publishing a newer version (e.g. -120) is enough
+ * for the app (and the "trained on this dataset" check) to pick it up.
+ */
+const DATASET_VARIANTS = {
+  default: { label: "default" },
+  esp32: { label: "ESP32", pattern: (controller) => new RegExp(`^${controller}-esp32-(\\d+)\\.csv$`) },
+};
+
+/** @returns {{variant, name, file, label} | null} */
+function resolveDataset(controller, variant = "default") {
+  if (!datasets.hasDefaultDataset(controller)) return null;
+  const spec = DATASET_VARIANTS[variant];
+  if (!spec) return null;
+  if (variant === "default") {
+    return { variant, name: datasets.datasetName(controller), file: path.join(__dirname, datasets.datasetFile(controller)), label: spec.label };
+  }
+  const dir = path.join(__dirname, "data");
+  const re = spec.pattern(controller);
+  const best = fs
+    .readdirSync(dir)
+    .map((f) => ({ f, m: f.match(re) }))
+    .filter((x) => x.m)
+    .sort((a, b) => Number(b.m[1]) - Number(a.m[1]))[0];
+  return best ? { variant, name: best.f, file: path.join(dir, best.f), label: spec.label } : null;
 }
 
-// The default dataset of a controller: its file, row count, columns.
+function readDatasetFile(file) {
+  return fs.readFileSync(file, "utf8");
+}
+
+// A dataset of a controller: its file, row count, columns. ?variant=default|esp32
 app.get("/api/controllers/:controller/dataset/info", (req, res) => {
   try {
     const { controller } = req.params;
-    if (!datasets.hasDefaultDataset(controller)) {
-      res.status(404).json({ error: "No dataset for this controller" });
+    const variant = typeof req.query.variant === "string" && req.query.variant ? req.query.variant : "default";
+    const ds = resolveDataset(controller, variant);
+    if (!ds) {
+      res.status(404).json({ error: "No dataset for this controller", variant });
       return;
     }
-    const table = datasets.defaultDataset(controller, readDatasetFile(controller));
-    res.json({
-      controller,
-      rows: datasets.DEFAULT_DATASET_ROWS,
-      file: datasets.datasetName(controller),
-      columns: table.header,
-    });
+    const table = datasets.defaultDataset(controller, readDatasetFile(ds.file));
+    res.json({ controller, variant: ds.variant, label: ds.label, rows: table.total, file: ds.name, columns: table.header });
   } catch (error) {
     sendServerError(res, error);
   }
 });
 
-// The default dataset of a controller as .xlsx.
+// A dataset of a controller as .xlsx (default) or raw .csv (?format=csv). ?variant=default|esp32
 app.get("/api/controllers/:controller/dataset", async (req, res) => {
   try {
     const { controller } = req.params;
-    if (!datasets.hasDefaultDataset(controller)) {
-      res.status(404).json({ error: "No dataset for this controller" });
+    const variant = typeof req.query.variant === "string" && req.query.variant ? req.query.variant : "default";
+    const ds = resolveDataset(controller, variant);
+    if (!ds) {
+      res.status(404).json({ error: "No dataset for this controller", variant });
       return;
     }
-    const table = datasets.defaultDataset(controller, readDatasetFile(controller));
+    const csv = readDatasetFile(ds.file);
+    const base = ds.name.replace(/\.csv$/i, "");
+    if (req.query.format === "csv") {
+      res.setHeader("Content-Type", "text/csv; charset=utf-8");
+      res.setHeader("Content-Disposition", `attachment; filename="${ds.name}"`);
+      res.send(csv);
+      return;
+    }
+    const table = datasets.defaultDataset(controller, csv);
     const bytes = await xlsx.write([{ name: "Dataset", rows: [table.header, ...table.rows] }]);
     res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
-    res.setHeader("Content-Disposition", `attachment; filename="${controller}-${datasets.DEFAULT_DATASET_ROWS}.xlsx"`);
+    res.setHeader("Content-Disposition", `attachment; filename="${base}.xlsx"`);
     res.setHeader("X-Row-Count", String(table.rows.length));
     res.send(Buffer.from(bytes));
   } catch (error) {
