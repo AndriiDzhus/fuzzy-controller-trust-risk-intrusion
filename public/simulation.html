@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="uk" class="is-loading">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title data-i18n="simulation.pageTitle">Комплексна оцінка | Платформа нечіткого виводу</title>
+    <link rel="icon" href="favicon.svg" type="image/svg+xml" />
+    <link rel="icon" href="favicon-32.png" type="image/png" sizes="32x32" />
+    <link rel="apple-touch-icon" href="apple-touch-icon.png" />
+    <meta name="theme-color" content="#667eea" />
+    <link rel="preload" href="i18n.json" as="fetch" crossorigin="anonymous" />
+    <link rel="stylesheet" href="style.css" />
+    <link rel="stylesheet" href="navigation.css" />
+    <link rel="stylesheet" href="simulation.css" />
+  </head>
+  <body>
+    <div class="container">
+      <header class="app-header">
+        <div class="app-header-top">
+          <h1 class="app-brand-name" data-i18n="simulation.headline">Комплексне оцінювання інформаційної безпеки пристрою</h1>
+          <div class="lang-wrap">
+            <select id="languageSwitcher" class="lang-select">
+              <option value="uk" data-i18n="common.languages.uk"></option>
+              <option value="en" data-i18n="common.languages.en"></option>
+            </select>
+          </div>
+        </div>
+        <nav class="navigation" aria-label="controllers">
+          <ul class="nav-list">
+            <li><a class="nav-link" href="index.html" data-i18n="navigation.main"></a></li>
+            <li><a class="nav-link" href="security.html" data-i18n="navigation.security"></a></li>
+            <li><a class="nav-link" href="intrusion.html" data-i18n="navigation.intrusion"></a></li>
+            <li><a class="nav-link active" href="simulation.html" data-i18n="navigation.simulation"></a></li>
+          </ul>
+        </nav>
+        <div class="page-head">
+          <div class="page-head-copy">
+            <p class="description" data-i18n="simulation.description"></p>
+          </div>
+        </div>
+      </header>
+
+      <!-- Integral assessment -->
+      <section class="sim-summary">
+        <div class="sim-cards">
+          <div class="sim-card sim-card-trust">
+            <h3><span data-i18n="simulation.controllers.trust"></span> <span class="sim-symbol">TI</span></h3>
+            <canvas id="sim-gauge-trust" class="sim-gauge"></canvas>
+            <div class="sim-card-value" id="sim-out-trust">—</div>
+            <div class="sim-card-term" id="sim-term-trust">—</div>
+          </div>
+          <div class="sim-card sim-card-security">
+            <h3><span data-i18n="simulation.controllers.security"></span> <span class="sim-symbol">SR</span></h3>
+            <canvas id="sim-gauge-security" class="sim-gauge"></canvas>
+            <div class="sim-card-value" id="sim-out-security">—</div>
+            <div class="sim-card-term" id="sim-term-security">—</div>
+          </div>
+          <div class="sim-card sim-card-intrusion">
+            <h3><span data-i18n="simulation.controllers.intrusion"></span> <span class="sim-symbol">IP</span></h3>
+            <canvas id="sim-gauge-intrusion" class="sim-gauge"></canvas>
+            <div class="sim-card-value" id="sim-out-intrusion">—</div>
+            <div class="sim-card-term" id="sim-term-intrusion">—</div>
+          </div>
+          <div class="sim-card sim-card-level">
+            <h3 data-i18n="simulation.levelTitle"></h3>
+            <div class="sim-level-row">
+              <div class="sim-level-value" id="sim-level">—</div>
+              <div>
+                <div class="sim-level-term" id="sim-level-term">—</div>
+                <div class="sim-status is-normal" id="sim-status">—</div>
+              </div>
+            </div>
+            <div class="sim-level-bar"><div class="sim-level-bar-fill is-normal" id="sim-level-bar"></div></div>
+            <div class="sim-level-meta">
+              <span><span data-i18n="simulation.weakest"></span>: <strong id="sim-weakest">—</strong></span>
+              <span><span data-i18n="simulation.step"></span>: <strong id="sim-step">0</strong></span>
+            </div>
+          </div>
+        </div>
+        <div class="sim-charts">
+          <div class="sim-timeline-wrap">
+            <h3 data-i18n="simulation.timelineTitle"></h3>
+            <canvas id="sim-timeline" class="sim-timeline"></canvas>
+          </div>
+          <div class="sim-card sim-card-radar">
+            <h3 data-i18n="simulation.radarTitle"></h3>
+            <canvas id="sim-radar" class="sim-radar"></canvas>
+          </div>
+        </div>
+      </section>
+
+      <!-- Data-source switch: generated scenario vs real device -->
+      <div class="sim-source" role="group" aria-label="data source">
+        <span class="sim-source-label" data-i18n="simulation.source.title"></span>
+        <div class="sim-source-toggle">
+          <button type="button" class="sim-source-btn is-active" id="sim-source-sim" data-source="sim" data-i18n="simulation.source.sim"></button>
+          <button type="button" class="sim-source-btn" id="sim-source-device" data-source="device" data-i18n="simulation.source.device"></button>
+        </div>
+        <p class="sim-hint sim-source-hint" data-i18n="simulation.source.hint"></p>
+      </div>
+
+      <!-- Inputs and scenario -->
+      <div class="workspace sim-workspace">
+        <!-- Read-only readouts: scenario values (simulation) or device telemetry (device mode) -->
+        <div class="input-section readouts-section">
+          <h2 class="workspace-heading" data-i18n="simulation.inputsTitle"></h2>
+          <p class="sim-hint device-only" data-i18n="simulation.device.liveHint"></p>
+          <p class="sim-hint scenario-only" data-i18n="simulation.scenarioReadHint"></p>
+          <div class="sim-live" id="sim-live"></div>
+        </div>
+
+        <!-- Manual inputs (simulation mode, only while the "Manual" scenario is selected) -->
+        <div class="input-section manual-only" id="sim-manual">
+          <h2 class="workspace-heading" data-i18n="simulation.manualTitle"></h2>
+          <p class="sim-hint" data-i18n="simulation.inputsHint"></p>
+
+          <fieldset class="sim-fieldset sim-fieldset-trust">
+            <legend><span data-i18n="simulation.controllers.trust"></span> · <span data-i18n="simulation.inputGroups.trust"></span></legend>
+            <div class="input-group">
+              <label for="sim-errors" data-i18n="index.inputs.errors"></label>
+              <input type="range" id="sim-errors" />
+              <input type="text" inputmode="decimal" autocomplete="off" class="value-input" id="sim-errors-num" />
+            </div>
+            <div class="input-group">
+              <label for="sim-connections" data-i18n="index.inputs.connections"></label>
+              <input type="range" id="sim-connections" />
+              <input type="text" inputmode="decimal" autocomplete="off" class="value-input" id="sim-connections-num" />
+            </div>
+            <div class="input-group">
+              <label for="sim-bytes" data-i18n="index.inputs.bytes"></label>
+              <input type="range" id="sim-bytes" />
+              <input type="text" inputmode="decimal" autocomplete="off" class="value-input" id="sim-bytes-num" />
+            </div>
+          </fieldset>
+
+          <fieldset class="sim-fieldset sim-fieldset-security">
+            <legend><span data-i18n="simulation.controllers.security"></span> · <span data-i18n="simulation.inputGroups.security"></span></legend>
+            <div class="input-group">
+              <label for="sim-energy" data-i18n="security.inputs.energy"></label>
+              <input type="range" id="sim-energy" />
+              <input type="text" inputmode="decimal" autocomplete="off" class="value-input" id="sim-energy-num" />
+            </div>
+            <div class="input-group">
+              <label for="sim-strength" data-i18n="security.inputs.strength"></label>
+              <input type="range" id="sim-strength" />
+              <input type="text" inputmode="decimal" autocomplete="off" class="value-input" id="sim-strength-num" />
+            </div>
+            <div class="input-group">
+              <label for="sim-response" data-i18n="security.inputs.response"></label>
+              <input type="range" id="sim-response" />
+              <input type="text" inputmode="decimal" autocomplete="off" class="value-input" id="sim-response-num" />
+            </div>
+          </fieldset>
+
+          <fieldset class="sim-fieldset sim-fieldset-intrusion">
+            <legend><span data-i18n="simulation.controllers.intrusion"></span> · <span data-i18n="simulation.inputGroups.intrusion"></span></legend>
+            <div class="input-group">
+              <label for="sim-packets" data-i18n="intrusion.inputs.packets"></label>
+              <input type="range" id="sim-packets" />
+              <input type="text" inputmode="decimal" autocomplete="off" class="value-input" id="sim-packets-num" />
+            </div>
+            <div class="input-group">
+              <label for="sim-rate" data-i18n="intrusion.inputs.rate"></label>
+              <input type="range" id="sim-rate" />
+              <input type="text" inputmode="decimal" autocomplete="off" class="value-input" id="sim-rate-num" />
+            </div>
+            <div class="input-group">
+              <label for="sim-weight" data-i18n="intrusion.inputs.weight"></label>
+              <input type="range" id="sim-weight" />
+              <input type="text" inputmode="decimal" autocomplete="off" class="value-input" id="sim-weight-num" />
+            </div>
+          </fieldset>
+        </div>
+
+        <div class="output-section sim-controls">
+          <!-- Device panel (device mode) -->
+          <div class="device-only sim-device">
+            <h2 class="workspace-heading" data-i18n="simulation.device.title"></h2>
+            <label class="sim-control">
+              <span data-i18n="simulation.device.picker"></span>
+              <select id="sim-device"></select>
+            </label>
+            <div class="sim-device-row">
+              <span class="sim-device-dot" id="sim-device-dot"></span>
+              <span class="sim-device-status" id="sim-device-status"></span>
+              <span class="sim-wifi" id="sim-wifi" hidden aria-hidden="true"><i></i><i></i><i></i><i></i></span>
+            </div>
+            <p class="sim-hint" id="sim-device-note"></p>
+            <div class="sim-buttons">
+              <button type="button" class="docs-btn sim-btn-primary" id="sim-connect"><span data-i18n="simulation.device.connect"></span></button>
+              <button type="button" class="docs-btn docs-btn-alt" id="sim-scan"><span data-i18n="simulation.device.scan"></span></button>
+            </div>
+            <div class="sim-buttons">
+              <button type="button" class="docs-btn sim-btn-primary" id="sim-listen" disabled><svg class="btn-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 4l14 8-14 8z"/></svg><span data-i18n="simulation.device.listen"></span></button>
+              <button type="button" class="docs-btn docs-btn-alt" id="sim-liststop" hidden><svg class="btn-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4h4v16H7zM13 4h4v16h-4z"/></svg><span data-i18n="simulation.device.stop"></span></button>
+            </div>
+
+            <h2 class="workspace-heading sim-heading-gap" data-i18n="simulation.device.commandTitle"></h2>
+            <p class="sim-hint" data-i18n="simulation.device.commandHint"></p>
+            <div class="sim-cmd-info" id="sim-cmd-info"></div>
+            <div class="sim-cmd-grid">
+              <button type="button" class="docs-btn docs-btn-alt sim-cmd" data-cmd="normal" disabled data-i18n="simulation.commands.normal"></button>
+              <button type="button" class="docs-btn docs-btn-alt sim-cmd" data-cmd="ddos" disabled data-i18n="simulation.commands.ddos"></button>
+              <button type="button" class="docs-btn docs-btn-alt sim-cmd" data-cmd="scan" disabled data-i18n="simulation.commands.scan"></button>
+              <button type="button" class="docs-btn docs-btn-alt sim-cmd" data-cmd="exhaustion" disabled data-i18n="simulation.commands.exhaustion"></button>
+            </div>
+          </div>
+
+          <!-- Scenario controls (simulation mode) -->
+          <div class="sim-only">
+          <h2 class="workspace-heading" data-i18n="simulation.scenarioTitle"></h2>
+          <label class="sim-control">
+            <span data-i18n="simulation.scenario"></span>
+            <select id="sim-scenario">
+              <option value="manual" data-i18n="simulation.scenarios.manual"></option>
+              <option value="normal" data-i18n="simulation.scenarios.normal"></option>
+              <option value="ddos" data-i18n="simulation.scenarios.ddos"></option>
+              <option value="scan" data-i18n="simulation.scenarios.scan"></option>
+              <option value="exhaustion" data-i18n="simulation.scenarios.exhaustion"></option>
+              <option value="mixed" data-i18n="simulation.scenarios.mixed"></option>
+            </select>
+          </label>
+          <p class="sim-hint" id="sim-scenario-note"></p>
+          <div id="sim-scenario-params">
+            <label class="sim-control sim-control-range">
+              <span><span data-i18n="simulation.intensity"></span> <strong id="sim-intensity-val">100 %</strong></span>
+              <input type="range" id="sim-intensity" min="0.1" max="1" step="0.05" value="1" />
+            </label>
+            <label class="sim-control sim-control-range">
+              <span><span data-i18n="simulation.start"></span> <strong id="sim-start-val">30</strong></span>
+              <input type="range" id="sim-start" min="0" max="100" step="1" value="30" />
+            </label>
+            <label class="sim-control sim-control-range">
+              <span><span data-i18n="simulation.duration"></span> <strong id="sim-duration-val">60</strong></span>
+              <input type="range" id="sim-duration" min="10" max="110" step="1" value="60" />
+            </label>
+            <label class="sim-control sim-control-range">
+              <span><span data-i18n="simulation.noise"></span> <strong id="sim-noise-val">100 %</strong></span>
+              <input type="range" id="sim-noise" min="0" max="2" step="0.1" value="1" />
+            </label>
+            <label class="sim-control sim-control-range">
+              <span><span data-i18n="simulation.speed"></span> <strong id="sim-speed-val">×1</strong></span>
+              <input type="range" id="sim-speed" min="0.5" max="8" step="0.5" value="1" />
+            </label>
+          </div>
+          <div class="sim-buttons">
+            <button type="button" class="docs-btn sim-btn-primary" id="sim-play"><svg class="btn-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 4l14 8-14 8z"/></svg><span data-i18n="simulation.play"></span></button>
+            <button type="button" class="docs-btn sim-btn-primary" id="sim-pause" hidden><svg class="btn-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4h4v16H7zM13 4h4v16h-4z"/></svg><span data-i18n="simulation.pause"></span></button>
+            <button type="button" class="docs-btn docs-btn-alt" id="sim-stepbtn"><svg class="btn-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4l10 8-10 8z"/><path d="M18 4v16"/></svg><span data-i18n="simulation.stepBtn"></span></button>
+            <button type="button" class="docs-btn docs-btn-alt" id="sim-reset"><svg class="btn-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12a8 8 0 1 0 3-6.2"/><path d="M4 4v5h5"/></svg><span data-i18n="simulation.reset"></span></button>
+          </div>
+          </div>
+
+          <h2 class="workspace-heading sim-heading-gap" data-i18n="simulation.modelTitle"></h2>
+          <p class="sim-hint" data-i18n="simulation.modelHint"></p>
+          <ul class="sim-models" id="sim-models"></ul>
+
+          <h2 class="workspace-heading sim-heading-gap" data-i18n="simulation.policyTitle"></h2>
+          <p class="sim-hint" data-i18n="simulation.policyHint"></p>
+          <div class="sim-policy">
+            <label><span class="sim-dot is-warning"></span><span data-i18n="simulation.status.warning"></span> <span data-i18n="simulation.policyBelow"></span> <input type="number" id="sim-warn" min="0" max="100" step="1" class="value-input" /></label>
+            <label><span class="sim-dot is-critical"></span><span data-i18n="simulation.status.critical"></span> <span data-i18n="simulation.policyBelow"></span> <input type="number" id="sim-critical" min="0" max="100" step="1" class="value-input" /></label>
+          </div>
+        </div>
+      </div>
+
+      <details class="process-step sim-sensors" open>
+        <summary>
+          <span class="process-step-num">◉</span>
+          <span class="process-step-title" data-i18n="simulation.sensors.title"></span>
+        </summary>
+        <div class="process-step-body">
+          <p class="sim-hint" data-i18n="simulation.sensors.hint"></p>
+          <div class="sim-sensors-head">
+            <span class="sim-sensors-name" id="sim-sensor-name">—</span>
+            <div class="sim-sensors-chips" id="sim-sensor-chips"></div>
+            <button type="button" class="docs-btn docs-btn-alt sim-sensors-refresh" id="sim-sensor-refresh"><svg class="btn-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12a8 8 0 1 0 3-6.2"/><path d="M4 4v5h5"/></svg><span data-i18n="simulation.sensors.refresh"></span></button>
+          </div>
+          <div class="sim-metrics">
+            <div class="sim-metric sim-metric-temp">
+              <span class="sim-metric-label" data-i18n="simulation.sensors.temperature"></span>
+              <span class="sim-metric-val"><strong id="sim-m-temp">—</strong> <span class="sim-metric-unit">°C</span></span>
+            </div>
+            <div class="sim-metric sim-metric-hum">
+              <span class="sim-metric-label" data-i18n="simulation.sensors.humidity"></span>
+              <span class="sim-metric-val"><strong id="sim-m-hum">—</strong> <span class="sim-metric-unit">%</span></span>
+            </div>
+            <div class="sim-metric sim-metric-press">
+              <span class="sim-metric-label" data-i18n="simulation.sensors.pressure"></span>
+              <span class="sim-metric-val"><strong id="sim-m-press">—</strong> <span class="sim-metric-unit" data-i18n="simulation.sensors.mmhg"></span></span>
+            </div>
+            <div class="sim-metric sim-metric-lux">
+              <span class="sim-metric-label" data-i18n="simulation.sensors.lux"></span>
+              <span class="sim-metric-val"><strong id="sim-m-lux">—</strong> <span class="sim-metric-unit" data-i18n="simulation.sensors.lx"></span></span>
+            </div>
+          </div>
+          <p class="sim-hint sim-sensors-meta" id="sim-sensor-meta"></p>
+        </div>
+      </details>
+
+      <details class="process-step" open>
+        <summary>
+          <span class="process-step-num">!</span>
+          <span class="process-step-title" data-i18n="simulation.log.title"></span>
+        </summary>
+        <div class="process-step-body">
+          <ul class="sim-log" id="sim-log"></ul>
+        </div>
+      </details>
+
+      <details class="process-step">
+        <summary>
+          <span class="process-step-num">i</span>
+          <span class="process-step-title" data-i18n="simulation.why.title"></span>
+        </summary>
+        <div class="process-step-body sim-about">
+          <p data-i18n="simulation.why.p1"></p>
+          <p data-i18n="simulation.why.p2"></p>
+          <p data-i18n="simulation.why.p3"></p>
+        </div>
+      </details>
+
+      <details class="process-step">
+        <summary>
+          <span class="process-step-num">?</span>
+          <span class="process-step-title" data-i18n="simulation.about.title"></span>
+        </summary>
+        <div class="process-step-body sim-about">
+          <p data-i18n="simulation.about.p1"></p>
+          <p data-i18n="simulation.about.p2"></p>
+          <p data-i18n="simulation.about.p3"></p>
+          <p data-i18n="simulation.about.p4"></p>
+        </div>
+      </details>
+    </div>
+
+    <script src="i18n-helper.js"></script>
+    <script src="simulation.js"></script>
+  </body>
+</html>

@@ -324,7 +324,8 @@
     "navigation": {
       "main": "Індекс довіри",
       "security": "Ризик безпеки",
-      "intrusion": "Ймовірність вторгнення"
+      "intrusion": "Ймовірність вторгнення",
+      "simulation": "Комплексна оцінка"
     },
     "index": {
       "pageTitle": "Індекс довіри | Платформа нечіткого виводу",
@@ -535,6 +536,204 @@
         "metaChip": "навчені (ГА)",
         "about": "Хромосома — 74 гени: 18 параметрів вхідних гаусоїд (c, σ) і 8 параметрів вихідних ({formulas|функції належності}) та 48 індексів термів 12 правил ({rules|база правил}). Пристосованість F = 1 / (1 + RMSE) на навчальній вибірці. Оператори: турнірна селекція, арифметичний кросовер для дійсних генів і двоточковий для правил, гаусова мутація параметрів та випадкова заміна індексу терму, валідація (σ > 0, центри в універсумі, порядок термів). Графік показує найкраще і середнє RMSE популяції та RMSE валідаційної вибірки по поколіннях.",
         "columnsNote": "Колонки: NP, Rate (пакетів/с), We, IP (0–100)."
+      }
+    },
+    "simulation": {
+      "pageTitle": "Комплексна оцінка | Платформа нечіткого виводу",
+      "headline": "Комплексне оцінювання інформаційної безпеки пристрою Інтернету речей",
+      "description": "Безпеку IoT-пристрою неможливо охарактеризувати одним показником, тому три контролери працюють разом на одному потоці спостережень: індекс довіри характеризує пристрій як учасника мережі, ризик безпеки – небезпечність умов його функціонування, ймовірність вторгнення – наявність атаки тут і зараз. Їх поєднання дає рівень інформаційної безпеки пристрою. У режимі «Симуляція» запустіть сценарій атаки; у режимі «Реальний пристрій» підключіть пристрій і почніть прослуховування показників.",
+      "controllers": {
+        "trust": "Індекс довіри",
+        "security": "Ризик безпеки",
+        "intrusion": "Ймовірність вторгнення"
+      },
+      "inputGroups": {
+        "trust": "поведінка з'єднань",
+        "security": "ресурси та канал",
+        "intrusion": "інтенсивність трафіку"
+      },
+      "partial": {
+        "trust": "Довіра",
+        "security": "Захищеність",
+        "intrusion": "Стійкість"
+      },
+      "levelTitle": "Рівень інформаційної безпеки",
+      "levelShort": "Рівень безпеки",
+      "level": "рівень",
+      "weakest": "Найслабша ланка",
+      "weakestShort": "найслабша ланка",
+      "step": "Крок",
+      "radarTitle": "Трикутник безпеки",
+      "timelineTitle": "Динаміка оцінок у часі",
+      "inputsTitle": "Вхідні параметри спостереження",
+      "inputsHint": "Зміна будь-якого параметра одразу перераховує всі три контролери та рівень безпеки; під час сценарію значення задає сценарій.",
+      "scenarioTitle": "Сценарій",
+      "scenario": "Сценарій спостережень",
+      "scenarios": {
+        "manual": "Ручне керування",
+        "normal": "Нормальна робота",
+        "ddos": "DDoS-атака (flood)",
+        "scan": "Сканування та підбір",
+        "exhaustion": "Виснаження ресурсів / глушіння",
+        "mixed": "Змішана атака",
+        "manualNote": "Входи задаються повзунками; кожна зміна додає крок на графік.",
+        "normalNote": "Пристрій працює штатно, входи коливаються навколо типових значень.",
+        "ddosNote": "Зростають швидкість передавання, кількість пакетів і з'єднань, частка SYN-помилок; корисне навантаження на пакет падає.",
+        "scanNote": "Багато з'єднань з високою часткою помилок при помірній швидкості: розвідка портів і підбір паролів.",
+        "exhaustionNote": "Зростають споживання енергії, потужність передачі та затримка: пристрій виснажують або глушать канал.",
+        "mixedNote": "Спершу DDoS-атака, після паузи виснаження ресурсів."
+      },
+      "intensity": "Інтенсивність атаки",
+      "start": "Початок атаки, крок",
+      "duration": "Тривалість, кроків",
+      "noise": "Шум вимірювань",
+      "speed": "Швидкість відтворення",
+      "play": "Запустити",
+      "pause": "Пауза",
+      "stepBtn": "Крок",
+      "reset": "Скинути",
+      "modelTitle": "Застосовані моделі",
+      "policyTitle": "Політика реагування",
+      "policyHint": "Стан пристрою визначається за рівнем безпеки; пороги можна змінити.",
+      "policyBelow": "якщо рівень нижчий за",
+      "status": {
+        "normal": "Норма",
+        "warning": "Попередження",
+        "critical": "Критичний стан",
+        "unknown": "Немає даних"
+      },
+      "levels": {
+        "VeryLow": "Дуже низький",
+        "Low": "Низький",
+        "Medium": "Середній",
+        "High": "Високий",
+        "VeryHigh": "Дуже високий"
+      },
+      "log": {
+        "title": "Журнал подій",
+        "empty": "Подій ще немає: стан пристрою не змінювався."
+      },
+      "about": {
+        "title": "Як формується рівень інформаційної безпеки",
+        "p1": "Кожен крок симуляції — це одне вікно спостереження за пристроєм. Дев'ять вхідних величин передаються трьом контролерам розділів 2–4: контролер довіри обчислює індекс довіри TI, контролер ризику — ризик безпеки SR, контролер вторгнення — ймовірність вторгнення IP.",
+        "p2": "Кожна оцінка переводиться в часткову оцінку безпеки на шкалі 0–100: довіра дорівнює TI, захищеність — 100 − SR, стійкість до вторгнення — 100 − IP. Рівень інформаційної безпеки — це нечітка кон'юнкція трьох часткових оцінок за t-нормою «мінімум»: пристрій безпечний, якщо він довірений, і його ризик низький, і вторгнення малоймовірне. Це принцип найслабшої ланки: рівень визначає та складова, яка зараз найгірша, і саме вона показана як найслабша ланка.",
+        "p3": "Рівень описується тими самими п'ятьма термами, що й індекс довіри (від «дуже низького» до «дуже високого»). Стан пристрою визначає політика реагування: нижче першого порогу — попередження, нижче другого — критичний стан (ізоляція пристрою). Пороги задаються оператором.",
+        "p4": "Сценарії задають профілі входів у часі: атака наростає, триває й спадає з невеликим шумом вимірювань. Усі обчислення виконуються тими самими модулями, що й на сторінках окремих контролерів, тому значення на цій сторінці збігаються з ними."
+      },
+      "why": {
+        "title": "Призначення контролерів і комплексний підхід",
+        "p1": "Необхідність комплексного підходу до оцінювання інформаційної безпеки в мережах Інтернету речей зумовлена тим, що безпеку IoT-пристрою неможливо повністю охарактеризувати одним показником або окремим механізмом контролю. Тому розроблено три контролери з різним функціональним призначенням, які разом формують комплексний механізм оцінювання інформаційної безпеки.",
+        "p2": "Контролер індексу довіри визначає ступінь довіри до конкретного пристрою на основі характеристик його поведінки в мережі; отримане значення використовується для рішень щодо подальшої взаємодії з пристроєм: надати пріоритет, обмежити доступ чи ізолювати. Контролер ризику безпеки оцінює потенційний рівень небезпеки, пов’язаний із функціонуванням пристрою, з урахуванням параметрів, що характеризують загрози та його стан; нейро-нечіткий підхід дає змогу враховувати нелінійні залежності й адаптувати модель за даними. Контролер виявлення вторгнень аналізує параметри мережевого трафіку та визначає, чи відповідає поточна активність нормальному стану, чи має ознаки вторгнення; генетичний алгоритм оптимізує параметри нечіткої моделі для підвищення якості виявлення.",
+        "p3": "Контролери не є послідовними етапами одного алгоритму: кожен працює незалежно, зі своїм набором вхідних параметрів, і відповідає на своє питання. Довіра характеризує пристрій як учасника мережі, ризик – небезпечність умов його функціонування, виявлення вторгнень – наявність атаки тут і зараз. Пристрій із високою довірою та низьким ризиком усе ж може стати об’єктом атаки, і це покаже лише контролер виявлення вторгнень. Поєднання трьох напрямів дає повніше уявлення про поточний стан інформаційної безпеки пристрою, а ця сторінка показує таке поєднання в динаміці."
+      },
+      "tooltip": {
+        "outputs": "Оцінки на цьому кроці (0–100)"
+      },
+      "source": {
+        "title": "Джерело даних",
+        "sim": "Симуляція",
+        "device": "Реальний пристрій",
+        "hint": "Режим «Симуляція» генерує спостереження за сценаріями. Режим «Реальний пристрій» отримує показники з підключеного пристрою IoT (ESP32) через шлюз."
+      },
+      "device": {
+        "title": "Підключення пристрою",
+        "picker": "Пристрій",
+        "demo": "Демонстраційний пристрій",
+        "noDevices": "Пристроїв не знайдено. Натисніть «Знайти пристрої», щоб просканувати локальну мережу на наявність вузлів ESP32, або задайте адресу вручну в налаштуваннях add-on.",
+        "demoNote": "Демонстраційний пристрій формує показники локально у браузері — щоб побачити роботу інтерфейсу до підключення реального ESP32.",
+        "connect": "Підключити",
+        "disconnect": "Відключити",
+        "statusIdle": "Не підключено",
+        "statusConnecting": "Підключення…",
+        "statusConnected": "Підключено",
+        "statusError": "Пристрій недоступний",
+        "listen": "Почати прослуховування",
+        "stop": "Зупинити",
+        "listening": "Прослуховування активне",
+        "reading": "Отримано показників",
+        "commandTitle": "Команди пристрою",
+        "commandHint": "Надіслати пристрою команду переходу в режим трафіку (на ізольованому стенді). У демонстраційному режимі команда змінює показники локально.",
+        "liveTitle": "Показники пристрою",
+        "liveHint": "Поточні значення дев’яти вхідних величин, отримані з пристрою за останнє вікно спостереження (лише для перегляду).",
+        "waiting": "Очікування показників…",
+        "scan": "Знайти пристрої",
+        "scanning": "Сканування мережі…",
+        "scanFound": "Знайдено пристроїв: {n}",
+        "connectedTo": "Підключено до {name}"
+      },
+      "commands": {
+        "normal": "Норма",
+        "ddos": "DoS/DDoS",
+        "scan": "Сканування",
+        "exhaustion": "Виснаження"
+      },
+      "manualTitle": "Вхідні параметри (ручне керування)",
+      "scenarioReadHint": "Поточні значення дев’яти вхідних величин за сценарієм (лише для перегляду) — видно, як вони змінюються під час атаки.",
+      "sensors": {
+        "title": "Показники датчика",
+        "hint": "Поточні фізичні вимірювання пристрою. Оновлюються автоматично; кнопка «Оновити» — негайно.",
+        "refresh": "Оновити",
+        "temperature": "Температура",
+        "humidity": "Вологість",
+        "pressure": "Тиск",
+        "lux": "Освітлення",
+        "mmhg": "мм рт. ст.",
+        "lx": "лк",
+        "updated": "оновлено",
+        "unreachable": "Пристрій недоступний"
+      },
+      "modelHint": "Інтегральна оцінка використовує модель, застосовану до кожного контролера (на його сторінці).",
+      "modelExpert": "експертна",
+      "modelTrained": "навчена",
+      "method": {
+        "anfis": "ANFIS",
+        "ga": "ГА"
+      },
+      "deviceModel": {
+        "train": "Навчити за датасетом",
+        "training": "Навчання…",
+        "get": "Отримати .xlsx",
+        "bench": "{label}-стенд",
+        "error": "Навчання не вдалося",
+        "infoTitle": "Навчання на датасеті стенда",
+        "infoWhy": "Базова модель контролера навчена на CICIoT2023 (потужні пристрої) і оцінює нормальний трафік простого IoT-пристрою на ESP32 як підвищений. Навчання на датасеті стенда адаптує контролер саме до цього пристрою.",
+        "infoFile": "Датасет:",
+        "infoRows": "{rows} рядків",
+        "infoGet": "Щоб отримати датасет, натисніть «Отримати .xlsx»."
+      },
+      "commandInfo": {
+        "aria": "Що робить команда",
+        "requestsLabel": "Запити:",
+        "actualLabel": "На стенді:",
+        "normal": {
+          "title": "Норма — легітимний режим (BenignTraffic)",
+          "what": "Легітимний режим: звичайна робота вузла з нормальними значеннями показників. Шлюз періодично опитує вузол, як система моніторингу.",
+          "requests": "GET /status · 1 з'єднання · 3 запити/с (≈6 за вікно).",
+          "actual": "вузол встигає все — 0% помилок, затримка ≈30 мс.",
+          "signal": "усі в межах норми — помилок немає, з'єднань мало, затримка мінімальна; очікувано високий рівень безпеки."
+        },
+        "ddos": {
+          "title": "DoS/DDoS — HTTP-флуд (DoS-HTTP_Flood)",
+          "what": "Атака на відмову в обслуговуванні: на вузол спрямовується надмірний обсяг трафіку, і він стає недоступним для легальних користувачів. На стенді атака йде з одного шлюзу, тож за класифікацією CICIoT2023 це DoS-HTTP_Flood (розподілений варіант — DDoS-HTTP_Flood).",
+          "requests": "GET /load?n=1200 (відповідь 1,2 КБ) · 24 паралельні з'єднання · ціль 120 запитів/с.",
+          "actual": "ESP32 витримує лише ≈38 запитів/с; ≈28% запитів — помилки або тайм-аути (>800 мс).",
+          "signal": "різко зростають Rate, NP, We і кількість з'єднань CC."
+        },
+        "scan": {
+          "title": "Сканування мережі — пошук вразливостей (VulnerabilityScan)",
+          "what": "Сканування мережі (network scanning and reconnaissance) для виявлення вразливостей і отримання несанкціонованого доступу до пристрою. На стенді перебираються шляхи вебсервера вузла (/admin, /cfg …), а не порти, тому найближчий клас CICIoT2023 — VulnerabilityScan.",
+          "requests": "GET по 7 шляхах (/status, /a, /b, /cfg, /x1, /y2, /admin) · 10 паралельних з'єднань · ціль 50 запитів/с.",
+          "actual": "≈36 запитів/с; ≈75% відповідей — помилки (404 на неіснуючі шляхи та тайм-аути).",
+          "signal": "стрибкоподібно зростають частка помилок ER і кількість з'єднань CC; індекс довіри різко падає."
+        },
+        "exhaustion": {
+          "title": "Виснаження ресурсів вузла",
+          "what": "Атака виснаження ресурсів граничного пристрою, що призводить до його перевантаження: багато одночасних з'єднань із важкими відповідями займають пам'ять і пул з'єднань ESP32.",
+          "requests": "GET /load?n=6000 (відповідь 6 КБ) · 20 паралельних з'єднань · невисока частота (ціль 12 запитів/с).",
+          "actual": "≈20 запитів/с; найвища затримка серед режимів (≈50 мс, макс. ≈90 мс); ≈74% — помилки/тайм-аути.",
+          "signal": "зростають частка помилок ER і затримка Lat (найбільша серед режимів) при помірній інтенсивності трафіку."
+        },
+        "effectLabel": "Вплив на вхідні величини:"
       }
     }
   },
@@ -844,7 +1043,8 @@
     "navigation": {
       "main": "Trust Index",
       "security": "Security Risk",
-      "intrusion": "Intrusion Probability"
+      "intrusion": "Intrusion Probability",
+      "simulation": "Joint assessment"
     },
     "index": {
       "pageTitle": "Trust Index | Fuzzy Security Platform",
@@ -1055,6 +1255,204 @@
         "metaChip": "trained (GA)",
         "about": "The chromosome has 74 genes: 18 parameters of the input Gaussians (c, σ) and 8 of the output ones ({formulas|membership functions}), plus 48 term indices of the 12 rules ({rules|rule base}). Fitness F = 1 / (1 + RMSE) on the training set. Operators: tournament selection, arithmetic crossover for the real genes and two-point crossover for the rules, Gaussian mutation of the parameters and random re-assignment of a term index, validation (σ > 0, centres inside the universe, ordered terms). The chart shows the best and mean RMSE of the population and the RMSE of the validation set per generation.",
         "columnsNote": "Columns: NP, Rate (packets/s), We, IP (0–100)."
+      }
+    },
+    "simulation": {
+      "pageTitle": "Joint Assessment | Fuzzy Security Platform",
+      "headline": "Joint information-security assessment of an IoT device",
+      "description": "The security of an IoT device cannot be described by a single indicator, so the three controllers work together on one stream of observations: the trust index characterises the device as a participant of the network, the security risk the danger of its operating conditions, the intrusion probability the presence of an attack here and now. Their combination gives the information-security level of the device. In Simulation mode run an attack scenario; in Real-device mode connect a device and start listening to its readings.",
+      "controllers": {
+        "trust": "Trust index",
+        "security": "Security risk",
+        "intrusion": "Intrusion probability"
+      },
+      "inputGroups": {
+        "trust": "connection behaviour",
+        "security": "resources and channel",
+        "intrusion": "traffic intensity"
+      },
+      "partial": {
+        "trust": "Trust",
+        "security": "Protection",
+        "intrusion": "Resilience"
+      },
+      "levelTitle": "Information-security level",
+      "levelShort": "Security level",
+      "level": "level",
+      "weakest": "Weakest link",
+      "weakestShort": "weakest link",
+      "step": "Step",
+      "radarTitle": "Security triangle",
+      "timelineTitle": "Assessments over time",
+      "inputsTitle": "Inputs of the observation",
+      "inputsHint": "Changing any input recomputes the three controllers and the security level at once; during a scenario the values are set by the scenario.",
+      "scenarioTitle": "Scenario",
+      "scenario": "Observation scenario",
+      "scenarios": {
+        "manual": "Manual control",
+        "normal": "Normal operation",
+        "ddos": "DDoS attack (flood)",
+        "scan": "Scanning and brute force",
+        "exhaustion": "Resource exhaustion / jamming",
+        "mixed": "Mixed attack",
+        "manualNote": "The inputs are set with the sliders; every change adds a step to the chart.",
+        "normalNote": "The device works normally, the inputs fluctuate around typical values.",
+        "ddosNote": "Transmission rate, packet and connection counts and the SYN error share grow; the payload per packet drops.",
+        "scanNote": "Many connections with a high error share at a moderate rate: port scanning and password guessing.",
+        "exhaustionNote": "Energy consumption, transmit power and latency grow: the device is being exhausted or the channel jammed.",
+        "mixedNote": "A DDoS attack first, then resource exhaustion after a pause."
+      },
+      "intensity": "Attack intensity",
+      "start": "Attack start, step",
+      "duration": "Duration, steps",
+      "noise": "Measurement noise",
+      "speed": "Playback speed",
+      "play": "Run",
+      "pause": "Pause",
+      "stepBtn": "Step",
+      "reset": "Reset",
+      "modelTitle": "Applied models",
+      "policyTitle": "Response policy",
+      "policyHint": "The state of the device follows the security level; the thresholds can be changed.",
+      "policyBelow": "if the level is below",
+      "status": {
+        "normal": "Normal",
+        "warning": "Warning",
+        "critical": "Critical",
+        "unknown": "No data"
+      },
+      "levels": {
+        "VeryLow": "Very low",
+        "Low": "Low",
+        "Medium": "Medium",
+        "High": "High",
+        "VeryHigh": "Very high"
+      },
+      "log": {
+        "title": "Event log",
+        "empty": "No events yet: the state of the device has not changed."
+      },
+      "about": {
+        "title": "How the information-security level is formed",
+        "p1": "Every step of the simulation is one observation window of a device. Nine inputs go to the three controllers of chapters 2–4: the trust controller computes the trust index TI, the risk controller the security risk SR, the intrusion controller the intrusion probability IP.",
+        "p2": "Each assessment is mapped to a partial security score on the 0–100 scale: trust equals TI, protection is 100 − SR, resilience to intrusion is 100 − IP. The information-security level is the fuzzy conjunction of the three partial scores with the t-norm min: the device is secure if it is trusted, and its risk is low, and an intrusion is unlikely. This is the weakest-link principle: the level is set by the facet that is currently the worst, and that facet is shown as the weakest link.",
+        "p3": "The level is described by the same five terms as the trust index (from very low to very high). The state of the device follows the response policy: below the first threshold a warning, below the second a critical state (isolation of the device). The thresholds are set by the operator.",
+        "p4": "The scenarios define input profiles over time: an attack rises, lasts and fades with a little measurement noise. All computations use the same modules as the pages of the individual controllers, so the values on this page match them."
+      },
+      "why": {
+        "title": "Purpose of the controllers and the joint approach",
+        "p1": "A joint approach to assessing information security in IoT networks is needed because the security of an IoT device cannot be fully described by a single indicator or a single control mechanism. Therefore three controllers with different purposes were developed; together they form a joint mechanism of information-security assessment.",
+        "p2": "The trust index controller determines the degree of trust in a particular device from the characteristics of its behaviour in the network; the value is used for decisions on further interaction with the device: give priority, restrict access or isolate. The security risk controller assesses the potential level of danger related to the operation of the device from parameters that characterise the threats and its state; the neuro-fuzzy approach captures non-linear dependencies and adapts the model to data. The intrusion detection controller analyses network traffic parameters and decides whether the current activity is normal or shows signs of an intrusion; the genetic algorithm optimises the parameters of the fuzzy model to improve the detection quality.",
+        "p3": "The controllers are not consecutive stages of one algorithm: each works independently, with its own inputs, and answers its own question. Trust characterises the device as a participant of the network, risk the danger of its operating conditions, intrusion detection the presence of an attack here and now. A device with high trust and low risk may still become the target of an attack, and only the intrusion controller will show it. Combining the three directions gives a fuller picture of the current information-security state of the device, and this page shows that combination over time."
+      },
+      "tooltip": {
+        "outputs": "Assessments at this step (0–100)"
+      },
+      "source": {
+        "title": "Data source",
+        "sim": "Simulation",
+        "device": "Real device",
+        "hint": "“Simulation” generates observations from scenarios. “Real device” receives features from a connected IoT device (ESP32) through the gateway."
+      },
+      "device": {
+        "title": "Device connection",
+        "picker": "Device",
+        "demo": "Demo device",
+        "noDevices": "No devices found. Press “Find devices” to scan the local network for ESP32 nodes, or set the address manually in the add-on options.",
+        "demoNote": "The demo device produces readings locally in the browser, so the interface can be shown before a real ESP32 is connected.",
+        "connect": "Connect",
+        "disconnect": "Disconnect",
+        "statusIdle": "Not connected",
+        "statusConnecting": "Connecting…",
+        "statusConnected": "Connected",
+        "statusError": "Device unavailable",
+        "listen": "Start listening",
+        "stop": "Stop",
+        "listening": "Listening",
+        "reading": "Readings received",
+        "commandTitle": "Device commands",
+        "commandHint": "Send the device a command to enter a traffic mode (on the isolated test bench). In demo mode the command changes the readings locally.",
+        "liveTitle": "Device readings",
+        "liveHint": "Current values of the nine inputs received from the device for the last observation window (read-only).",
+        "waiting": "Waiting for readings…",
+        "scan": "Find devices",
+        "scanning": "Scanning the network…",
+        "scanFound": "Devices found: {n}",
+        "connectedTo": "Connected to {name}"
+      },
+      "commands": {
+        "normal": "Normal",
+        "ddos": "DoS/DDoS",
+        "scan": "Scan",
+        "exhaustion": "Exhaustion"
+      },
+      "manualTitle": "Input parameters (manual control)",
+      "scenarioReadHint": "Current values of the nine inputs produced by the scenario (read-only) — you can see them change during the attack.",
+      "sensors": {
+        "title": "Sensor readings",
+        "hint": "Current physical measurements from the device. Updated automatically; \"Refresh\" updates now.",
+        "refresh": "Refresh",
+        "temperature": "Temperature",
+        "humidity": "Humidity",
+        "pressure": "Pressure",
+        "lux": "Illuminance",
+        "mmhg": "mmHg",
+        "lx": "lx",
+        "updated": "updated",
+        "unreachable": "Device unreachable"
+      },
+      "modelHint": "The integral assessment uses the model applied to each controller (on its page).",
+      "modelExpert": "expert",
+      "modelTrained": "trained",
+      "method": {
+        "anfis": "ANFIS",
+        "ga": "GA"
+      },
+      "deviceModel": {
+        "train": "Train on dataset",
+        "training": "Training…",
+        "get": "Get .xlsx",
+        "bench": "{label} test bed",
+        "error": "Training failed",
+        "infoTitle": "Training on the test-bed dataset",
+        "infoWhy": "The base model of the controller was trained on CICIoT2023 (powerful devices) and rates the normal traffic of a simple ESP32 IoT device as elevated. Training on the test-bed dataset adapts the controller to this device.",
+        "infoFile": "Dataset:",
+        "infoRows": "{rows} rows",
+        "infoGet": "To get the dataset, press “Get .xlsx”."
+      },
+      "commandInfo": {
+        "aria": "What the command does",
+        "requestsLabel": "Requests:",
+        "actualLabel": "On the test bed:",
+        "normal": {
+          "title": "Normal — legitimate mode (BenignTraffic)",
+          "what": "Legitimate mode: regular operation of the node with normal values of the indicators. The gateway polls the node periodically, as a monitoring system does.",
+          "requests": "GET /status · 1 connection · 3 requests/s (≈6 per window).",
+          "actual": "the node keeps up — 0% errors, latency ≈30 ms.",
+          "signal": "all within normal — no errors, few connections, minimal latency; a high security level is expected."
+        },
+        "ddos": {
+          "title": "DoS/DDoS — HTTP flood (DoS-HTTP_Flood)",
+          "what": "Denial-of-service attack: an excessive volume of traffic is directed at the node, which becomes unavailable to legitimate users. On the test bed the attack comes from a single gateway, so in CICIoT2023 terms it is DoS-HTTP_Flood (the distributed variant is DDoS-HTTP_Flood).",
+          "requests": "GET /load?n=1200 (1.2 KB response) · 24 parallel connections · target 120 requests/s.",
+          "actual": "the ESP32 sustains only ≈38 requests/s; ≈28% of requests fail or time out (>800 ms).",
+          "signal": "Rate, NP, We and the number of connections CC rise sharply."
+        },
+        "scan": {
+          "title": "Network scan — vulnerability scan (VulnerabilityScan)",
+          "what": "Network scanning and reconnaissance to find vulnerabilities and gain unauthorised access to the device. On the test bed the paths of the node's web server are probed (/admin, /cfg …), not ports, so the closest CICIoT2023 class is VulnerabilityScan.",
+          "requests": "GET over 7 paths (/status, /a, /b, /cfg, /x1, /y2, /admin) · 10 parallel connections · target 50 requests/s.",
+          "actual": "≈36 requests/s; ≈75% of responses are errors (404 on non-existent paths and time-outs).",
+          "signal": "the error rate ER and the number of connections CC jump; the trust index drops sharply."
+        },
+        "exhaustion": {
+          "title": "Resource exhaustion of the node",
+          "what": "An attack exhausting the resources of an edge device and overloading it: many simultaneous connections with heavy responses occupy the memory and connection pool of the ESP32.",
+          "requests": "GET /load?n=6000 (6 KB response) · 20 parallel connections · low rate (target 12 requests/s).",
+          "actual": "≈20 requests/s; the highest latency of all modes (≈50 ms, max ≈90 ms); ≈74% errors/time-outs.",
+          "signal": "the error rate ER and the latency Lat (the largest of all modes) rise at a moderate traffic intensity."
+        },
+        "effectLabel": "Effect on the inputs:"
       }
     }
   }

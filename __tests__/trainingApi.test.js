@@ -40,7 +40,7 @@ describe("dataset download", () => {
   test("reports the row count, the file name and the columns", async () => {
     const info = await request(app).get("/api/controllers/security/dataset/info");
     expect(info.status).toBe(200);
-    expect(info.body).toEqual({ controller: "security", rows: 100, file: "security-100.csv", columns: ["EC", "TP", "Lat", "SR"] });
+    expect(info.body).toEqual({ controller: "security", variant: "default", label: "default", rows: 100, file: "security-100.csv", columns: ["EC", "TP", "Lat", "SR"] });
     const intrusion = await request(app).get("/api/controllers/intrusion/dataset/info");
     expect(intrusion.body.file).toBe("intrusion-100.csv");
     for (const controller of ["security", "intrusion"]) {
