@@ -96,8 +96,8 @@ describe("datasets", () => {
     expect(datasets.hasDefaultDataset("trust")).toBe(false);
     expect(() => datasets.datasetName("trust")).toThrow();
     expect(() => datasets.defaultDataset("trust", "a\n1")).toThrow();
-    // Only the 100-row files are shipped.
-    expect(fs.readdirSync(path.join(root, "data")).filter((name) => name.endsWith(".csv")).sort()).toEqual(["intrusion-100.csv", "security-100.csv"]);
+    // The 100-row default files plus the ESP32 test-bed dataset are shipped.
+    expect(fs.readdirSync(path.join(root, "data")).filter((name) => name.endsWith(".csv")).sort()).toEqual(["intrusion-100.csv", "intrusion-esp32-112.csv", "security-100.csv"]);
   });
 
   test("default intrusion dataset: the file size is the row count, the split is made by the app", () => {
