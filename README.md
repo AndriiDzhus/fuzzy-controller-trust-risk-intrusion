@@ -47,6 +47,8 @@ public/
   index.html  trust.js            Trust page
   security.html  security.js      Security page
   intrusion.html  intrusion.js    Intrusion page
+  simulation.html  simulation.js  Joint assessment page: the three controllers on one stream of observations,
+  simulation.css                  integral information-security level, scenarios, timeline
   fuzzy-page-core.js              shared UI: inputs, charts, inference steps, hints
   controller-docs.js              "Formulas" and "Rule base" modals (also for the trained model)
   training-panel.js               "Model training" block: dataset, live chart, results, apply
@@ -128,6 +130,24 @@ The static build for GitHub Pages computes the same in the browser through
 - `public/controller-docs.js` — formulas and rule bases for the modals; the test
   `__tests__/docsConsistency.test.js` checks them against the controller models.
 - `public/i18n.json`, `public/i18n-helper.js` — translations (uk by default, en).
+
+## Joint assessment page
+
+`simulation.html` ("Joint assessment" in the menu) runs the three controllers together on one stream of observations of a
+device. Every step is one observation window: nine inputs (three per controller) come from
+a scenario (normal operation, DDoS flood, scanning, resource exhaustion / jamming, mixed) or
+from the sliders, the controllers compute TI, SR and IP, and the page combines them into the
+**information-security level**: each output is mapped to a partial security score on
+0–100 (TI, 100 − SR, 100 − IP) and the level is their fuzzy conjunction with the t-norm min —
+the weakest-link principle. The level is described by the five terms of the trust index; a
+response policy with two thresholds (warning, critical) gives the state of the device and the
+event log. The page shows gauges of the three outputs, a "security triangle" of the partial
+scores and the time series of all assessments, and can switch the risk and intrusion
+controllers to their trained parameters. The gauges and the level bar are split into the
+zones of the policy (normal / warning / critical, recomputed when the thresholds change;
+for SR and IP the scale is inverted, since more is worse) and are filled with the colour of
+the zone the value is in; the series themselves keep neutral colours (blue, violet, teal). The computations are the same as on the controller
+pages (API with the local server, `window.fuzzyControllers` in the static build).
 
 ## Training the controllers
 

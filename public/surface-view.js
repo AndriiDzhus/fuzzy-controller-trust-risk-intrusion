@@ -336,7 +336,7 @@
       return surface || null;
     }
     const body = typeof root.withModelParams === "function" ? root.withModelParams(request) : request;
-    const response = await fetch(`/api/controllers/${controller}/surface`, {
+    const response = await fetch(`api/controllers/${controller}/surface`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body),

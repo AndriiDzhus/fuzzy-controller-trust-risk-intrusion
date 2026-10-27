@@ -43,10 +43,9 @@ function copyDir(src, dest) {
   }
 }
 
-function injectBundleScript(htmlPath) {
-  const marker = '<script src="fuzzy-page-core.js"></script>';
-  const injection =
-    '<script src="controllers-bundle.js"></script>\n    <script src="fuzzy-page-core.js"></script>';
+function injectBundleScript(htmlPath, pageScript = "fuzzy-page-core.js") {
+  const marker = `<script src="${pageScript}"></script>`;
+  const injection = `<script src="controllers-bundle.js"></script>\n    ${marker}`;
 
   const html = fs.readFileSync(htmlPath, "utf8");
   if (!html.includes(marker)) {
@@ -74,6 +73,8 @@ bundleScript(path.join(rootDir, "scripts/training-worker-entry.js"), workerPath)
 for (const page of ["index.html", "security.html", "intrusion.html"]) {
   injectBundleScript(path.join(distDir, page));
 }
+// The simulation page has no fuzzy-page-core.js: the bundle goes before its own script.
+injectBundleScript(path.join(distDir, "simulation.html"), "simulation.js");
 
 fs.writeFileSync(path.join(distDir, ".nojekyll"), "");
 
