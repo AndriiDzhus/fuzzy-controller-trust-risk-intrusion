@@ -17,6 +17,9 @@
  *   1.1.0  sensor cache (I2C read in loop(), not in HTTP handlers),
  *          WS2812B status indicator (/led), watchdog
  *   1.2.0  indicator state "standby" (dim blue), fw_version in /status
+ *   1.2.1  joins the access point with the strongest signal (mesh Wi-Fi:
+ *          by default the ESP32 takes the first one it finds); "bssid" and
+ *          "channel" in /status
  *
  * HTTP endpoints:
  *   GET /             small HTML page
@@ -53,7 +56,7 @@
 #include <BH1750.h>
 #include <Adafruit_NeoPixel.h>
 
-const char* FW_VERSION = "1.2.0";          // bump on every firmware change (see the list above)
+const char* FW_VERSION = "1.2.1";          // bump on every firmware change (see the list above)
 
 // ---- configuration — EDIT THESE -----------------------------------------
 const char* WIFI_SSID = "YOUR_WIFI_SSID";
@@ -203,6 +206,8 @@ String telemetryJson() {
   j += "\"ip\":\"" + WiFi.localIP().toString() + "\",";
   j += "\"uptime_s\":" + String(millis() / 1000) + ",";
   j += "\"rssi_dbm\":" + String(WiFi.RSSI()) + ",";
+  j += "\"bssid\":\"" + WiFi.BSSIDstr() + "\",";        // which access point (mesh node)
+  j += "\"channel\":" + String(WiFi.channel()) + ",";
   j += "\"tx_power_dbm\":" + String(txdbm, 2) + ",";
   j += "\"free_heap\":" + String(ESP.getFreeHeap()) + ",";
   j += "\"sensors_age_s\":" + String(sensorsReadAt ? (millis() - sensorsReadAt) / 1000 : 0) + ",";
@@ -267,6 +272,10 @@ void setup() {
 
   WiFi.mode(WIFI_STA);
   WiFi.setSleep(false);                     // keep latency low and traffic steady
+  // Mesh Wi-Fi: scan all channels and join the strongest access point, not the
+  // first one found (the default fast scan may pick a far mesh node).
+  WiFi.setScanMethod(WIFI_ALL_CHANNEL_SCAN);
+  WiFi.setSortMethod(WIFI_CONNECT_AP_BY_SIGNAL);
   WiFi.begin(WIFI_SSID, WIFI_PASS);
   Serial.print("[wifi] connecting");
   uint32_t t0 = millis();

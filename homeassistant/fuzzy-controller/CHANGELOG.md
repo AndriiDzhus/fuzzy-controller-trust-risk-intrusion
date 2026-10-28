@@ -5,8 +5,9 @@
   assessment page drives its colour (green / yellow / red) with a two-window
   hysteresis; a checkbox in "Sensor readings" appears only when the node has
   the indicator. Without listening: lamp test, then dim blue standby.
-- Firmware 1.2.0: `/led` endpoint (incl. standby), sensor cache, watchdog,
-  `fw_version` in `/status`; the version is shown in the sensor panel.
+- Firmware 1.2.1: `/led` endpoint (incl. standby), sensor cache, watchdog,
+  `fw_version` in `/status` (shown in the sensor panel); joins the strongest
+  access point of a mesh network, `bssid` / `channel` in `/status`.
 - Chart restart button on "Scores over time".
 - Response-policy thresholds: drag the markers under the security-level bar;
   the fields are in a collapsed "Response policy" section (current values and
