@@ -10,16 +10,25 @@
  * really floods / scans / holds connections against the node, so the measured
  * features reflect real network behaviour, not a generated profile.
  *
- * Mapping from measured quantities to the controller ranges is linear with the
- * named constants below (calibratable); the attack patterns are tuned so the
- * mapped values land in the attack zones.
+ * The traffic patterns of the modes are fixed, typical loads (normal polling,
+ * HTTP flood, path scan, slow heavy downloads, intense error-free polling); the
+ * node's real behaviour under them is measured, not prescribed.
+ * Mapping from the measured application-level quantities to the controller
+ * ranges (features of NSL-KDD, the 6G IoT dataset and CIC IoT 2023) is linear
+ * with fixed constants (see toInputs). ER, CC and BS are taken as measured; Rate
+ * uses PACKETS_PER_REQUEST measured with tcpdump on the test bed; the divisors
+ * of NP, We and Lat are fixed scaling constants (a proxy, documented as such).
+ * Sensitivity of the results to these constants was checked on the test bed.
  *
  * Endpoints (mounted at /api/devices):
  *   GET  /                 list of configured devices
  *   GET  /:id              reachability check (pings the node)
  *   GET  /:id/stream       SSE of readings, one per window: { inputs, telemetry, flow }
  *   GET  /:id/reading      latest reading (polling fallback)
- *   POST /:id/command      { scenario: normal|ddos|scan|exhaustion } sets the mode
+ *   POST /:id/command      { scenario: normal|ddos|scan|exhaustion|surge } sets the mode;
+ *                          optional { rps, conc } override the pattern of the mode
+ *                          until the next command (test-bed calibration only — the
+ *                          page never sends them)
  *   POST /:id/indicate     { status: normal|warning|critical|standby|off } sets the
  *                          node's status indicator (WS2812B pixel) to the decided
  *                          state; standby = connected, no assessment yet
@@ -83,12 +92,19 @@ const MODES = {
   ddos: { rps: 120, conc: 24, bytes: 1200, paths: ["/load"] },
   scan: { rps: 50, conc: 10, bytes: 0, paths: ["/status", "/a", "/b", "/cfg", "/x1", "/y2", "/admin"] },
   exhaustion: { rps: 12, conc: 20, bytes: 6000, paths: ["/load"] },
+  // Intense but error-free traffic: as many requests per window as the DoS/DDoS
+  // mode reaches on the test bed (~100), but with the largest concurrency the
+  // node still serves without failures (4; with 6+ connections failures appear),
+  // small responses and no payload. Calibrated 28.10.2026 (firmware 1.2.1):
+  // ~96 requests/window, 1 failure in 1735 requests.
+  surge: { rps: 60, conc: 4, bytes: 0, paths: ["/status"] },
 };
+const OVERRIDE_LIMITS = { rps: [1, 200], conc: [1, 32] };
 const DEFAULT_MODE = "normal";
 
 /** Run the traffic pattern of `mode` for ~WINDOW_MS, collecting flow stats. */
-async function runWindow(host, mode) {
-  const m = MODES[mode] || MODES[DEFAULT_MODE];
+async function runWindow(host, mode, override = null) {
+  const m = { ...(MODES[mode] || MODES[DEFAULT_MODE]), ...(override || {}) };
   const deadline = Date.now() + WINDOW_MS;
   const pathFor = (i) => {
     const base = m.paths[i % m.paths.length];
@@ -119,6 +135,12 @@ async function runWindow(host, mode) {
 }
 
 // --- mapping measured flow + telemetry to the nine inputs -----------------
+// TCP packets (both directions) per successful HTTP request between the gateway
+// and the node: new connection, request, response, close. Measured with tcpdump
+// on the test bed 29.10.2026 (firmware 1.2.1): 11.2-12.6 per request for the
+// modes without failures (normal, scan, intense traffic). Rate = requests/s x this.
+const PACKETS_PER_REQUEST = 12;
+
 function toInputs(flow, tele) {
   const { issued, err, bytesIn, reqPerSec, rttMean, conc } = flow;
   const txPower = tele && tele.tx_power_dbm != null ? Number(tele.tx_power_dbm) : 18;
@@ -133,12 +155,12 @@ function toInputs(flow, tele) {
     energy: powerMw != null
       ? clamp(0.01 + powerMw / 20000, 0.01, 0.05)              // EC: real, from INA219 power
       : clamp(0.015 + reqPerSec * 0.00025, 0.01, 0.05),        // EC: estimate from activity until INA219 is fitted
-    strength: clamp(txPower, 0, 40),                           // TP: real Wi-Fi TX power from the node
-    response: clamp(rttMean / 12, 0, 10),                      // Lat: round-trip latency (ms -> 0..10)
+    strength: clamp(txPower, 0, 40),                           // TP: configured Wi-Fi TX power of the node (constant, not a measurement)
+    response: clamp(rttMean / 12, 0, 10),                      // Lat: mean time of a successful request, ms / 12 (scaling)
     // Intrusion controller — traffic intensity
-    packets: clamp(issued / 16, 0, 15),                        // NP
-    rate: clamp(reqPerSec * 20, 0, 3000),                      // Rate
-    weight: clamp((issued * conc) / 20, 0, 250),               // We
+    packets: clamp(issued / 16, 0, 15),                        // NP: requests per window / 16 (proxy)
+    rate: clamp(reqPerSec * PACKETS_PER_REQUEST, 0, 3000),     // Rate: packets/s from requests/s (measured ratio)
+    weight: clamp((issued * conc) / 20, 0, 250),               // We: requests x concurrency / 20 (proxy)
   };
 }
 
@@ -147,24 +169,28 @@ class Monitor {
   constructor(dev) {
     this.dev = dev;
     this.mode = DEFAULT_MODE;
+    this.override = null; // { rps, conc } for calibration, cleared by the next command
     this.subs = new Set();
     this.last = null;
     this.running = false;
     this.busy = false;
   }
-  setMode(m) { if (MODES[m]) this.mode = m; }
+  setMode(m, override = null) { if (MODES[m]) { this.mode = m; this.override = override; } }
   addSub(res) { this.subs.add(res); if (!this.running) this.start(); }
   removeSub(res) { this.subs.delete(res); if (this.subs.size === 0) this.stop(); }
   start() { if (this.running) return; this.running = true; this.loop(); }
-  stop() { this.running = false; this.mode = DEFAULT_MODE; }
+  stop() { this.running = false; this.mode = DEFAULT_MODE; this.override = null; }
 
   async loop() {
     if (!this.running || this.busy) return;
     this.busy = true;
     try {
-      const flow = await runWindow(this.dev.host, this.mode);
+      // the window is labelled with the mode it was measured in (a command
+      // during the window takes effect from the next one)
+      const mode = this.mode;
+      const flow = await runWindow(this.dev.host, mode, this.override);
       const tele = await fetchStatus(this.dev.host);
-      const reading = { deviceId: this.dev.id, mode: this.mode, ts: Date.now(), inputs: toInputs(flow, tele), telemetry: tele, flow };
+      const reading = { deviceId: this.dev.id, mode, ts: Date.now(), inputs: toInputs(flow, tele), telemetry: tele, flow };
       this.last = reading;
       this.broadcast(reading);
     } catch (_) { /* keep looping */ }
@@ -302,8 +328,17 @@ function buildRouter() {
     if (!m) return res.status(404).json({ error: "Unknown device" });
     const scenario = req.body && req.body.scenario;
     if (!MODES[scenario]) return res.status(400).json({ error: "Unknown scenario", allowed: Object.keys(MODES) });
-    m.setMode(scenario);
-    return res.json({ ok: true, mode: scenario });
+    // optional override of the pattern (calibration of the test bed)
+    const override = {};
+    for (const [key, [lo, hi]] of Object.entries(OVERRIDE_LIMITS)) {
+      if (req.body[key] === undefined) continue;
+      const v = Number(req.body[key]);
+      if (!Number.isInteger(v) || v < lo || v > hi) return res.status(400).json({ error: `Invalid ${key}`, range: [lo, hi] });
+      override[key] = v;
+    }
+    const used = Object.keys(override).length ? override : null;
+    m.setMode(scenario, used);
+    return res.json(used ? { ok: true, mode: scenario, override: used } : { ok: true, mode: scenario });
   });
 
   // Status indicator on the node (one WS2812B pixel, firmware endpoint /led).
@@ -337,4 +372,4 @@ function buildRouter() {
   return router;
 }
 
-module.exports = { buildRouter, toInputs, runWindow, MODES, configuredDevices, discover, probe, localSubnets };
+module.exports = { buildRouter, toInputs, runWindow, MODES, PACKETS_PER_REQUEST, configuredDevices, discover, probe, localSubnets };

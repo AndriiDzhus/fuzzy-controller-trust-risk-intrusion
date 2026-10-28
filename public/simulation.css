@@ -608,6 +608,8 @@
 .sim-device-dot.is-error { background: #eb5757; }
 .sim-device-status { font-size: 0.85rem; font-weight: 600; color: #2c3e50; }
 .sim-cmd-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+/* an odd last button (the fifth one) takes the whole row */
+.sim-cmd-grid .sim-cmd:last-child:nth-child(odd) { grid-column: 1 / -1; }
 .sim-cmd.is-active { background: #2f80ed; border-color: #2f80ed; color: #fff; }
 .sim-cmd[disabled] { opacity: 0.5; cursor: default; }
 

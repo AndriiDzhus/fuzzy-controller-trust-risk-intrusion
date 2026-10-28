@@ -671,7 +671,8 @@
         "normal": "Норма",
         "ddos": "DoS/DDoS",
         "scan": "Сканування",
-        "exhaustion": "Виснаження"
+        "exhaustion": "Виснаження",
+        "surge": "Інтенсивний трафік"
       },
       "manualTitle": "Вхідні параметри (ручне керування)",
       "scenarioReadHint": "Поточні значення дев’яти вхідних величин за сценарієм (лише для перегляду) — видно, як вони змінюються під час атаки.",
@@ -721,34 +722,38 @@
       "commandInfo": {
         "aria": "Що робить команда",
         "requestsLabel": "Запити:",
-        "actualLabel": "На стенді:",
+        "actualLabel": "На стенді зараз:",
+        "actualNow": "запити {rps}/с · помилки {err}% · затримка {rtt} мс (останні вікна).",
+        "actualWaiting": "числа з'являться під час прослуховування.",
         "normal": {
           "title": "Норма — легітимний режим (BenignTraffic)",
           "what": "Легітимний режим: звичайна робота вузла з нормальними значеннями показників. Шлюз періодично опитує вузол, як система моніторингу.",
           "requests": "GET /status · 1 з'єднання · 3 запити/с (≈6 за вікно).",
-          "actual": "вузол встигає все — 0% помилок, затримка ≈30 мс.",
           "signal": "усі в межах норми — помилок немає, з'єднань мало, затримка мінімальна; очікувано високий рівень безпеки."
         },
         "ddos": {
           "title": "DoS/DDoS — HTTP-флуд (DoS-HTTP_Flood)",
           "what": "Атака на відмову в обслуговуванні: на вузол спрямовується надмірний обсяг трафіку, і він стає недоступним для легальних користувачів. На стенді атака йде з одного шлюзу, тож за класифікацією CICIoT2023 це DoS-HTTP_Flood (розподілений варіант — DDoS-HTTP_Flood).",
           "requests": "GET /load?n=1200 (відповідь 1,2 КБ) · 24 паралельні з'єднання · ціль 120 запитів/с.",
-          "actual": "ESP32 витримує лише ≈38 запитів/с; ≈28% запитів — помилки або тайм-аути (>800 мс).",
           "signal": "різко зростають Rate, NP, We і кількість з'єднань CC."
         },
         "scan": {
           "title": "Сканування мережі — пошук вразливостей (VulnerabilityScan)",
           "what": "Сканування мережі (network scanning and reconnaissance) для виявлення вразливостей і отримання несанкціонованого доступу до пристрою. На стенді перебираються шляхи вебсервера вузла (/admin, /cfg …), а не порти, тому найближчий клас CICIoT2023 — VulnerabilityScan.",
           "requests": "GET по 7 шляхах (/status, /a, /b, /cfg, /x1, /y2, /admin) · 10 паралельних з'єднань · ціль 50 запитів/с.",
-          "actual": "≈36 запитів/с; ≈75% відповідей — помилки (404 на неіснуючі шляхи та тайм-аути).",
           "signal": "стрибкоподібно зростають частка помилок ER і кількість з'єднань CC; індекс довіри різко падає."
         },
         "exhaustion": {
           "title": "Виснаження ресурсів вузла",
           "what": "Атака виснаження ресурсів граничного пристрою, що призводить до його перевантаження: багато одночасних з'єднань із важкими відповідями займають пам'ять і пул з'єднань ESP32.",
           "requests": "GET /load?n=6000 (відповідь 6 КБ) · 20 паралельних з'єднань · невисока частота (ціль 12 запитів/с).",
-          "actual": "≈20 запитів/с; найвища затримка серед режимів (≈50 мс, макс. ≈90 мс); ≈74% — помилки/тайм-аути.",
           "signal": "зростають частка помилок ER і затримка Lat (найбільша серед режимів) при помірній інтенсивності трафіку."
+        },
+        "surge": {
+          "title": "Інтенсивний трафік без відмов",
+          "what": "Дуже часті, але коректні запити, які вузол встигає обслужити повністю: помилок і тайм-аутів практично немає. Так виглядає, наприклад, агресивне опитування телеметрії або вивантаження даних з пристрою. За кількістю запитів сценарій такий самий, як DoS/DDoS на стенді, але без відмов: інтенсивність трафіку оцінює контролер ймовірності вторгнення, а індекс довіри лишається вище порога попередження.",
+          "requests": "GET /status · 4 паралельні з'єднання (найбільше, за якого вузол не відмовляє) · ціль 60 запитів/с.",
+          "signal": "Rate і NP — як у DoS/DDoS, зростає кількість з'єднань CC, а частка помилок ER лишається нульовою; We мале."
         },
         "effectLabel": "Вплив на вхідні величини:"
       }
@@ -1407,7 +1412,8 @@
         "normal": "Normal",
         "ddos": "DoS/DDoS",
         "scan": "Scan",
-        "exhaustion": "Exhaustion"
+        "exhaustion": "Exhaustion",
+        "surge": "Intense traffic"
       },
       "manualTitle": "Input parameters (manual control)",
       "scenarioReadHint": "Current values of the nine inputs produced by the scenario (read-only) — you can see them change during the attack.",
@@ -1457,34 +1463,38 @@
       "commandInfo": {
         "aria": "What the command does",
         "requestsLabel": "Requests:",
-        "actualLabel": "On the test bed:",
+        "actualLabel": "On the test bed now:",
+        "actualNow": "requests {rps}/s · errors {err}% · latency {rtt} ms (last windows).",
+        "actualWaiting": "the numbers appear while listening.",
         "normal": {
           "title": "Normal — legitimate mode (BenignTraffic)",
           "what": "Legitimate mode: regular operation of the node with normal values of the indicators. The gateway polls the node periodically, as a monitoring system does.",
           "requests": "GET /status · 1 connection · 3 requests/s (≈6 per window).",
-          "actual": "the node keeps up — 0% errors, latency ≈30 ms.",
           "signal": "all within normal — no errors, few connections, minimal latency; a high security level is expected."
         },
         "ddos": {
           "title": "DoS/DDoS — HTTP flood (DoS-HTTP_Flood)",
           "what": "Denial-of-service attack: an excessive volume of traffic is directed at the node, which becomes unavailable to legitimate users. On the test bed the attack comes from a single gateway, so in CICIoT2023 terms it is DoS-HTTP_Flood (the distributed variant is DDoS-HTTP_Flood).",
           "requests": "GET /load?n=1200 (1.2 KB response) · 24 parallel connections · target 120 requests/s.",
-          "actual": "the ESP32 sustains only ≈38 requests/s; ≈28% of requests fail or time out (>800 ms).",
           "signal": "Rate, NP, We and the number of connections CC rise sharply."
         },
         "scan": {
           "title": "Network scan — vulnerability scan (VulnerabilityScan)",
           "what": "Network scanning and reconnaissance to find vulnerabilities and gain unauthorised access to the device. On the test bed the paths of the node's web server are probed (/admin, /cfg …), not ports, so the closest CICIoT2023 class is VulnerabilityScan.",
           "requests": "GET over 7 paths (/status, /a, /b, /cfg, /x1, /y2, /admin) · 10 parallel connections · target 50 requests/s.",
-          "actual": "≈36 requests/s; ≈75% of responses are errors (404 on non-existent paths and time-outs).",
           "signal": "the error rate ER and the number of connections CC jump; the trust index drops sharply."
         },
         "exhaustion": {
           "title": "Resource exhaustion of the node",
           "what": "An attack exhausting the resources of an edge device and overloading it: many simultaneous connections with heavy responses occupy the memory and connection pool of the ESP32.",
           "requests": "GET /load?n=6000 (6 KB response) · 20 parallel connections · low rate (target 12 requests/s).",
-          "actual": "≈20 requests/s; the highest latency of all modes (≈50 ms, max ≈90 ms); ≈74% errors/time-outs.",
           "signal": "the error rate ER and the latency Lat (the largest of all modes) rise at a moderate traffic intensity."
+        },
+        "surge": {
+          "title": "Intense traffic without failures",
+          "what": "Very frequent but valid requests that the node serves completely: practically no errors and no time-outs. This is how, for example, aggressive polling of the telemetry or bulk download of data from the device looks. In the number of requests the scenario equals DoS/DDoS on the test bed, but without failures: traffic intensity is assessed by the intrusion-probability controller, while the trust index stays above the warning threshold.",
+          "requests": "GET /status · 4 parallel connections (the most the node serves without failures) · target 60 requests/s.",
+          "signal": "Rate and NP as in DoS/DDoS, the number of connections CC rises, while the error fraction ER stays at zero; We is small."
         },
         "effectLabel": "Effect on the inputs:"
       }

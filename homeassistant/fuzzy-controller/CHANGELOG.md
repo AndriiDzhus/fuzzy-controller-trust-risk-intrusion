@@ -17,7 +17,13 @@
   pinned at the top while the score cards are scrolled out of view.
 - Sensor readings moved into the readouts column as a compact card.
 - Chart tooltips close on scroll / tap outside on touch screens.
-- Backend: `POST /api/devices/:id/indicate`.
+- New device command "Intense traffic": as many requests as DoS/DDoS, but at the
+  largest concurrency the node serves without failures (ER ≈ 0).
+- Real-device mapping: Rate = requests/s × 12 (TCP packets per HTTP request,
+  measured with tcpdump on the test bed) instead of × 20; a reading is labelled
+  with the mode it was measured in.
+- Backend: `POST /api/devices/:id/indicate`; optional `rps` / `conc` override in
+  `POST /api/devices/:id/command` (test-bed calibration).
 
 ## 1.3.0
 - Device sensor panel: a collapsible "Sensor readings" section shows the node's
