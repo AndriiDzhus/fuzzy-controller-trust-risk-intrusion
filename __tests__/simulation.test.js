@@ -78,3 +78,96 @@ describe("simulation page: scenarios", () => {
     expect(a).toEqual(b);
   });
 });
+
+describe("simulation page: response policy thresholds", () => {
+  const norm = sim.normalizePolicy;
+  test("integers in 0..100", () => {
+    expect(norm({ warn: 49.6, critical: -3 })).toEqual({ warn: 50, critical: 0 });
+    expect(norm({ warn: 140, critical: "25" })).toEqual({ warn: 100, critical: 25 });
+  });
+  test("the moved threshold stops at the other one (critical ≤ warn)", () => {
+    expect(norm({ warn: 50, critical: 70 }, "critical")).toEqual({ warn: 50, critical: 50 });
+    expect(norm({ warn: 10, critical: 25 }, "warn")).toEqual({ warn: 25, critical: 25 });
+  });
+  test("the zones follow the thresholds", () => {
+    expect(sim.policyZones(norm({ warn: 60, critical: 30 }))).toEqual([
+      { from: 0, to: 30, status: "critical" }, { from: 30, to: 60, status: "warning" }, { from: 60, to: 100, status: "normal" },
+    ]);
+  });
+});
+
+describe("simulation page: device selector after a scan", () => {
+  const pick = sim.scanSelection;
+  test("a found node replaces the demo device (disconnects it, no auto-connect)", () => {
+    expect(pick(["192.168.50.173"], "demo", "demo")).toEqual({ select: "192.168.50.173", disconnect: true });
+    expect(pick(["192.168.50.173"], "demo", null)).toEqual({ select: "192.168.50.173", disconnect: false });
+  });
+  test("an already selected node found again stays selected; else the first found", () => {
+    expect(pick(["a", "b"], "b", null)).toEqual({ select: "b", disconnect: false });
+    expect(pick(["a", "b"], "c", null)).toEqual({ select: "a", disconnect: false });
+  });
+  test("a connected real device is not disturbed; nothing found changes nothing", () => {
+    expect(pick(["a", "b"], "b", "b")).toEqual({ select: "b", disconnect: false });
+    expect(pick([], "demo", "demo")).toEqual({ select: "demo", disconnect: false });
+  });
+});
+
+describe("simulation page: status indicator hysteresis", () => {
+  const step = sim.indicatorStep;
+  test("a new status is sent only after two consecutive windows", () => {
+    let t = step(null, "normal");
+    expect(t.send).toBeNull();
+    t = step(t, "normal");
+    expect(t.send).toBe("normal");
+    expect(t.shown).toBe("normal");
+    // one window of "critical" (noise) does not change the LED
+    t = step(t, "critical");
+    expect(t.send).toBeNull();
+    expect(t.shown).toBe("normal");
+    // back to normal: the candidate is dropped, nothing is sent again
+    t = step(t, "normal");
+    expect(t.send).toBeNull();
+    expect(t.candidate).toBeNull();
+    // two windows of "critical" switch the LED
+    t = step(t, "critical");
+    t = step(t, "critical");
+    expect(t.send).toBe("critical");
+    expect(t.shown).toBe("critical");
+  });
+
+  test("an unknown status is ignored and keeps the track", () => {
+    let t = step({ shown: "normal", candidate: "warning", count: 1, sentAt: 1000 }, "unknown", 2000);
+    expect(t.send).toBeNull();
+    expect(t.candidate).toBe("warning");
+    expect(sim.INDICATOR_CONFIRM).toBe(2);
+  });
+
+  test("a stable state is re-sent as a keep-alive every 20 s", () => {
+    let t = step(null, "normal", 0);
+    t = step(t, "normal", 2000);
+    expect(t.send).toBe("normal");
+    expect(t.sentAt).toBe(2000);
+    t = step(t, "normal", 12000);
+    expect(t.send).toBeNull();
+    t = step(t, "normal", 2000 + sim.INDICATOR_KEEPALIVE_MS);
+    expect(t.send).toBe("normal");
+    expect(t.sentAt).toBe(22000);
+    // a change resets the keep-alive clock
+    t = step(t, "critical", 24000); t = step(t, "critical", 26000);
+    expect(t.send).toBe("critical");
+    expect(t.sentAt).toBe(26000);
+  });
+
+  test("switched on during listening: the last status is shown at once, changes keep the hysteresis", () => {
+    expect(sim.indicatorSeed(null)).toBeNull();
+    expect(sim.indicatorSeed("unknown")).toBeNull();
+    let t = sim.indicatorSeed("critical", 1000);
+    expect(t).toEqual({ shown: "critical", candidate: null, count: 0, sentAt: 1000 });
+    t = step(t, "critical", 3000);
+    expect(t.send).toBeNull(); // already shown, nothing re-sent
+    t = step(t, "normal", 5000);
+    expect(t.send).toBeNull(); // one window is not enough to change it
+    t = step(t, "normal", 7000);
+    expect(t.send).toBe("normal");
+  });
+});

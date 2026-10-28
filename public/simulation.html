@@ -40,6 +40,21 @@
         </div>
       </header>
 
+      <!-- Compact read-only copy of the scores, pinned at the top while the score cards are
+           scrolled out of view; a click scrolls back to them. The policy is not editable here. -->
+      <div class="sim-sticky is-unknown" id="sim-sticky" aria-hidden="true">
+        <button type="button" class="sim-sticky-inner" id="sim-sticky-btn" tabindex="-1">
+        <span class="sim-sticky-ctl is-trust" data-ctl="trust"><span class="sim-sticky-sym">TI</span><span class="sim-sticky-val" id="sim-st-trust">—</span><span class="sim-sticky-line"><i id="sim-st-trust-bar"></i></span></span>
+        <span class="sim-sticky-ctl is-security" data-ctl="security"><span class="sim-sticky-sym">SR</span><span class="sim-sticky-val" id="sim-st-security">—</span><span class="sim-sticky-line"><i id="sim-st-security-bar"></i></span></span>
+        <span class="sim-sticky-ctl is-intrusion" data-ctl="intrusion"><span class="sim-sticky-sym">IP</span><span class="sim-sticky-val" id="sim-st-intrusion">—</span><span class="sim-sticky-line"><i id="sim-st-intrusion-bar"></i></span></span>
+        <span class="sim-sticky-level">
+            <span class="sim-sticky-level-val" id="sim-st-level">—</span>
+            <span class="sim-status is-unknown" id="sim-st-status">—</span>
+            <span class="sim-level-bar sim-sticky-bar"><span class="sim-level-bar-fill is-unknown" id="sim-st-bar"></span></span>
+          </span>
+        </button>
+      </div>
+
       <!-- Integral assessment -->
       <section class="sim-summary">
         <div class="sim-cards">
@@ -70,7 +85,12 @@
                 <div class="sim-status is-normal" id="sim-status">—</div>
               </div>
             </div>
-            <div class="sim-level-bar"><div class="sim-level-bar-fill is-normal" id="sim-level-bar"></div></div>
+            <!-- the markers under the bar are the policy thresholds: drag them (or use the arrow keys) -->
+            <div class="sim-level-scale">
+              <div class="sim-level-bar"><div class="sim-level-bar-fill is-normal" id="sim-level-bar"></div></div>
+              <button type="button" class="sim-thr is-critical" id="sim-thr-critical" role="slider" aria-valuemin="0" aria-valuemax="100"><span class="sim-thr-bubble"></span></button>
+              <button type="button" class="sim-thr is-warning" id="sim-thr-warn" role="slider" aria-valuemin="0" aria-valuemax="100"><span class="sim-thr-bubble"></span></button>
+            </div>
             <div class="sim-level-meta">
               <span><span data-i18n="simulation.weakest"></span>: <strong id="sim-weakest">—</strong></span>
               <span><span data-i18n="simulation.step"></span>: <strong id="sim-step">0</strong></span>
@@ -79,7 +99,10 @@
         </div>
         <div class="sim-charts">
           <div class="sim-timeline-wrap">
-            <h3 data-i18n="simulation.timelineTitle"></h3>
+            <div class="sim-timeline-head">
+              <h3 data-i18n="simulation.timelineTitle"></h3>
+              <button type="button" class="sim-icon-btn" id="sim-timeline-reset"><svg class="btn-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12a8 8 0 1 0 3-6.2"/><path d="M4 4v5h5"/></svg></button>
+            </div>
             <canvas id="sim-timeline" class="sim-timeline"></canvas>
           </div>
           <div class="sim-card sim-card-radar">
@@ -107,6 +130,43 @@
           <p class="sim-hint device-only" data-i18n="simulation.device.liveHint"></p>
           <p class="sim-hint scenario-only" data-i18n="simulation.scenarioReadHint"></p>
           <div class="sim-live" id="sim-live"></div>
+          <!-- Physical sensor readings of a real device (only in real-device mode, not for the demo) -->
+          <section class="sim-live-group sim-sensors" aria-labelledby="sim-sensors-title">
+            <div class="sim-sensors-head">
+              <h3 class="sim-live-legend sim-sensors-title" id="sim-sensors-title" data-i18n="simulation.sensors.title"></h3>
+              <span class="sim-sensors-name" id="sim-sensor-name">—</span>
+              <div class="sim-sensors-chips" id="sim-sensor-chips"></div>
+              <button type="button" class="docs-btn docs-btn-alt sim-sensors-refresh" id="sim-sensor-refresh"><svg class="btn-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12a8 8 0 1 0 3-6.2"/><path d="M4 4v5h5"/></svg><span data-i18n="simulation.sensors.refresh"></span></button>
+            </div>
+              <div class="sim-metrics">
+                <div class="sim-metric sim-metric-temp">
+                  <span class="sim-metric-label" data-i18n="simulation.sensors.temperature"></span>
+                  <span class="sim-metric-val"><strong id="sim-m-temp">—</strong> <span class="sim-metric-unit">°C</span></span>
+                </div>
+                <div class="sim-metric sim-metric-hum">
+                  <span class="sim-metric-label" data-i18n="simulation.sensors.humidity"></span>
+                  <span class="sim-metric-val"><strong id="sim-m-hum">—</strong> <span class="sim-metric-unit">%</span></span>
+                </div>
+                <div class="sim-metric sim-metric-press">
+                  <span class="sim-metric-label" data-i18n="simulation.sensors.pressure"></span>
+                  <span class="sim-metric-val"><strong id="sim-m-press">—</strong> <span class="sim-metric-unit" data-i18n="simulation.sensors.mmhg"></span></span>
+                </div>
+                <div class="sim-metric sim-metric-lux">
+                  <span class="sim-metric-label" data-i18n="simulation.sensors.lux"></span>
+                  <span class="sim-metric-val"><strong id="sim-m-lux">—</strong> <span class="sim-metric-unit" data-i18n="simulation.sensors.lx"></span></span>
+                </div>
+              </div>
+              <div class="sim-indicator" id="sim-indicator-row" hidden>
+                <label class="sim-indicator-label">
+                  <input type="checkbox" id="sim-indicator-on" />
+                  <span class="sim-indicator-dot" id="sim-indicator-dot"></span>
+                  <span data-i18n="simulation.sensors.indicator"></span>
+                </label>
+                <span class="sim-indicator-info" id="sim-indicator-info"></span>
+                <span class="sim-indicator-spacer"></span>
+              </div>
+              <p class="sim-hint sim-sensors-meta" id="sim-sensor-meta"></p>
+          </section>
         </div>
 
         <!-- Manual inputs (simulation mode, only while the "Manual" scenario is selected) -->
@@ -255,48 +315,22 @@
           <p class="sim-hint" data-i18n="simulation.modelHint"></p>
           <ul class="sim-models" id="sim-models"></ul>
 
-          <h2 class="workspace-heading sim-heading-gap" data-i18n="simulation.policyTitle"></h2>
-          <p class="sim-hint" data-i18n="simulation.policyHint"></p>
-          <div class="sim-policy">
-            <label><span class="sim-dot is-warning"></span><span data-i18n="simulation.status.warning"></span> <span data-i18n="simulation.policyBelow"></span> <input type="number" id="sim-warn" min="0" max="100" step="1" class="value-input" /></label>
-            <label><span class="sim-dot is-critical"></span><span data-i18n="simulation.status.critical"></span> <span data-i18n="simulation.policyBelow"></span> <input type="number" id="sim-critical" min="0" max="100" step="1" class="value-input" /></label>
-          </div>
+          <details class="sim-policy-box sim-heading-gap" id="sim-policy-box">
+            <summary class="sim-policy-head">
+              <h2 class="workspace-heading" data-i18n="simulation.policyTitle"></h2>
+              <span class="sim-policy-summary" id="sim-policy-summary"></span>
+              <span class="sim-policy-changed" id="sim-policy-changed" data-i18n="simulation.policyChanged" hidden></span>
+            </summary>
+            <p class="sim-hint" data-i18n="simulation.policyHint"></p>
+            <div class="sim-policy">
+              <label><span class="sim-dot is-warning"></span><span data-i18n="simulation.status.warning"></span> <span data-i18n="simulation.policyBelow"></span> <input type="number" id="sim-warn" min="0" max="100" step="1" class="value-input" /></label>
+              <label><span class="sim-dot is-critical"></span><span data-i18n="simulation.status.critical"></span> <span data-i18n="simulation.policyBelow"></span> <input type="number" id="sim-critical" min="0" max="100" step="1" class="value-input" /></label>
+              <button type="button" class="docs-btn docs-btn-alt sim-policy-reset" id="sim-policy-reset"></button>
+            </div>
+          </details>
         </div>
       </div>
 
-      <details class="process-step sim-sensors" open>
-        <summary>
-          <span class="process-step-num">◉</span>
-          <span class="process-step-title" data-i18n="simulation.sensors.title"></span>
-        </summary>
-        <div class="process-step-body">
-          <p class="sim-hint" data-i18n="simulation.sensors.hint"></p>
-          <div class="sim-sensors-head">
-            <span class="sim-sensors-name" id="sim-sensor-name">—</span>
-            <div class="sim-sensors-chips" id="sim-sensor-chips"></div>
-            <button type="button" class="docs-btn docs-btn-alt sim-sensors-refresh" id="sim-sensor-refresh"><svg class="btn-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12a8 8 0 1 0 3-6.2"/><path d="M4 4v5h5"/></svg><span data-i18n="simulation.sensors.refresh"></span></button>
-          </div>
-          <div class="sim-metrics">
-            <div class="sim-metric sim-metric-temp">
-              <span class="sim-metric-label" data-i18n="simulation.sensors.temperature"></span>
-              <span class="sim-metric-val"><strong id="sim-m-temp">—</strong> <span class="sim-metric-unit">°C</span></span>
-            </div>
-            <div class="sim-metric sim-metric-hum">
-              <span class="sim-metric-label" data-i18n="simulation.sensors.humidity"></span>
-              <span class="sim-metric-val"><strong id="sim-m-hum">—</strong> <span class="sim-metric-unit">%</span></span>
-            </div>
-            <div class="sim-metric sim-metric-press">
-              <span class="sim-metric-label" data-i18n="simulation.sensors.pressure"></span>
-              <span class="sim-metric-val"><strong id="sim-m-press">—</strong> <span class="sim-metric-unit" data-i18n="simulation.sensors.mmhg"></span></span>
-            </div>
-            <div class="sim-metric sim-metric-lux">
-              <span class="sim-metric-label" data-i18n="simulation.sensors.lux"></span>
-              <span class="sim-metric-val"><strong id="sim-m-lux">—</strong> <span class="sim-metric-unit" data-i18n="simulation.sensors.lx"></span></span>
-            </div>
-          </div>
-          <p class="sim-hint sim-sensors-meta" id="sim-sensor-meta"></p>
-        </div>
-      </details>
 
       <details class="process-step" open>
         <summary>
@@ -335,6 +369,7 @@
     </div>
 
     <script src="i18n-helper.js"></script>
+    <script src="transient-tips.js"></script>
     <script src="simulation.js"></script>
   </body>
 </html>
