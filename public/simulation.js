@@ -176,7 +176,75 @@
     return zones.filter(([from, to]) => to > from).map(([from, to, status]) => ({ from, to, status }));
   }
 
-  const api = { INPUTS, BASELINE, SCENARIOS, STEPS, scenarioInputs, assess, levelTerm, policyZones, createRandom, DEFAULT_POLICY };
+  /**
+   * Thresholds after one of them was moved: integers in 0..100 and
+   * critical ≤ warn. The threshold that was not moved stays; the moved one
+   * stops at it.
+   * @param {{warn:number, critical:number}} policy
+   * @param {"warn"|"critical"} moved
+   */
+  function normalizePolicy(policy, moved = "warn") {
+    let warn = Math.round(clamp(Number(policy.warn) || 0, 0, 100));
+    let critical = Math.round(clamp(Number(policy.critical) || 0, 0, 100));
+    if (critical > warn) {
+      if (moved === "critical") critical = warn;
+      else warn = critical;
+    }
+    return { warn, critical };
+  }
+
+  /**
+   * Status indicator on the device: hysteresis of the state shown by the
+   * node's LED. A new status is sent only after it has been observed in
+   * INDICATOR_CONFIRM consecutive windows, so a level oscillating around a
+   * threshold does not make the LED flicker.
+   * @param {{shown:string|null, candidate:string|null, count:number}} track
+   * @param {string} status assessment status of the current window
+   * @returns {{shown, candidate, count, send: string|null}} send = status to transmit now, or null
+   */
+  const INDICATOR_CONFIRM = 2;
+  // The shown state is re-sent every INDICATOR_KEEPALIVE_MS (one small request
+  // outside the measurement window), so the node's watchdog does not switch
+  // the LED off while the state is stable.
+  const INDICATOR_KEEPALIVE_MS = 20000;
+  function indicatorStep(track, status, now = Date.now()) {
+    const base = track || { shown: null, candidate: null, count: 0, sentAt: 0 };
+    const keep = (t) => (t.shown && now - (t.sentAt || 0) >= INDICATOR_KEEPALIVE_MS ? { ...t, send: t.shown, sentAt: now } : { ...t, send: null });
+    if (!status || status === "unknown") return keep({ ...base });
+    if (status === base.shown) return keep({ shown: base.shown, candidate: null, count: 0, sentAt: base.sentAt });
+    const count = status === base.candidate ? base.count + 1 : 1;
+    if (count >= INDICATOR_CONFIRM) return { shown: status, candidate: null, count: 0, sentAt: now, send: status };
+    return keep({ shown: base.shown, candidate: status, count, sentAt: base.sentAt });
+  }
+  /**
+   * Track for indication switched on while listening: the status of the last
+   * window is already confirmed by the assessment, so the LED shows it at once
+   * (no two-window wait); the hysteresis applies to the changes after it.
+   * @returns track, or null when there is no assessed status yet
+   */
+  function indicatorSeed(status, now = Date.now()) {
+    if (!status || status === "unknown") return null;
+    return { shown: status, candidate: null, count: 0, sentAt: now };
+  }
+
+  /**
+   * Device selector after "Find devices": a found node replaces the demo device.
+   * A real device that is connected stays as it is; otherwise the selection
+   * goes to the found device (the one already selected if it was found again,
+   * else the first found), and the demo device is disconnected. No auto-connect.
+   * @param {string[]} foundIds ids returned by the scan
+   * @param {string|null} selected current value of the selector
+   * @param {string|null} connectedId id of the connected device, null if none
+   * @returns {{select: string|null, disconnect: boolean}}
+   */
+  function scanSelection(foundIds, selected, connectedId) {
+    if (!foundIds.length) return { select: selected, disconnect: false };
+    if (connectedId && connectedId !== "demo") return { select: connectedId, disconnect: false };
+    const select = foundIds.includes(selected) ? selected : foundIds[0];
+    return { select, disconnect: connectedId === "demo" };
+  }
+
+  const api = { INPUTS, BASELINE, SCENARIOS, STEPS, scenarioInputs, assess, levelTerm, policyZones, createRandom, DEFAULT_POLICY, normalizePolicy, indicatorStep, indicatorSeed, scanSelection, INDICATOR_CONFIRM, INDICATOR_KEEPALIVE_MS };
   if (typeof module !== "undefined" && module.exports) module.exports = api;
   if (!root || !root.document) return;
   root.securitySimulation = api;
@@ -207,6 +275,7 @@
     deviceTrainError: null,
     deviceInfoOpen: false,
     cmdInfoOpen: false,
+    indicatorInfoOpen: false,
     policy: { ...DEFAULT_POLICY },
     source: "sim",
     step: 0,
@@ -513,20 +582,21 @@
       logTransition(entry);
       render(entry);
       renderLive(inputs); // keep the read-only readouts in sync (scenario and device modes)
+      if (!manual && state.source === "device") driveIndicator(assessment.status);
       state.step += 1;
     } finally {
       state.busy = false;
     }
   }
 
-  function logTransition(entry) {
+  function logTransition(entry, quiet = false) {
     const status = entry.assessment.status;
     if (status === state.lastStatus) return;
     state.lastStatus = status;
     const weakest = entry.assessment.weakest ? t(`simulation.controllers.${entry.assessment.weakest}`) : "";
     state.log.unshift({ step: entry.step, status, level: entry.assessment.level, weakest });
     if (state.log.length > 40) state.log.pop();
-    renderLog();
+    if (!quiet) renderLog();
   }
 
   function tick() {
@@ -560,6 +630,21 @@
     writeInputs(inputs);
     recordStep(inputs);
   }
+  // The icon in the corner of the chart: start the timeline from step 0.
+  // Simulation: the same as "Reset". Device mode: the history, step counter and
+  // event log are cleared; listening (if running) continues and the next window
+  // is drawn at the beginning of the chart.
+  function restartTimeline() {
+    if (state.source !== "device") { reset(); return; }
+    state.step = 0;
+    state.history = [];
+    state.log = [];
+    state.lastStatus = null;
+    renderLog();
+    blankRender();
+    if (device.listening) $("sim-status").textContent = t("simulation.device.waiting", "");
+  }
+
   function reset() {
     pause();
     state.step = 0;
@@ -609,6 +694,45 @@
     styleLevelBar($("sim-level-bar"), level, assessment.status);
     drawRadar($("sim-radar"), assessment);
     drawTimeline($("sim-timeline"));
+    renderSticky(entry);
+  }
+
+  // --- pinned compact scores -----------------------------------------------------
+  // A read-only copy of the score cards in a thin bar at the top of the window,
+  // shown while the cards are scrolled out of view (above it). Lines in the
+  // colours of the timeline, the weakest link in bold, the level with its status
+  // and the policy zones; the bottom edge takes the colour of the status.
+  function renderSticky(entry) {
+    const bar = $("sim-sticky");
+    if (!bar) return;
+    const a = entry ? entry.assessment : null;
+    CONTROLLERS.forEach((name) => {
+      const v = entry ? entry.outputs[name] : null;
+      $(`sim-st-${name}`).textContent = fmt(v, 1);
+      $(`sim-st-${name}-bar`).style.width = `${v === null || v === undefined ? 0 : clamp(v, 0, 100)}%`;
+      bar.querySelector(`[data-ctl="${name}"]`).classList.toggle("is-weakest", Boolean(a && a.weakest === name));
+    });
+    const status = a && a.level !== null ? a.status : "unknown";
+    $("sim-st-level").textContent = fmt(a ? a.level : null, 1);
+    const st = $("sim-st-status");
+    st.textContent = status === "unknown" ? "—" : t(`simulation.status.${status}`);
+    st.className = `sim-status is-${status}`;
+    styleLevelBar($("sim-st-bar"), a ? a.level : null, status);
+    ["normal", "warning", "critical", "unknown"].forEach((s) => bar.classList.toggle(`is-${s}`, s === status));
+    $("sim-sticky-btn").setAttribute("aria-label", t("simulation.stickyBack"));
+  }
+  function bindSticky() {
+    const cards = document.querySelector(".sim-cards"), bar = $("sim-sticky"), btn = $("sim-sticky-btn");
+    if (!cards || !bar || !btn) return;
+    btn.addEventListener("click", () => document.querySelector(".sim-summary").scrollIntoView({ behavior: "smooth", block: "start" }));
+    renderSticky(null);
+    if (typeof IntersectionObserver === "undefined") return;
+    new IntersectionObserver(([e]) => {
+      const show = !e.isIntersecting && e.boundingClientRect.top < 0;
+      bar.classList.toggle("is-visible", show);
+      bar.setAttribute("aria-hidden", show ? "false" : "true");
+      btn.tabIndex = show ? 0 : -1;
+    }, { threshold: 0 }).observe(cards);
   }
 
   function renderLog() {
@@ -693,6 +817,114 @@
     track.style.setProperty("--sim-dividers", dividers.length ? dividers.join(", ") : "none");
     fill.style.clipPath = `inset(0 ${100 - (level === null ? 0 : clamp(level, 0, 100))}% 0 0)`;
     fill.className = `sim-level-bar-fill is-${status}`;
+  }
+
+  // --- response policy ---------------------------------------------------------
+  // The thresholds are set by dragging the markers under the level bar (or with
+  // the arrow keys on a focused marker) or in the collapsed "Response policy"
+  // fields. Only the assessment depends on the policy, so a change re-assesses
+  // the recorded outputs (no new controller calls); while dragging this runs once
+  // per frame, and the LED of the node follows only when the change is committed.
+  const POLICY_KEYS = ["warn", "critical"];
+  const policyStatus = (k) => (k === "warn" ? "warning" : "critical");
+  const isDefaultPolicy = () => state.policy.warn === DEFAULT_POLICY.warn && state.policy.critical === DEFAULT_POLICY.critical;
+  const fill2 = (s, p) => s.replace("{warn}", String(p.warn)).replace("{critical}", String(p.critical));
+
+  function renderPolicy() {
+    const p = state.policy;
+    POLICY_KEYS.forEach((k) => {
+      const input = $(k === "warn" ? "sim-warn" : "sim-critical");
+      if (input) input.value = p[k];
+      const h = $(`sim-thr-${k}`);
+      if (!h) return;
+      const status = t(`simulation.status.${policyStatus(k)}`);
+      h.style.left = `${p[k]}%`;
+      h.setAttribute("aria-valuenow", String(p[k]));
+      h.setAttribute("aria-valuetext", `${status} < ${p[k]}`);
+      h.setAttribute("aria-label", t("simulation.policyHandle").replace("{status}", status));
+      h.querySelector(".sim-thr-bubble").textContent = `${status} < ${p[k]}`;
+    });
+    const summary = $("sim-policy-summary");
+    if (summary) summary.textContent = fill2(t("simulation.policySummary"), p);
+    const changed = $("sim-policy-changed");
+    if (changed) changed.hidden = isDefaultPolicy();
+    const resetBtn = $("sim-policy-reset");
+    if (resetBtn) { resetBtn.textContent = fill2(t("simulation.policyReset"), DEFAULT_POLICY); resetBtn.disabled = isDefaultPolicy(); }
+  }
+
+  function reassess(commit) {
+    state.log = []; state.lastStatus = null;
+    state.history.forEach((e) => { e.assessment = assess(e.outputs, state.policy); logTransition(e, true); });
+    renderLog();
+    const last = state.history[state.history.length - 1];
+    if (last) render(last);
+    else { styleLevelBar($("sim-level-bar"), null, "unknown"); CONTROLLERS.forEach((name) => drawGauge($(`sim-gauge-${name}`), null, name)); drawTimeline($("sim-timeline")); renderSticky(null); }
+    // the operator's decision is shown on the node at once (no two-window wait)
+    if (!commit || !last || last.manual || state.source !== "device" || !device.listening) return;
+    device.indicator.lastSeen = last.assessment.status;
+    if (!device.indicator.enabled || !device.indicator.present) return;
+    const shown = device.indicator.track && device.indicator.track.shown;
+    if (shown === last.assessment.status) return;
+    device.indicator.track = indicatorSeed(last.assessment.status);
+    if (device.indicator.track) sendIndicator(last.assessment.status);
+  }
+
+  let policyFrame = 0;
+  function setPolicy(next, moved, commit) {
+    state.policy = normalizePolicy(next, moved);
+    renderPolicy();
+    if (commit) {
+      if (policyFrame) { cancelAnimationFrame(policyFrame); policyFrame = 0; }
+      reassess(true);
+    } else if (!policyFrame) {
+      policyFrame = requestAnimationFrame(() => { policyFrame = 0; reassess(false); });
+    }
+  }
+
+  function bindPolicy() {
+    const bar = $("sim-level-bar").parentElement;
+    const valueAt = (x) => { const r = bar.getBoundingClientRect(); return Math.round(((x - r.left) / Math.max(1, r.width)) * 100); };
+    POLICY_KEYS.forEach((k) => {
+      const h = $(`sim-thr-${k}`);
+      if (!h) return;
+      const raise = () => POLICY_KEYS.forEach((o) => $(`sim-thr-${o}`).classList.toggle("is-top", o === k));
+      h.addEventListener("pointerdown", (e) => {
+        e.preventDefault();
+        raise();
+        h.focus({ preventScroll: true });
+        try { h.setPointerCapture(e.pointerId); } catch (_) { /* pointer already gone */ }
+        h.classList.add("is-dragging");
+        const move = (ev) => setPolicy({ ...state.policy, [k]: valueAt(ev.clientX) }, k, false);
+        const end = () => {
+          h.removeEventListener("pointermove", move);
+          h.removeEventListener("pointerup", end);
+          h.removeEventListener("pointercancel", end);
+          h.classList.remove("is-dragging");
+          setPolicy(state.policy, k, true);
+        };
+        h.addEventListener("pointermove", move);
+        h.addEventListener("pointerup", end);
+        h.addEventListener("pointercancel", end);
+      });
+      let keyTimer = null;
+      h.addEventListener("keydown", (e) => {
+        const delta = { ArrowLeft: -1, ArrowDown: -1, ArrowRight: 1, ArrowUp: 1, PageDown: -5, PageUp: 5 }[e.key];
+        let v = state.policy[k];
+        if (delta) v += delta;
+        else if (e.key === "Home") v = 0;
+        else if (e.key === "End") v = 100;
+        else return;
+        e.preventDefault();
+        raise();
+        setPolicy({ ...state.policy, [k]: v }, k, false);
+        clearTimeout(keyTimer);
+        keyTimer = setTimeout(() => setPolicy(state.policy, k, true), 400);
+      });
+      const input = $(k === "warn" ? "sim-warn" : "sim-critical");
+      input.addEventListener("change", () => setPolicy({ ...state.policy, [k]: input.value }, k, true));
+    });
+    $("sim-policy-reset").addEventListener("click", () => setPolicy({ ...DEFAULT_POLICY }, "warn", true));
+    renderPolicy();
   }
 
   /** "Security triangle": the three partial scores as a filled polygon. */
@@ -876,6 +1108,8 @@
       placeTooltip(tip, event);
     });
     canvas.addEventListener("mouseleave", hide);
+    // touch screens: no mouseleave — close on scroll or on a tap outside the chart
+    root.transientTips?.register({ owner: canvas, hide, isOpen: () => tip.classList.contains("visible") });
     canvas.addEventListener("touchstart", (event) => { const touch = event.touches[0]; if (touch) canvas.dispatchEvent(new MouseEvent("mousemove", { clientX: touch.clientX, clientY: touch.clientY })); }, { passive: true });
   }
 
@@ -887,14 +1121,16 @@
     $("sim-duration").addEventListener("input", (e) => { state.duration = Number(e.target.value); $("sim-duration-val").textContent = String(state.duration); });
     $("sim-noise").addEventListener("input", (e) => { state.noise = Number(e.target.value); $("sim-noise-val").textContent = `${Math.round(state.noise * 100)} %`; });
     $("sim-speed").addEventListener("input", (e) => { state.speed = Number(e.target.value); $("sim-speed-val").textContent = `×${state.speed}`; });
-    $("sim-warn").addEventListener("change", (e) => { state.policy.warn = clamp(Number(e.target.value) || 0, 0, 100); replay(); });
-    $("sim-critical").addEventListener("change", (e) => { state.policy.critical = clamp(Number(e.target.value) || 0, 0, 100); replay(); });
+    bindPolicy();
+    bindSticky();
     $("sim-play").addEventListener("click", play);
     $("sim-pause").addEventListener("click", pause);
     $("sim-stepbtn").addEventListener("click", stepOnce);
     $("sim-reset").addEventListener("click", reset);
-    $("sim-warn").value = state.policy.warn;
-    $("sim-critical").value = state.policy.critical;
+    const tlReset = $("sim-timeline-reset");
+    const labelTimelineReset = () => { const l = t("simulation.timelineReset"); tlReset.title = l; tlReset.setAttribute("aria-label", l); };
+    labelTimelineReset();
+    tlReset.addEventListener("click", restartTimeline);
     root.addEventListener("resize", () => { const last = state.history[state.history.length - 1]; if (last) render(last); });
     // A model applied or reverted on a controller tab updates the indicator and
     // recomputes the assessment with the new model.
@@ -905,6 +1141,9 @@
       const last = state.history[state.history.length - 1]; if (last) render(last); renderLog(); updateScenarioControls();
       renderModelIndicator();
       renderCmdInfo();
+      renderIndicatorInfo();
+      renderPolicy();
+      labelTimelineReset();
       updateConnectBtn();
       if (device.connected) { setDeviceStatus("connected", device.name); if (device.source && device.source.isDemo) $("sim-device-note").textContent = t("simulation.device.demoNote"); }
       else { setDeviceStatus("idle"); $("sim-device-note").textContent = $("sim-device").options.length <= 1 ? t("simulation.device.noDevices") : ""; }
@@ -940,7 +1179,9 @@
   };
   const UNITS = { bytes: "log₁₀", energy: "kWh/GB", strength: "dBm", response: "ms", rate: "п/с" };
 
-  const device = { source: null, connected: false, listening: false, mode: "normal" };
+  const device = { source: null, connected: false, listening: false, mode: "normal",
+    // status indicator (LED) on the node: present per telemetry, enabled by the operator
+    indicator: { present: false, enabled: false, state: "off", track: null, gen: 0, armed: false, lastSeen: null } };
 
   // The chosen source tab, the selected device and whether it was connected are
   // remembered so navigating away and back keeps the same device and tab.
@@ -990,9 +1231,11 @@
     return {
       id: "demo", isDemo: true,
       async connect() { return true; },
+      currentMode() { return mode; },
       start(onReading) { timer = setInterval(() => onReading(reading()), 1000); },
       stop() { clearInterval(timer); timer = null; },
       async command(name) { mode = name; },
+      async indicate() { /* the demo device has no indicator */ },
       async telemetry() {
         return {
           node: "demo", sensors: { bme280: true, ina219: false, bh1750: false },
@@ -1007,11 +1250,17 @@
 
   /** API source: real device served by the gateway backend (HA add-on). */
   function apiSource(id) {
-    let es = null, poll = null;
+    let es = null, poll = null, info = null;
     const url = (suffix) => `api/devices/${encodeURIComponent(id)}${suffix}`;
     return {
       id, isDemo: false,
-      async connect() { const r = await fetch(url("")).catch(() => null); return Boolean(r && r.ok); },
+      async connect() {
+        const r = await fetch(url("")).catch(() => null);
+        if (!r || !r.ok) return false;
+        info = await r.json().catch(() => null);
+        return true;
+      },
+      currentMode() { return info && info.mode ? info.mode : null; },
       start(onReading) {
         try {
           es = new EventSource(url("/stream"));
@@ -1026,6 +1275,10 @@
       stop() { if (es) { es.close(); es = null; } if (poll) { clearInterval(poll); poll = null; } },
       async command(name) {
         await fetch(url("/command"), { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ scenario: name }) }).catch(() => { /* ignore */ });
+      },
+      async indicate(status) {
+        const r = await fetch(url("/indicate"), { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ status }) }).catch(() => null);
+        return Boolean(r && r.ok);
       },
       async telemetry() {
         const r = await fetch(url("/telemetry")).catch(() => null);
@@ -1084,6 +1337,7 @@
     $("sim-weakest").textContent = "—"; $("sim-step").textContent = "0";
     drawTimeline($("sim-timeline"));
     drawRadar($("sim-radar"), { partial: { trust: null, security: null, intrusion: null }, level: null });
+    renderSticky(null);
   }
 
   function setDeviceStatus(s, detail) {
@@ -1144,7 +1398,11 @@
     $("sim-device-note").textContent = t("simulation.device.scanning");
     let real = [];
     try { const r = await fetch("api/devices/discover"); if (r.ok) { const d = await r.json(); if (Array.isArray(d)) real = d; } } catch (_) { /* no backend */ }
+    const pick = scanSelection(real.map((d) => d.id), $("sim-device").value, device.connected && device.source ? device.source.id : null);
+    if (pick.disconnect) disconnectDevice(); // the demo gives way to the found node
     const n = populateDevices(real);
+    if (pick.select && [...$("sim-device").options].some((o) => o.value === pick.select)) $("sim-device").value = pick.select;
+    saveDeviceSession();
     btn.disabled = false;
     if (n) {
       const names = real.map((d) => d.name || d.id).join(", ");
@@ -1169,20 +1427,32 @@
     $("sim-listen").disabled = false;
     setCmdEnabled(true);
     updateConnectBtn();
+    // The buttons show the scenario the gateway is actually running against the
+    // node: "normal" (background traffic) unless another page started an attack.
+    const running = typeof src.currentMode === "function" ? src.currentMode() : null;
+    device.mode = running || "normal";
     setActiveCmd(device.mode);
     // Sensor panel and Wi-Fi quality only for a real device (not the demo).
     document.documentElement.classList.toggle("is-realdevice", !src.isDemo);
     renderModelIndicator(); // the ESP32-dataset block depends on the active device
+    device.indicator.enabled = src.isDemo ? false : indicatorPref(src.id);
+    device.indicator.track = null;
+    device.indicator.armed = false; // lamp test + standby on the first telemetry
+    if (!src.isDemo) startIdleKeepAlive();
     if (src.isDemo) { stopSensors(); updateWifi(null); } else { startSensors(); }
     saveDeviceSession();
   }
   function disconnectDevice() {
     stopListening();
+    indicatorOff();
+    stopIdleKeepAlive();
+    device.indicator.armed = false;
     stopSensors(); resetSensors(); updateWifi(null);
     document.documentElement.classList.remove("is-realdevice");
     renderModelIndicator();
     if (device.source) device.source.stop();
-    device.source = null; device.connected = false; device.name = null;
+    device.source = null; device.connected = false; device.name = null; device.mode = "normal";
+    setActiveCmd(device.mode);
     $("sim-listen").disabled = true; setCmdEnabled(false);
     setDeviceStatus("idle"); updateConnectBtn();
     saveDeviceSession();
@@ -1211,9 +1481,12 @@
     set("sim-sensor-name", tele.node || "—");
     const s = tele.sensors || {};
     $("sim-sensor-chips").innerHTML = sensorChip("BME280", s.bme280) + sensorChip("BH1750", s.bh1750) + sensorChip("INA219", s.ina219);
+    renderIndicator(tele.indicator || null);
     const meta = [];
     if (tele.rssi_dbm != null) meta.push(`RSSI ${tele.rssi_dbm} dBm`);
     if (tele.tx_power_dbm != null) meta.push(`TX ${tele.tx_power_dbm} dBm`);
+    // firmware 1.2.0+ reports its version; older firmware has none
+    if (tele.fw_version) meta.push(`${t("simulation.sensors.firmware")} ${tele.fw_version}`);
     meta.push(`${t("simulation.sensors.updated")}: ${new Date().toLocaleTimeString()}`);
     $("sim-sensor-meta").textContent = meta.join(" · ");
   }
@@ -1226,18 +1499,171 @@
   function stopSensors() { if (sensorTimer) { clearInterval(sensorTimer); sensorTimer = null; } }
   function resetSensors() {
     renderSensors(null);
+    renderIndicator(null);
     $("sim-sensor-name").textContent = "—";
     $("sim-sensor-chips").innerHTML = "";
     $("sim-sensor-meta").textContent = "";
   }
+  // --- status indicator (LED) on the node --------------------------------------
+  // The checkbox is shown only when the connected device reports an indicator
+  // in its telemetry ({ indicator: { present: true, state } }). The operator's
+  // choice is kept per device. While listening, the LED shows the state decided
+  // by the policy of this page; it changes only after two consecutive windows
+  // with a new status (indicatorStep). Without listening there is no assessment,
+  // so the LED does not show green: when indication is switched on (or the
+  // device connects with it on) it runs a lamp test (red → yellow → green) and
+  // stays dim blue ("standby") until listening starts; it returns to standby
+  // when listening stops. It goes off when indication is disabled or the device
+  // is disconnected. Commands to the node are sent one after another (a chain),
+  // and a newer intent (gen) cancels a lamp test that is still running.
+  const INDICATOR_KEY = "simIndicator";
+  const indicatorPref = (id) => { try { return localStorage.getItem(`${INDICATOR_KEY}:${id}`) === "1"; } catch (_) { return false; } };
+  const saveIndicatorPref = (id, on) => { try { localStorage.setItem(`${INDICATOR_KEY}:${id}`, on ? "1" : "0"); } catch (_) { /* ignore */ } };
+
+  // "i" of the indicator: what the LED shows and when it changes (click to open, as for the commands).
+  function renderIndicatorInfo() {
+    const host = $("sim-indicator-info");
+    if (!host) return;
+    host.innerHTML = "";
+    const wrap = document.createElement("span");
+    wrap.className = "sim-info-wrap";
+    const btn = document.createElement("button");
+    btn.type = "button"; btn.className = "sim-info"; btn.textContent = "i";
+    btn.setAttribute("aria-label", t("simulation.sensors.indicatorAria"));
+    btn.setAttribute("aria-expanded", state.indicatorInfoOpen ? "true" : "false");
+    btn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      state.indicatorInfoOpen = !state.indicatorInfoOpen;
+      if (state.cmdInfoOpen) { state.cmdInfoOpen = false; renderCmdInfo(); }
+      if (state.deviceInfoOpen) { state.deviceInfoOpen = false; renderModelIndicator(); }
+      renderIndicatorInfo();
+    });
+    wrap.append(btn);
+    if (state.indicatorInfoOpen) {
+      const pop = document.createElement("div");
+      pop.className = "sim-info-pop is-wide is-up";
+      pop.setAttribute("role", "dialog");
+      pop.addEventListener("click", (e) => e.stopPropagation());
+      const title = document.createElement("strong"); title.textContent = t("simulation.sensors.indicatorInfoTitle");
+      pop.append(title);
+      ["colors", "test", "change", "off"].forEach((k) => {
+        const el = document.createElement("p"); el.textContent = t(`simulation.sensors.indicatorInfo.${k}`); pop.append(el);
+      });
+      wrap.append(pop);
+    }
+    host.append(wrap);
+  }
+
+  function renderIndicator(info) {
+    const row = $("sim-indicator-row"), box = $("sim-indicator-on"), dot = $("sim-indicator-dot");
+    if (!row || !box || !dot) return;
+    const present = Boolean(info && info.present);
+    device.indicator.present = present;
+    row.hidden = !present;
+    if (!present) { device.indicator.state = "off"; return; }
+    device.indicator.state = info.state || "off";
+    dot.className = `sim-indicator-dot is-${device.indicator.state}`;
+    dot.title = indicatorTitle(device.indicator.state);
+    box.checked = device.indicator.enabled;
+    if (!$("sim-indicator-info").children.length) renderIndicatorInfo();
+    // first telemetry of this connection: indication saved as "on" → lamp test + standby
+    if (!device.indicator.armed) {
+      device.indicator.armed = true;
+      if (device.indicator.enabled && !device.listening) indicatorStandby({ test: true });
+    }
+  }
+  const LAMP_TEST_STEP_MS = 300;
+  const LAMP_TEST = ["critical", "warning", "normal"];
+  const indicatorTitle = (s) => (s === "standby" ? t("simulation.sensors.indicatorStandby") : t(`simulation.status.${s}`, s));
+  let indicatorChain = Promise.resolve(true);
+  let idleKeepAlive = null;
+  async function sendNow(src, status) {
+    if (!src || typeof src.indicate !== "function") return false;
+    const ok = await src.indicate(status);
+    if (ok && src === device.source) {
+      device.indicator.state = status;
+      const dot = $("sim-indicator-dot");
+      if (dot) { dot.className = `sim-indicator-dot is-${status}`; dot.title = indicatorTitle(status); }
+    }
+    return Boolean(ok);
+  }
+  // One command at a time: "standby" then "off" on disconnect must arrive in this order.
+  // The device is taken when the command is queued: "off" queued by disconnect
+  // still reaches the node after the page has forgotten it.
+  function sendIndicator(status) {
+    const src = device.source;
+    const next = indicatorChain.then(() => sendNow(src, status));
+    indicatorChain = next.catch(() => false);
+    return indicatorChain;
+  }
+  const wait = (ms) => new Promise((r) => setTimeout(r, ms));
+  const idleIndicator = () => device.connected && !device.listening && device.indicator.enabled && device.indicator.present;
+  async function lampTest(gen) {
+    for (const s of LAMP_TEST) {
+      if (gen !== device.indicator.gen || !idleIndicator()) return false;
+      await sendIndicator(s);
+      await wait(LAMP_TEST_STEP_MS);
+    }
+    return gen === device.indicator.gen;
+  }
+  async function indicatorStandby({ test = false } = {}) {
+    if (!idleIndicator()) return;
+    const gen = ++device.indicator.gen;
+    if (test && !(await lampTest(gen))) return;
+    if (gen !== device.indicator.gen || !idleIndicator()) return;
+    // firmware without "standby" refuses it: then the LED just goes off after the test
+    if (!(await sendIndicator("standby"))) await sendIndicator("off");
+  }
+  function driveIndicator(status) {
+    device.indicator.lastSeen = status; // also with indication off: it is shown at once when switched on
+    if (!device.indicator.enabled || !device.indicator.present) return;
+    const next = indicatorStep(device.indicator.track, status);
+    device.indicator.track = { shown: next.shown, candidate: next.candidate, count: next.count, sentAt: next.sentAt };
+    if (next.send) sendIndicator(next.send);
+  }
+  function indicatorOff() {
+    // Sent regardless of the checkbox (it is called right after the checkbox has
+    // been cleared) and of the last known colour: a queued "standby" or a lamp
+    // test may not have reached the node yet.
+    device.indicator.gen += 1; // cancels a running lamp test
+    device.indicator.track = null;
+    if (device.indicator.present) sendIndicator("off");
+  }
+  function setIndicatorEnabled(on) {
+    device.indicator.enabled = on;
+    if (device.source) saveIndicatorPref(device.source.id, on);
+    if (!on) { indicatorOff(); return; }
+    if (!device.listening) { indicatorStandby({ test: true }); return; }
+    // listening: show the status of the last window at once, standby if none yet
+    device.indicator.gen += 1;
+    device.indicator.track = indicatorSeed(device.indicator.lastSeen);
+    if (device.indicator.present) sendIndicator(device.indicator.track ? device.indicator.track.shown : "standby");
+  }
+  // the firmware switches the LED off after 60 s without commands: keep standby alive
+  function startIdleKeepAlive() {
+    stopIdleKeepAlive();
+    idleKeepAlive = setInterval(() => {
+      if (idleIndicator() && device.indicator.state === "standby") sendIndicator("standby");
+    }, INDICATOR_KEEPALIVE_MS);
+  }
+  function stopIdleKeepAlive() { if (idleKeepAlive) { clearInterval(idleKeepAlive); idleKeepAlive = null; } }
+
   function startListening() {
     if (!device.source || device.listening) return;
     device.listening = true;
+    device.indicator.gen += 1; // a lamp test still running stops; standby stays until two windows decide
+    device.indicator.lastSeen = null;
     $("sim-listen").hidden = true; $("sim-liststop").hidden = false;
     device.source.start((inputs) => { recordStep(inputs, false); });
   }
   function stopListening() {
-    if (device.source && device.listening) device.source.stop();
+    if (device.source && device.listening) {
+      device.source.stop();
+      device.listening = false;
+      device.indicator.track = null;
+      device.indicator.lastSeen = null;
+      if (device.indicator.enabled) indicatorStandby(); else indicatorOff(); // no assessment any more
+    }
     device.listening = false;
     if ($("sim-listen")) $("sim-listen").hidden = false;
     if ($("sim-liststop")) $("sim-liststop").hidden = true;
@@ -1337,10 +1763,13 @@
       // A click on a command button keeps the command info open: it only switches its content.
       const onCommand = e && e.target && e.target.closest && e.target.closest(".sim-cmd");
       if (state.cmdInfoOpen && !onCommand) { state.cmdInfoOpen = false; renderCmdInfo(); }
+      if (state.indicatorInfoOpen) { state.indicatorInfoOpen = false; renderIndicatorInfo(); }
     };
     document.addEventListener("click", closeDeviceInfo);
     document.addEventListener("keydown", (e) => { if (e.key === "Escape") closeDeviceInfo(); });
     $("sim-sensor-refresh").addEventListener("click", refreshSensors);
+    const indBox = $("sim-indicator-on");
+    if (indBox) indBox.addEventListener("change", () => setIndicatorEnabled(indBox.checked));
     $("sim-device").addEventListener("change", () => { if (device.connected) disconnectDevice(); else saveDeviceSession(); });
     $("sim-listen").addEventListener("click", startListening);
     $("sim-liststop").addEventListener("click", stopListening);

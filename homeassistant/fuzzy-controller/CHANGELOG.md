@@ -1,5 +1,23 @@
 # Changelog
 
+## 1.4.0
+- Security-level indicator on the ESP32 node (one WS2812B pixel): the joint
+  assessment page drives its colour (green / yellow / red) with a two-window
+  hysteresis; a checkbox in "Sensor readings" appears only when the node has
+  the indicator. Without listening: lamp test, then dim blue standby.
+- Firmware 1.2.0: `/led` endpoint (incl. standby), sensor cache, watchdog,
+  `fw_version` in `/status`; the version is shown in the sensor panel.
+- Chart restart button on "Scores over time".
+- Response-policy thresholds: drag the markers under the security-level bar;
+  the fields are in a collapsed "Response policy" section (current values and
+  a "changed" mark in its header, reset to 50 / 25).
+- "Find devices": a found node replaces the demo device in the selector.
+- Joint assessment: a thin read-only bar with TI / SR / IP and the level is
+  pinned at the top while the score cards are scrolled out of view.
+- Sensor readings moved into the readouts column as a compact card.
+- Chart tooltips close on scroll / tap outside on touch screens.
+- Backend: `POST /api/devices/:id/indicate`.
+
 ## 1.3.0
 - Device sensor panel: a collapsible "Sensor readings" section shows the node's
   live physical measurements (temperature, humidity, pressure in mmHg,

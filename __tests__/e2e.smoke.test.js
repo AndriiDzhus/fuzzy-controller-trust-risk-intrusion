@@ -317,4 +317,13 @@ describe("E2E smoke: navigation and i18n", () => {
       expect(res.text).toContain('src="fuzzy-page-core.js"');
     }
   });
+
+  test("tooltip closing helper for touch screens is loaded on all pages", async () => {
+    for (const page of ["/index.html", "/security.html", "/intrusion.html", "/simulation.html"]) {
+      const res = await request(app).get(page);
+      expect(res.text).toContain('src="transient-tips.js"');
+    }
+    const js = await request(app).get("/transient-tips.js");
+    expect(js.status).toBe(200);
+  });
 });
