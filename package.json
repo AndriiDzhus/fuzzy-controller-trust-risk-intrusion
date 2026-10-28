@@ -1,6 +1,6 @@
 {
   "name": "fuzzy-controller-trust-risk-intrusion",
-  "version": "1.3.0",
+  "version": "1.4.0",
   "description": "Multi-Controller Fuzzy Inference Platform for System Security Assessment",
   "main": "server.js",
   "scripts": {

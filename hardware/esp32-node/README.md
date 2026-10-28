@@ -38,7 +38,9 @@ Missing sensors are reported as `false` in `/status`; add them and reboot.
 - Open *Tools → Serial Monitor* at **115200** baud. You should see the I2C scan,
   the detected BME280 (chip ID `0x60`), the Wi-Fi IP, and the HTTP server line.
 - From a browser or the Pi: `http://<esp-ip>/status` → JSON with
-  `temperature_c`, `humidity_pct`, `pressure_hpa`, `tx_power_dbm`, `rssi_dbm`,
+  `fw_version` (firmware version, `FW_VERSION` in the sketch; also printed at
+  boot and shown in the app's sensor panel), `temperature_c`, `humidity_pct`,
+  `pressure_hpa`, `tx_power_dbm`, `rssi_dbm`,
   and `ina219`/`bh1750` = `false` until those sensors are added.
 - `http://<esp-ip>/ping` → `pong`; `http://<esp-ip>/load?n=2000` → 2000 bytes.
 

@@ -12,16 +12,23 @@
  *   - BH1750  (0x23/0x5C) : illuminance (lux)                  [add later]
  * Missing sensors are simply reported as absent; add them and reboot.
  *
+ * Firmware version (FW_VERSION, reported in /status as "fw_version"):
+ *   1.0.0  sensors, /status /ping /load
+ *   1.1.0  sensor cache (I2C read in loop(), not in HTTP handlers),
+ *          WS2812B status indicator (/led), watchdog
+ *   1.2.0  indicator state "standby" (dim blue), fw_version in /status
+ *
  * HTTP endpoints:
  *   GET /             small HTML page
  *   GET /status       JSON telemetry (used by the gateway/UI)
  *   GET /ping         "pong" (latency / lightweight traffic target)
  *   GET /load?n=      N bytes of payload (traffic generation target)
- *   GET /led?state=   status indicator: normal | warning | critical | off
+ *   GET /led?state=   status indicator: normal | warning | critical | standby | off
  *
  * Status indicator (one WS2812B pixel cut from an addressable strip):
  *   the gateway sets the colour from the computed security level
- *   (green = normal, yellow = warning, red = critical). The node cannot
+ *   (green = normal, yellow = warning, red = critical); dim blue = standby
+ *   (connected, indication on, no assessment yet). The node cannot
  *   detect the pixel, so its presence is a build-time flag (HAS_INDICATOR).
  *   If no command arrives for LED_WATCHDOG_MS the pixel is switched off
  *   (the page refreshes the state every 20 s while indication is on).
@@ -45,6 +52,8 @@
 #include <Adafruit_INA219.h>
 #include <BH1750.h>
 #include <Adafruit_NeoPixel.h>
+
+const char* FW_VERSION = "1.2.0";          // bump on every firmware change (see the list above)
 
 // ---- configuration — EDIT THESE -----------------------------------------
 const char* WIFI_SSID = "YOUR_WIFI_SSID";
@@ -87,7 +96,7 @@ bool hasBME = false, hasINA = false, hasBH = false;
 uint8_t bmeAddr = 0, bhAddr = 0;
 
 Adafruit_NeoPixel pixel(1, LED_PIN, NEO_GRB + NEO_KHZ800);
-String   ledState   = "off";              // normal | warning | critical | off
+String   ledState   = "off";              // normal | warning | critical | standby | off
 uint32_t ledLastCmd = 0;                  // millis() of the last /led command
 
 // ---- indicator -------------------------------------------------------------
@@ -98,12 +107,13 @@ bool setIndicator(const String& state) {
   if      (state == "normal")   c = pixel.Color(0, 60, 0);    // green
   else if (state == "warning")  c = pixel.Color(70, 45, 0);   // yellow (R+G)
   else if (state == "critical") c = pixel.Color(80, 0, 0);    // red
+  else if (state == "standby")  c = pixel.Color(0, 0, 45);    // dim blue: connected, no assessment yet
   else if (state == "off")      c = pixel.Color(0, 0, 0);
   else return false;
   pixel.setPixelColor(0, c);
   pixel.show();
 #else
-  if (state != "normal" && state != "warning" && state != "critical" && state != "off") return false;
+  if (state != "normal" && state != "warning" && state != "critical" && state != "standby" && state != "off") return false;
 #endif
   ledState = state;
   return true;
@@ -189,6 +199,7 @@ String telemetryJson() {
 
   String j = "{";
   j += "\"node\":\"" + String(NODE_NAME) + "\",";
+  j += "\"fw_version\":\"" + String(FW_VERSION) + "\",";
   j += "\"ip\":\"" + WiFi.localIP().toString() + "\",";
   j += "\"uptime_s\":" + String(millis() / 1000) + ",";
   j += "\"rssi_dbm\":" + String(WiFi.RSSI()) + ",";
@@ -228,7 +239,7 @@ void handleLoad() {
   server.send(200, "application/octet-stream", body);
 }
 
-// GET /led?state=normal|warning|critical|off  -> {"led":"<state>"}
+// GET /led?state=normal|warning|critical|standby|off  -> {"led":"<state>"}
 void handleLed() {
   String s = server.hasArg("state") ? server.arg("state") : "";
   if (!setIndicator(s)) { server.send(400, "application/json", "{\"error\":\"bad state\"}"); return; }
@@ -238,7 +249,7 @@ void handleLed() {
 
 void handleRoot() {
   String html = "<!doctype html><meta charset=utf-8><h3>" + String(NODE_NAME) + "</h3>";
-  html += "<p>IP: " + WiFi.localIP().toString() + " | RSSI: " + String(WiFi.RSSI()) + " dBm</p>";
+  html += "<p>Firmware " + String(FW_VERSION) + " | IP: " + WiFi.localIP().toString() + " | RSSI: " + String(WiFi.RSSI()) + " dBm</p>";
   html += "<p><a href='/status'>/status</a> (JSON telemetry) &middot; <a href='/ping'>/ping</a> &middot; <a href='/led?state=normal'>/led?state=normal</a></p>";
   server.send(200, "text/html", html);
 }
@@ -246,7 +257,7 @@ void handleRoot() {
 void setup() {
   Serial.begin(115200);
   delay(300);
-  Serial.println("\n[boot] ESP32 test node starting");
+  Serial.printf("\n[boot] ESP32 test node starting, firmware %s\n", FW_VERSION);
 
   Wire.begin(SDA_PIN, SCL_PIN);
   Wire.setTimeOut(I2C_TIMEOUT_MS);          // a stuck bus must not block the node for a second

@@ -1,5 +1,76 @@
 /* Simulation page: joint assessment of the three controllers. */
 
+/* ---- pinned compact scores (while the score cards are scrolled out of view) ---- */
+.sim-sticky {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 40;
+  pointer-events: none;
+  opacity: 0;
+  transform: translateY(-8px);
+  transition: opacity 0.18s ease, transform 0.18s ease;
+}
+.sim-sticky.is-visible { opacity: 1; transform: none; }
+/* the width of the page container, as the pinned inputs of the controller pages */
+.sim-sticky-inner {
+  display: flex;
+  align-items: center;
+  gap: 6px 18px;
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 6px clamp(12px, 2vw, 20px);
+  min-height: 34px;
+  background: rgba(255, 255, 255, 0.96);
+  border: 1px solid #dbe3ea;
+  border-top: none;
+  border-bottom: 2px solid rgba(127, 140, 141, 0.55);
+  border-radius: 0 0 12px 12px;
+  box-shadow: 0 10px 28px rgba(44, 62, 80, 0.16);
+  backdrop-filter: blur(10px);
+  font: inherit;
+  color: #2c3e50;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.25s ease;
+}
+.sim-sticky.is-visible .sim-sticky-inner { pointer-events: auto; }
+.sim-sticky.is-normal .sim-sticky-inner { border-bottom-color: #27ae60; }
+.sim-sticky.is-warning .sim-sticky-inner { border-bottom-color: #f2994a; }
+.sim-sticky.is-critical .sim-sticky-inner { border-bottom-color: #eb5757; }
+.sim-sticky-ctl {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.78rem;
+  color: #95a5a6;
+  font-variant-numeric: tabular-nums;
+}
+.sim-sticky-sym { font-size: 0.7rem; font-weight: 700; letter-spacing: 0.02em; }
+.sim-sticky-val { min-width: 2.4rem; font-weight: 600; color: #5d6d7e; }
+.sim-sticky-line { width: 56px; height: 3px; border-radius: 2px; background: #e6ebf0; overflow: hidden; }
+.sim-sticky-line i { display: block; height: 100%; width: 0; transition: width 0.25s ease; }
+.sim-sticky-ctl.is-trust .sim-sticky-line i { background: #2f80ed; }
+.sim-sticky-ctl.is-security .sim-sticky-line i { background: #8e44ad; }
+.sim-sticky-ctl.is-intrusion .sim-sticky-line i { background: #16a085; }
+/* the weakest link sets the level: bold */
+.sim-sticky-ctl.is-weakest .sim-sticky-sym,
+.sim-sticky-ctl.is-weakest .sim-sticky-val { color: #2c3e50; font-weight: 800; }
+.sim-sticky-level { margin-left: auto; display: inline-flex; align-items: center; gap: 8px; }
+.sim-sticky-level-val { font-size: 1rem; font-weight: 800; font-variant-numeric: tabular-nums; }
+.sim-sticky .sim-status { margin: 0; padding: 1px 8px; font-size: 0.68rem; }
+.sim-sticky .sim-level-bar.sim-sticky-bar { display: block; margin: 0; width: 140px; height: 6px; }
+.sim-sticky .sim-level-bar-fill { display: block; }
+@media (max-width: 640px) {
+  .sim-sticky-inner { gap: 6px 10px; padding: 6px 12px; }
+  .sim-sticky-val { display: none; }
+  .sim-sticky-ctl { gap: 4px; }
+  .sim-sticky-line { width: 24px; }
+  .sim-sticky .sim-level-bar.sim-sticky-bar { width: 64px; }
+}
+
 .sim-summary {
   margin-bottom: clamp(16px, 3vw, 24px);
 }
@@ -137,6 +208,57 @@
 .sim-level-bar-fill.is-warning { background: #f2994a; }
 .sim-level-bar-fill.is-critical { background: #eb5757; }
 .sim-level-bar-fill.is-unknown { background: #95a5a6; }
+
+/* Policy thresholds as markers under the level bar (drag with mouse / finger, arrows on keyboard). */
+.sim-level-scale { position: relative; padding-bottom: 12px; }
+.sim-thr {
+  position: absolute;
+  top: 18px;
+  width: 24px;
+  height: 18px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  transform: translateX(-50%);
+  cursor: ew-resize;
+  touch-action: none;
+  z-index: 1;
+}
+.sim-thr::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 50%;
+  margin-left: -6px;
+  border-left: 6px solid transparent;
+  border-right: 6px solid transparent;
+  border-bottom: 9px solid #f2994a;
+}
+.sim-thr.is-critical::before { border-bottom-color: #eb5757; }
+.sim-thr.is-top { z-index: 2; }
+.sim-thr:focus { outline: none; }
+.sim-thr:focus-visible::before { filter: drop-shadow(0 0 2px #2f80ed); }
+.sim-thr-bubble {
+  position: absolute;
+  bottom: calc(100% + 14px);
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 2px 7px;
+  border-radius: 6px;
+  background: rgba(44, 62, 80, 0.94);
+  color: #fff;
+  font-size: 0.72rem;
+  font-weight: 600;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.12s ease;
+}
+.sim-thr:hover .sim-thr-bubble,
+.sim-thr:focus-visible .sim-thr-bubble,
+.sim-thr.is-dragging .sim-thr-bubble { opacity: 1; }
+@media (hover: none) { .sim-thr:hover .sim-thr-bubble { opacity: 0; } .sim-thr.is-dragging .sim-thr-bubble { opacity: 1; } }
 
 .sim-level-meta {
   display: flex;
@@ -286,6 +408,44 @@
 }
 
 .sim-policy input.value-input { width: 4rem; }
+
+/* "Response policy" collapsed by default: the summary shows the current thresholds. */
+.sim-policy-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 10px;
+  cursor: pointer;
+  list-style: none;
+  user-select: none;
+  margin-bottom: 8px;
+}
+.sim-policy-head::-webkit-details-marker { display: none; }
+.sim-policy-head .workspace-heading { margin: 0; }
+.sim-policy-head::after {
+  content: "";
+  width: 0.4rem;
+  height: 0.4rem;
+  margin-left: auto;
+  align-self: center;
+  border-right: 2px solid #7f8c8d;
+  border-bottom: 2px solid #7f8c8d;
+  transform: rotate(45deg);
+  transition: transform 0.15s ease;
+}
+.sim-policy-box[open] > .sim-policy-head::after { transform: rotate(225deg); }
+.sim-policy-summary { font-size: 0.8rem; color: #5d6d7e; }
+.sim-policy-changed {
+  padding: 1px 7px;
+  border-radius: 999px;
+  background: #fdebd0;
+  color: #a04000;
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+.sim-policy-changed[hidden] { display: none; }
+.sim-policy-reset { margin-top: 2px; font-size: 0.8rem; }
+.sim-policy-reset[disabled] { opacity: 0.5; cursor: default; }
 
 .sim-dot {
   width: 10px;
@@ -461,15 +621,18 @@
 .manual-only { display: none; }
 :root.is-manual-mode:not(.is-device-mode) .manual-only { display: block; }
 
-/* ---- device sensor readings panel --------------------------------------- */
+/* ---- device sensor readings (a card under the readouts, real device only) ---- */
+.sim-live-group.sim-sensors { margin-top: 10px; border-left-color: #f2994a; }
 .sim-sensors-head {
   display: flex;
   align-items: center;
   flex-wrap: wrap;
-  gap: 8px 12px;
-  margin-bottom: 10px;
+  gap: 6px 10px;
+  margin-bottom: 8px;
 }
-.sim-sensors-name { font-size: 0.95rem; font-weight: 700; color: #2c3e50; }
+.sim-sensors-title { margin: 0; padding: 0; border: 0; display: block; font-size: 0.78rem; }
+.sim-sensors-title::after { content: none; }
+.sim-sensors-name { font-size: 0.82rem; font-weight: 600; color: #5d6d7e; }
 .sim-sensors-chips { display: inline-flex; gap: 6px; flex-wrap: wrap; }
 .sim-chip {
   display: inline-block;
@@ -480,21 +643,21 @@
 }
 .sim-chip.is-on { background: #e5f6ec; color: #1e8f52; }
 .sim-chip.is-off { background: #eef0f2; color: #9aa6b2; }
-.sim-sensors-refresh { margin-left: auto; }
+.sim-sensors-refresh { margin-left: auto; padding: 4px 10px; font-size: 0.78rem; }
 .sim-metrics {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
-  gap: 10px;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 8px;
 }
 .sim-metric {
   border: 1px solid #e8edf2;
   border-left-width: 4px;
   border-radius: 10px;
   background: #f8fafc;
-  padding: 10px 12px;
+  padding: 7px 10px;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 2px;
 }
 .sim-metric-temp { border-left-color: #eb5757; }
 .sim-metric-hum { border-left-color: #2f80ed; }
@@ -502,15 +665,13 @@
 .sim-metric-lux { border-left-color: #f2c94c; }
 .sim-metric-label { font-size: 0.78rem; color: #5d6d7e; }
 .sim-metric-val { font-size: 1.05rem; color: #2c3e50; font-variant-numeric: tabular-nums; }
-.sim-metric-val strong { font-size: 1.5rem; font-weight: 700; }
+.sim-metric-val strong { font-size: 1.25rem; font-weight: 700; }
 .sim-metric-unit { font-size: 0.8rem; color: #95a5a6; font-weight: 500; }
-.sim-sensors-meta { margin: 10px 0 0; }
+.sim-sensors-meta { margin: 8px 0 0; }
 /* status indicator (LED) on the node */
-.sim-indicator { margin: 12px 0 0; padding-top: 10px; border-top: 1px dashed #dfe4ea; display: flex; align-items: center; gap: 8px; }
+.sim-indicator { margin: 10px 0 0; padding-top: 8px; border-top: 1px dashed #dfe4ea; display: flex; align-items: center; gap: 8px; }
 .sim-indicator-info { display: inline-flex; }
 .sim-indicator-spacer { flex: 1; }
-/* the info popover of the indicator must not be clipped by the panel */
-.process-step.sim-sensors { overflow: visible; }
 /* the popover of the indicator opens to the right of the "i", below the row */
 .sim-indicator-info .sim-info-pop.is-right { left: -2px; right: auto; }
 .sim-indicator-info .sim-info-pop.is-right::before { left: 4px; right: auto; }
@@ -520,6 +681,7 @@
 .sim-indicator-dot.is-normal { background: #27ae60; box-shadow: 0 0 6px rgba(39,174,96,0.6); }
 .sim-indicator-dot.is-warning { background: #f2c94c; box-shadow: 0 0 6px rgba(242,201,76,0.7); }
 .sim-indicator-dot.is-critical { background: #eb5757; box-shadow: 0 0 6px rgba(235,87,87,0.7); }
+.sim-indicator-dot.is-standby { background: #5b8def; box-shadow: 0 0 5px rgba(91,141,239,0.55); }
 
 /* Sensor panel: only for a real connected device (not the demo). */
 .sim-sensors { display: none; }
