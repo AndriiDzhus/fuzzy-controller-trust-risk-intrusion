@@ -176,7 +176,31 @@
     return zones.filter(([from, to]) => to > from).map(([from, to, status]) => ({ from, to, status }));
   }
 
-  const api = { INPUTS, BASELINE, SCENARIOS, STEPS, scenarioInputs, assess, levelTerm, policyZones, createRandom, DEFAULT_POLICY };
+  /**
+   * Status indicator on the device: hysteresis of the state shown by the
+   * node's LED. A new status is sent only after it has been observed in
+   * INDICATOR_CONFIRM consecutive windows, so a level oscillating around a
+   * threshold does not make the LED flicker.
+   * @param {{shown:string|null, candidate:string|null, count:number}} track
+   * @param {string} status assessment status of the current window
+   * @returns {{shown, candidate, count, send: string|null}} send = status to transmit now, or null
+   */
+  const INDICATOR_CONFIRM = 2;
+  // The shown state is re-sent every INDICATOR_KEEPALIVE_MS (one small request
+  // outside the measurement window), so the node's watchdog does not switch
+  // the LED off while the state is stable.
+  const INDICATOR_KEEPALIVE_MS = 20000;
+  function indicatorStep(track, status, now = Date.now()) {
+    const base = track || { shown: null, candidate: null, count: 0, sentAt: 0 };
+    const keep = (t) => (t.shown && now - (t.sentAt || 0) >= INDICATOR_KEEPALIVE_MS ? { ...t, send: t.shown, sentAt: now } : { ...t, send: null });
+    if (!status || status === "unknown") return keep({ ...base });
+    if (status === base.shown) return keep({ shown: base.shown, candidate: null, count: 0, sentAt: base.sentAt });
+    const count = status === base.candidate ? base.count + 1 : 1;
+    if (count >= INDICATOR_CONFIRM) return { shown: status, candidate: null, count: 0, sentAt: now, send: status };
+    return keep({ shown: base.shown, candidate: status, count, sentAt: base.sentAt });
+  }
+
+  const api = { INPUTS, BASELINE, SCENARIOS, STEPS, scenarioInputs, assess, levelTerm, policyZones, createRandom, DEFAULT_POLICY, indicatorStep, INDICATOR_CONFIRM, INDICATOR_KEEPALIVE_MS };
   if (typeof module !== "undefined" && module.exports) module.exports = api;
   if (!root || !root.document) return;
   root.securitySimulation = api;
@@ -207,6 +231,7 @@
     deviceTrainError: null,
     deviceInfoOpen: false,
     cmdInfoOpen: false,
+    indicatorInfoOpen: false,
     policy: { ...DEFAULT_POLICY },
     source: "sim",
     step: 0,
@@ -513,6 +538,7 @@
       logTransition(entry);
       render(entry);
       renderLive(inputs); // keep the read-only readouts in sync (scenario and device modes)
+      if (!manual && state.source === "device") driveIndicator(assessment.status);
       state.step += 1;
     } finally {
       state.busy = false;
@@ -560,6 +586,21 @@
     writeInputs(inputs);
     recordStep(inputs);
   }
+  // The icon in the corner of the chart: start the timeline from step 0.
+  // Simulation: the same as "Reset". Device mode: the history, step counter and
+  // event log are cleared; listening (if running) continues and the next window
+  // is drawn at the beginning of the chart.
+  function restartTimeline() {
+    if (state.source !== "device") { reset(); return; }
+    state.step = 0;
+    state.history = [];
+    state.log = [];
+    state.lastStatus = null;
+    renderLog();
+    blankRender();
+    if (device.listening) $("sim-status").textContent = t("simulation.device.waiting", "");
+  }
+
   function reset() {
     pause();
     state.step = 0;
@@ -893,6 +934,10 @@
     $("sim-pause").addEventListener("click", pause);
     $("sim-stepbtn").addEventListener("click", stepOnce);
     $("sim-reset").addEventListener("click", reset);
+    const tlReset = $("sim-timeline-reset");
+    const labelTimelineReset = () => { const l = t("simulation.timelineReset"); tlReset.title = l; tlReset.setAttribute("aria-label", l); };
+    labelTimelineReset();
+    tlReset.addEventListener("click", restartTimeline);
     $("sim-warn").value = state.policy.warn;
     $("sim-critical").value = state.policy.critical;
     root.addEventListener("resize", () => { const last = state.history[state.history.length - 1]; if (last) render(last); });
@@ -905,6 +950,8 @@
       const last = state.history[state.history.length - 1]; if (last) render(last); renderLog(); updateScenarioControls();
       renderModelIndicator();
       renderCmdInfo();
+      renderIndicatorInfo();
+      labelTimelineReset();
       updateConnectBtn();
       if (device.connected) { setDeviceStatus("connected", device.name); if (device.source && device.source.isDemo) $("sim-device-note").textContent = t("simulation.device.demoNote"); }
       else { setDeviceStatus("idle"); $("sim-device-note").textContent = $("sim-device").options.length <= 1 ? t("simulation.device.noDevices") : ""; }
@@ -940,7 +987,9 @@
   };
   const UNITS = { bytes: "log₁₀", energy: "kWh/GB", strength: "dBm", response: "ms", rate: "п/с" };
 
-  const device = { source: null, connected: false, listening: false, mode: "normal" };
+  const device = { source: null, connected: false, listening: false, mode: "normal",
+    // status indicator (LED) on the node: present per telemetry, enabled by the operator
+    indicator: { present: false, enabled: false, state: "off", track: null } };
 
   // The chosen source tab, the selected device and whether it was connected are
   // remembered so navigating away and back keeps the same device and tab.
@@ -990,9 +1039,11 @@
     return {
       id: "demo", isDemo: true,
       async connect() { return true; },
+      currentMode() { return mode; },
       start(onReading) { timer = setInterval(() => onReading(reading()), 1000); },
       stop() { clearInterval(timer); timer = null; },
       async command(name) { mode = name; },
+      async indicate() { /* the demo device has no indicator */ },
       async telemetry() {
         return {
           node: "demo", sensors: { bme280: true, ina219: false, bh1750: false },
@@ -1007,11 +1058,17 @@
 
   /** API source: real device served by the gateway backend (HA add-on). */
   function apiSource(id) {
-    let es = null, poll = null;
+    let es = null, poll = null, info = null;
     const url = (suffix) => `api/devices/${encodeURIComponent(id)}${suffix}`;
     return {
       id, isDemo: false,
-      async connect() { const r = await fetch(url("")).catch(() => null); return Boolean(r && r.ok); },
+      async connect() {
+        const r = await fetch(url("")).catch(() => null);
+        if (!r || !r.ok) return false;
+        info = await r.json().catch(() => null);
+        return true;
+      },
+      currentMode() { return info && info.mode ? info.mode : null; },
       start(onReading) {
         try {
           es = new EventSource(url("/stream"));
@@ -1026,6 +1083,10 @@
       stop() { if (es) { es.close(); es = null; } if (poll) { clearInterval(poll); poll = null; } },
       async command(name) {
         await fetch(url("/command"), { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ scenario: name }) }).catch(() => { /* ignore */ });
+      },
+      async indicate(status) {
+        const r = await fetch(url("/indicate"), { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ status }) }).catch(() => null);
+        return Boolean(r && r.ok);
       },
       async telemetry() {
         const r = await fetch(url("/telemetry")).catch(() => null);
@@ -1169,20 +1230,28 @@
     $("sim-listen").disabled = false;
     setCmdEnabled(true);
     updateConnectBtn();
+    // The buttons show the scenario the gateway is actually running against the
+    // node: "normal" (background traffic) unless another page started an attack.
+    const running = typeof src.currentMode === "function" ? src.currentMode() : null;
+    device.mode = running || "normal";
     setActiveCmd(device.mode);
     // Sensor panel and Wi-Fi quality only for a real device (not the demo).
     document.documentElement.classList.toggle("is-realdevice", !src.isDemo);
     renderModelIndicator(); // the ESP32-dataset block depends on the active device
+    device.indicator.enabled = src.isDemo ? false : indicatorPref(src.id);
+    device.indicator.track = null;
     if (src.isDemo) { stopSensors(); updateWifi(null); } else { startSensors(); }
     saveDeviceSession();
   }
   function disconnectDevice() {
     stopListening();
+    indicatorOff();
     stopSensors(); resetSensors(); updateWifi(null);
     document.documentElement.classList.remove("is-realdevice");
     renderModelIndicator();
     if (device.source) device.source.stop();
-    device.source = null; device.connected = false; device.name = null;
+    device.source = null; device.connected = false; device.name = null; device.mode = "normal";
+    setActiveCmd(device.mode);
     $("sim-listen").disabled = true; setCmdEnabled(false);
     setDeviceStatus("idle"); updateConnectBtn();
     saveDeviceSession();
@@ -1211,6 +1280,7 @@
     set("sim-sensor-name", tele.node || "—");
     const s = tele.sensors || {};
     $("sim-sensor-chips").innerHTML = sensorChip("BME280", s.bme280) + sensorChip("BH1750", s.bh1750) + sensorChip("INA219", s.ina219);
+    renderIndicator(tele.indicator || null);
     const meta = [];
     if (tele.rssi_dbm != null) meta.push(`RSSI ${tele.rssi_dbm} dBm`);
     if (tele.tx_power_dbm != null) meta.push(`TX ${tele.tx_power_dbm} dBm`);
@@ -1226,10 +1296,98 @@
   function stopSensors() { if (sensorTimer) { clearInterval(sensorTimer); sensorTimer = null; } }
   function resetSensors() {
     renderSensors(null);
+    renderIndicator(null);
     $("sim-sensor-name").textContent = "—";
     $("sim-sensor-chips").innerHTML = "";
     $("sim-sensor-meta").textContent = "";
   }
+  // --- status indicator (LED) on the node --------------------------------------
+  // The checkbox is shown only when the connected device reports an indicator
+  // in its telemetry ({ indicator: { present: true, state } }). The operator's
+  // choice is kept per device. The LED shows the state decided by the policy of
+  // this page; it changes only after two consecutive windows with a new status
+  // (indicatorStep), and is switched off when indication is disabled, the
+  // listening stops or the device is disconnected.
+  const INDICATOR_KEY = "simIndicator";
+  const indicatorPref = (id) => { try { return localStorage.getItem(`${INDICATOR_KEY}:${id}`) === "1"; } catch (_) { return false; } };
+  const saveIndicatorPref = (id, on) => { try { localStorage.setItem(`${INDICATOR_KEY}:${id}`, on ? "1" : "0"); } catch (_) { /* ignore */ } };
+
+  // "i" of the indicator: what the LED shows and when it changes (click to open, as for the commands).
+  function renderIndicatorInfo() {
+    const host = $("sim-indicator-info");
+    if (!host) return;
+    host.innerHTML = "";
+    const wrap = document.createElement("span");
+    wrap.className = "sim-info-wrap";
+    const btn = document.createElement("button");
+    btn.type = "button"; btn.className = "sim-info"; btn.textContent = "i";
+    btn.setAttribute("aria-label", t("simulation.sensors.indicatorAria"));
+    btn.setAttribute("aria-expanded", state.indicatorInfoOpen ? "true" : "false");
+    btn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      state.indicatorInfoOpen = !state.indicatorInfoOpen;
+      if (state.cmdInfoOpen) { state.cmdInfoOpen = false; renderCmdInfo(); }
+      if (state.deviceInfoOpen) { state.deviceInfoOpen = false; renderModelIndicator(); }
+      renderIndicatorInfo();
+    });
+    wrap.append(btn);
+    if (state.indicatorInfoOpen) {
+      const pop = document.createElement("div");
+      pop.className = "sim-info-pop is-wide is-up";
+      pop.setAttribute("role", "dialog");
+      pop.addEventListener("click", (e) => e.stopPropagation());
+      const title = document.createElement("strong"); title.textContent = t("simulation.sensors.indicatorInfoTitle");
+      pop.append(title);
+      ["colors", "change", "off"].forEach((k) => {
+        const el = document.createElement("p"); el.textContent = t(`simulation.sensors.indicatorInfo.${k}`); pop.append(el);
+      });
+      wrap.append(pop);
+    }
+    host.append(wrap);
+  }
+
+  function renderIndicator(info) {
+    const row = $("sim-indicator-row"), box = $("sim-indicator-on"), dot = $("sim-indicator-dot");
+    if (!row || !box || !dot) return;
+    const present = Boolean(info && info.present);
+    device.indicator.present = present;
+    row.hidden = !present;
+    if (!present) { device.indicator.state = "off"; return; }
+    device.indicator.state = info.state || "off";
+    dot.className = `sim-indicator-dot is-${device.indicator.state}`;
+    dot.title = t(`simulation.status.${device.indicator.state}`, device.indicator.state);
+    box.checked = device.indicator.enabled;
+    if (!$("sim-indicator-info").children.length) renderIndicatorInfo();
+  }
+  async function sendIndicator(status) {
+    if (!device.source || typeof device.source.indicate !== "function") return;
+    const ok = await device.source.indicate(status);
+    if (ok) {
+      device.indicator.state = status;
+      const dot = $("sim-indicator-dot");
+      if (dot) { dot.className = `sim-indicator-dot is-${status}`; dot.title = t(`simulation.status.${status}`, status); }
+    }
+  }
+  function driveIndicator(status) {
+    if (!device.indicator.enabled || !device.indicator.present) return;
+    const next = indicatorStep(device.indicator.track, status);
+    device.indicator.track = { shown: next.shown, candidate: next.candidate, count: next.count, sentAt: next.sentAt };
+    if (next.send) sendIndicator(next.send);
+  }
+  function indicatorOff() {
+    // Sent whenever the node reports (or we last set) a colour, regardless of
+    // the checkbox: it is called right after the checkbox has been cleared.
+    const lit = device.indicator.present && device.indicator.state !== "off";
+    device.indicator.track = null;
+    if (lit) sendIndicator("off");
+  }
+  function setIndicatorEnabled(on) {
+    device.indicator.enabled = on;
+    if (device.source) saveIndicatorPref(device.source.id, on);
+    if (!on) indicatorOff();
+    else device.indicator.track = null; // the next two windows decide the colour
+  }
+
   function startListening() {
     if (!device.source || device.listening) return;
     device.listening = true;
@@ -1237,7 +1395,7 @@
     device.source.start((inputs) => { recordStep(inputs, false); });
   }
   function stopListening() {
-    if (device.source && device.listening) device.source.stop();
+    if (device.source && device.listening) { device.source.stop(); indicatorOff(); }
     device.listening = false;
     if ($("sim-listen")) $("sim-listen").hidden = false;
     if ($("sim-liststop")) $("sim-liststop").hidden = true;
@@ -1337,10 +1495,13 @@
       // A click on a command button keeps the command info open: it only switches its content.
       const onCommand = e && e.target && e.target.closest && e.target.closest(".sim-cmd");
       if (state.cmdInfoOpen && !onCommand) { state.cmdInfoOpen = false; renderCmdInfo(); }
+      if (state.indicatorInfoOpen) { state.indicatorInfoOpen = false; renderIndicatorInfo(); }
     };
     document.addEventListener("click", closeDeviceInfo);
     document.addEventListener("keydown", (e) => { if (e.key === "Escape") closeDeviceInfo(); });
     $("sim-sensor-refresh").addEventListener("click", refreshSensors);
+    const indBox = $("sim-indicator-on");
+    if (indBox) indBox.addEventListener("change", () => setIndicatorEnabled(indBox.checked));
     $("sim-device").addEventListener("change", () => { if (device.connected) disconnectDevice(); else saveDeviceSession(); });
     $("sim-listen").addEventListener("click", startListening);
     $("sim-liststop").addEventListener("click", stopListening);

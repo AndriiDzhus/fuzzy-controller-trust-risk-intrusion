@@ -78,3 +78,50 @@ describe("simulation page: scenarios", () => {
     expect(a).toEqual(b);
   });
 });
+
+describe("simulation page: status indicator hysteresis", () => {
+  const step = sim.indicatorStep;
+  test("a new status is sent only after two consecutive windows", () => {
+    let t = step(null, "normal");
+    expect(t.send).toBeNull();
+    t = step(t, "normal");
+    expect(t.send).toBe("normal");
+    expect(t.shown).toBe("normal");
+    // one window of "critical" (noise) does not change the LED
+    t = step(t, "critical");
+    expect(t.send).toBeNull();
+    expect(t.shown).toBe("normal");
+    // back to normal: the candidate is dropped, nothing is sent again
+    t = step(t, "normal");
+    expect(t.send).toBeNull();
+    expect(t.candidate).toBeNull();
+    // two windows of "critical" switch the LED
+    t = step(t, "critical");
+    t = step(t, "critical");
+    expect(t.send).toBe("critical");
+    expect(t.shown).toBe("critical");
+  });
+
+  test("an unknown status is ignored and keeps the track", () => {
+    let t = step({ shown: "normal", candidate: "warning", count: 1, sentAt: 1000 }, "unknown", 2000);
+    expect(t.send).toBeNull();
+    expect(t.candidate).toBe("warning");
+    expect(sim.INDICATOR_CONFIRM).toBe(2);
+  });
+
+  test("a stable state is re-sent as a keep-alive every 20 s", () => {
+    let t = step(null, "normal", 0);
+    t = step(t, "normal", 2000);
+    expect(t.send).toBe("normal");
+    expect(t.sentAt).toBe(2000);
+    t = step(t, "normal", 12000);
+    expect(t.send).toBeNull();
+    t = step(t, "normal", 2000 + sim.INDICATOR_KEEPALIVE_MS);
+    expect(t.send).toBe("normal");
+    expect(t.sentAt).toBe(22000);
+    // a change resets the keep-alive clock
+    t = step(t, "critical", 24000); t = step(t, "critical", 26000);
+    expect(t.send).toBe("critical");
+    expect(t.sentAt).toBe(26000);
+  });
+});

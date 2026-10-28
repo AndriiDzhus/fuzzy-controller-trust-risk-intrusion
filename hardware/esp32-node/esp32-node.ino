@@ -23,7 +23,8 @@
  *   the gateway sets the colour from the computed security level
  *   (green = normal, yellow = warning, red = critical). The node cannot
  *   detect the pixel, so its presence is a build-time flag (HAS_INDICATOR).
- *   If no command arrives for LED_WATCHDOG_MS the pixel is switched off.
+ *   If no command arrives for LED_WATCHDOG_MS the pixel is switched off
+ *   (the page refreshes the state every 20 s while indication is on).
  *
  * Wiring (all I2C sensors share the bus):
  *   SDA -> GPIO21 (D21)      SCL -> GPIO22 (D22)      GND -> GND
@@ -57,7 +58,18 @@ const int   SCL_PIN   = 22;
 #define HAS_INDICATOR 1                   // 0 if no pixel is soldered to the board
 const int      LED_PIN         = 27;      // DIn of the pixel (through 330 ohm)
 const uint8_t  LED_BRIGHTNESS  = 80;      // 0..255; keep low for photos
-const uint32_t LED_WATCHDOG_MS = 30000;   // switch off if the gateway goes silent
+const uint32_t LED_WATCHDOG_MS = 60000;   // switch off if the gateway goes silent (the page refreshes every 20 s)
+
+// ---- sensor cache ----------------------------------------------------------
+// The sensors are read in loop() at most every SENSOR_PERIOD_MS and /status
+// serves the cached values, so an I2C hiccup (a slow or failing read can block
+// Wire for up to its timeout) never delays an HTTP response: /status is also
+// the request target of the gateway in the normal-traffic scenario, and its
+// response time must reflect the network, not the I2C bus.
+const uint32_t SENSOR_PERIOD_MS = 2000;
+const uint16_t I2C_TIMEOUT_MS   = 50;
+float cT = NAN, cH = NAN, cP = NAN, cLux = NAN, cVolt = NAN, cCur = NAN, cPw = NAN;
+uint32_t sensorsReadAt = 0;
 
 // ---- I2C addresses -------------------------------------------------------
 #define ADDR_BME_A 0x76
@@ -159,15 +171,20 @@ void scanSensors() {
 
 String jnum(float v, int d) { return isnan(v) ? String("null") : String(v, d); }
 
-String telemetryJson() {
-  float t = NAN, h = NAN, p = NAN, lux = NAN, volt = NAN, cur = NAN, pw = NAN;
-  if (hasBME) { t = bme.readTemperature(); h = bme.readHumidity(); p = bme.readPressure() / 100.0f; }
-  if (hasBH)  { lux = lightMeter.readLightLevel(); }
+// Reads all present sensors into the cache (called from loop(), not from HTTP handlers).
+void readSensors() {
+  if (hasBME) { cT = bme.readTemperature(); cH = bme.readHumidity(); cP = bme.readPressure() / 100.0f; }
+  if (hasBH)  { cLux = lightMeter.readLightLevel(); }
   if (hasINA) {
-    volt = ina219.getBusVoltage_V() + ina219.getShuntVoltage_mV() / 1000.0f;
-    cur  = ina219.getCurrent_mA();
-    pw   = ina219.getPower_mW();
+    cVolt = ina219.getBusVoltage_V() + ina219.getShuntVoltage_mV() / 1000.0f;
+    cCur  = ina219.getCurrent_mA();
+    cPw   = ina219.getPower_mW();
   }
+  sensorsReadAt = millis();
+}
+
+String telemetryJson() {
+  float t = cT, h = cH, p = cP, lux = cLux, volt = cVolt, cur = cCur, pw = cPw;
   float txdbm = (float)WiFi.getTxPower() / 4.0f;   // enum value is in 0.25 dBm steps
 
   String j = "{";
@@ -177,6 +194,7 @@ String telemetryJson() {
   j += "\"rssi_dbm\":" + String(WiFi.RSSI()) + ",";
   j += "\"tx_power_dbm\":" + String(txdbm, 2) + ",";
   j += "\"free_heap\":" + String(ESP.getFreeHeap()) + ",";
+  j += "\"sensors_age_s\":" + String(sensorsReadAt ? (millis() - sensorsReadAt) / 1000 : 0) + ",";
   j += "\"sensors\":{";
   j +=   "\"bme280\":" + String(hasBME ? "true" : "false") + ",";
   j +=   "\"ina219\":" + String(hasINA ? "true" : "false") + ",";
@@ -231,7 +249,9 @@ void setup() {
   Serial.println("\n[boot] ESP32 test node starting");
 
   Wire.begin(SDA_PIN, SCL_PIN);
+  Wire.setTimeOut(I2C_TIMEOUT_MS);          // a stuck bus must not block the node for a second
   scanSensors();
+  readSensors();
   indicatorSelfTest();
 
   WiFi.mode(WIFI_STA);
@@ -263,11 +283,12 @@ void setup() {
 
 void loop() {
   server.handleClient();
+  if (millis() - sensorsReadAt >= SENSOR_PERIOD_MS) readSensors();
   // watchdog: the indicator shows the gateway's decision, so it must not
   // keep the last colour forever once the gateway stops talking to the node
   if (ledLastCmd && ledState != "off" && millis() - ledLastCmd > LED_WATCHDOG_MS) {
     setIndicator("off");
     ledLastCmd = 0;
-    Serial.println("[led] watchdog: no command for 30 s -> off");
+    Serial.println("[led] watchdog: no command for 60 s -> off");
   }
 }

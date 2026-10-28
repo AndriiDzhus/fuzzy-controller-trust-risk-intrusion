@@ -176,6 +176,12 @@
   color: #2c3e50;
 }
 
+.sim-timeline-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin: 0 0 6px; }
+.sim-timeline-head h3 { margin: 0; }
+.sim-icon-btn { display: inline-flex; align-items: center; justify-content: center; width: 26px; height: 26px; padding: 0; border: 1px solid #d6dce2; border-radius: 6px; background: #fff; color: #5d6d7e; cursor: pointer; }
+.sim-icon-btn:hover, .sim-icon-btn:focus-visible { border-color: #2a78d6; color: #2a78d6; outline: none; }
+.sim-icon-btn .btn-icon { width: 15px; height: 15px; margin: 0; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+
 .sim-timeline {
   width: 100%;
   height: 220px;
@@ -499,6 +505,21 @@
 .sim-metric-val strong { font-size: 1.5rem; font-weight: 700; }
 .sim-metric-unit { font-size: 0.8rem; color: #95a5a6; font-weight: 500; }
 .sim-sensors-meta { margin: 10px 0 0; }
+/* status indicator (LED) on the node */
+.sim-indicator { margin: 12px 0 0; padding-top: 10px; border-top: 1px dashed #dfe4ea; display: flex; align-items: center; gap: 8px; }
+.sim-indicator-info { display: inline-flex; }
+.sim-indicator-spacer { flex: 1; }
+/* the info popover of the indicator must not be clipped by the panel */
+.process-step.sim-sensors { overflow: visible; }
+/* the popover of the indicator opens to the right of the "i", below the row */
+.sim-indicator-info .sim-info-pop.is-right { left: -2px; right: auto; }
+.sim-indicator-info .sim-info-pop.is-right::before { left: 4px; right: auto; }
+.sim-indicator-label { display: inline-flex; align-items: center; gap: 8px; font-size: 0.92rem; color: #2c3e50; cursor: pointer; }
+.sim-indicator-label input { margin: 0; }
+.sim-indicator-dot { width: 12px; height: 12px; border-radius: 50%; background: #d6dce2; box-shadow: inset 0 0 0 1px rgba(0,0,0,0.08); display: inline-block; }
+.sim-indicator-dot.is-normal { background: #27ae60; box-shadow: 0 0 6px rgba(39,174,96,0.6); }
+.sim-indicator-dot.is-warning { background: #f2c94c; box-shadow: 0 0 6px rgba(242,201,76,0.7); }
+.sim-indicator-dot.is-critical { background: #eb5757; box-shadow: 0 0 6px rgba(235,87,87,0.7); }
 
 /* Sensor panel: only for a real connected device (not the demo). */
 .sim-sensors { display: none; }
