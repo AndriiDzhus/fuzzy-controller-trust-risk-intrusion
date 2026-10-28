@@ -244,7 +244,28 @@
     return { select, disconnect: connectedId === "demo" };
   }
 
-  const api = { INPUTS, BASELINE, SCENARIOS, STEPS, scenarioInputs, assess, levelTerm, policyZones, createRandom, DEFAULT_POLICY, normalizePolicy, indicatorStep, indicatorSeed, scanSelection, INDICATOR_CONFIRM, INDICATOR_KEEPALIVE_MS };
+  /**
+   * What the node is doing now under the active command, from the last
+   * observation windows of that command (flow statistics of the gateway).
+   * @param {Array<{issued:number, ok?:number, err:number, reqPerSec:number, rttMean:number}>} windows
+   * @returns {{rps:number, errPct:number, rttMs:number|null, n:number}|null}
+   */
+  function flowSummary(windows) {
+    const w = (windows || []).filter((f) => f && f.issued > 0);
+    if (!w.length) return null;
+    const issued = w.reduce((s, f) => s + f.issued, 0);
+    const err = w.reduce((s, f) => s + f.err, 0);
+    const served = w.map((f) => ({ ok: f.ok !== undefined ? f.ok : f.issued - f.err, rtt: f.rttMean })).filter((f) => f.ok > 0);
+    const ok = served.reduce((s, f) => s + f.ok, 0);
+    return {
+      rps: w.reduce((s, f) => s + f.reqPerSec, 0) / w.length,
+      errPct: (100 * err) / issued,
+      rttMs: ok ? served.reduce((s, f) => s + f.rtt * f.ok, 0) / ok : null, // successful requests only
+      n: w.length,
+    };
+  }
+
+  const api = { INPUTS, BASELINE, SCENARIOS, STEPS, scenarioInputs, flowSummary, assess, levelTerm, policyZones, createRandom, DEFAULT_POLICY, normalizePolicy, indicatorStep, indicatorSeed, scanSelection, INDICATOR_CONFIRM, INDICATOR_KEEPALIVE_MS };
   if (typeof module !== "undefined" && module.exports) module.exports = api;
   if (!root || !root.document) return;
   root.securitySimulation = api;
@@ -1179,7 +1200,7 @@
   };
   const UNITS = { bytes: "log₁₀", energy: "kWh/GB", strength: "dBm", response: "ms", rate: "п/с" };
 
-  const device = { source: null, connected: false, listening: false, mode: "normal",
+  const device = { source: null, connected: false, listening: false, mode: "normal", flow: [],
     // status indicator (LED) on the node: present per telemetry, enabled by the operator
     indicator: { present: false, enabled: false, state: "off", track: null, gen: 0, armed: false, lastSeen: null } };
 
@@ -1211,8 +1232,11 @@
     const rnd = createRandom(1234);
     const current = { ...BASELINE };
     let mode = "normal", timer = null;
+    // the demo has no simulation scenario for intense error-free traffic
+    const DEMO_TARGETS = { surge: { connections: 70, rate: 700, packets: 4.4, weight: 7, errors: 0 } };
     const targetFor = (name) => {
       const base = { ...BASELINE };
+      if (DEMO_TARGETS[name]) return Object.assign(base, DEMO_TARGETS[name]);
       const sc = SCENARIOS[name];
       if (sc && sc.phases) sc.phases.forEach((ph) => Object.assign(base, ph.target));
       return base;
@@ -1264,11 +1288,11 @@
       start(onReading) {
         try {
           es = new EventSource(url("/stream"));
-          es.onmessage = (ev) => { try { const d = JSON.parse(ev.data); if (d && d.inputs) onReading(d.inputs); } catch (_) { /* skip */ } };
+          es.onmessage = (ev) => { try { const d = JSON.parse(ev.data); if (d && d.inputs) onReading(d.inputs, d); } catch (_) { /* skip */ } };
         } catch (_) {
           poll = setInterval(async () => {
             const r = await fetch(url("/reading")).catch(() => null);
-            if (r && r.ok) { const d = await r.json(); if (d && d.inputs) onReading(d.inputs); }
+            if (r && r.ok) { const d = await r.json(); if (d && d.inputs) onReading(d.inputs, d); }
           }, 1000);
         }
       },
@@ -1654,7 +1678,8 @@
     device.indicator.gen += 1; // a lamp test still running stops; standby stays until two windows decide
     device.indicator.lastSeen = null;
     $("sim-listen").hidden = true; $("sim-liststop").hidden = false;
-    device.source.start((inputs) => { recordStep(inputs, false); });
+    device.flow = [];
+    device.source.start((inputs, reading) => { noteFlow(reading); recordStep(inputs, false); });
   }
   function stopListening() {
     if (device.source && device.listening) {
@@ -1662,6 +1687,7 @@
       device.listening = false;
       device.indicator.track = null;
       device.indicator.lastSeen = null;
+      device.flow = [];
       if (device.indicator.enabled) indicatorStandby(); else indicatorOff(); // no assessment any more
     }
     device.listening = false;
@@ -1676,7 +1702,7 @@
   // --- "i" of the device commands: what the active command sends and what it changes ---
   // What each device command sends and how it shows in the inputs (request parameters
   // follow the MODES of src/devices.js; "on the test bed" values were measured with the ESP32).
-  const COMMAND_MODES = ["normal", "ddos", "scan", "exhaustion"];
+  const COMMAND_MODES = ["normal", "ddos", "scan", "exhaustion", "surge"];
   function renderCmdInfo() {
     const host = $("sim-cmd-info");
     if (!host) return;
@@ -1709,16 +1735,33 @@
         title,
         what,
         labelled("requestsLabel", k("requests")),
-        labelled("actualLabel", k("actual")),
-        labelled("effectLabel", k("signal"), "sim-info-signal"),
       );
+      // live numbers of the real node (the demo device has no gateway measurements)
+      if (device.source && !device.source.isDemo) pop.append(labelled("actualLabel", flowText()));
+      pop.append(labelled("effectLabel", k("signal"), "sim-info-signal"));
       wrap.append(pop);
     }
     host.append(wrap);
   }
+  // "On the test bed now" of the command info: the last windows of the active
+  // command (a window measured before the switch is skipped by its mode).
+  const FLOW_WINDOWS = 3;
+  function noteFlow(reading) {
+    if (!reading || !reading.flow || reading.mode !== device.mode) return;
+    device.flow = [...(device.flow || []), reading.flow].slice(-FLOW_WINDOWS);
+    if (state.cmdInfoOpen) renderCmdInfo();
+  }
+  function flowText() {
+    const f = flowSummary(device.flow);
+    if (!f) return t("simulation.commandInfo.actualWaiting");
+    return t("simulation.commandInfo.actualNow")
+      .replace("{rps}", fmt(f.rps, 0))
+      .replace("{err}", fmt(f.errPct, 0))
+      .replace("{rtt}", f.rttMs === null ? "—" : fmt(f.rttMs, 0));
+  }
   async function sendCommand(name) {
     if (!device.source) return;
-    device.mode = name; setActiveCmd(name);
+    device.mode = name; device.flow = []; setActiveCmd(name);
     await device.source.command(name);
   }
 

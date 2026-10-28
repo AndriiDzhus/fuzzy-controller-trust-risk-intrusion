@@ -46,6 +46,18 @@ function appFor(host) {
   return app;
 }
 
+describe("mapping of the measured flow to the inputs", () => {
+  test("Rate uses the packets-per-request ratio measured on the test bed; ER/CC/BS have no scaling", () => {
+    const devices = require("../src/devices");
+    expect(devices.PACKETS_PER_REQUEST).toBe(12);
+    const x = devices.toInputs({ issued: 100, err: 0, bytesIn: 44800, reqPerSec: 50, rttMean: 21, conc: 4 }, { tx_power_dbm: 19.5 });
+    expect(x.rate).toBe(600);
+    expect(x.connections).toBe(100);
+    expect(x.errors).toBe(0);
+    expect(x.bytes).toBeCloseTo(Math.log10(44801), 10);
+  });
+});
+
 describe("device status indicator (LED)", () => {
   test("POST /indicate forwards the decided state to the node's /led", async () => {
     const app = appFor(`127.0.0.1:${nodePort}`);
@@ -89,6 +101,19 @@ describe("device status indicator (LED)", () => {
     await request(app).post("/api/devices/esp32/command").send({ scenario: "scan" });
     const r2 = await request(app).get("/api/devices/esp32");
     expect(r2.body.mode).toBe("scan");
+  });
+
+  test("intense error-free traffic is a command like the others; rps/conc override only within limits", async () => {
+    const app = appFor(`127.0.0.1:${nodePort}`);
+    const ok = await request(app).post("/api/devices/esp32/command").send({ scenario: "surge" });
+    expect(ok.status).toBe(200);
+    expect(ok.body).toEqual({ ok: true, mode: "surge" });
+    const cal = await request(app).post("/api/devices/esp32/command").send({ scenario: "surge", rps: 40, conc: 3 });
+    expect(cal.body).toEqual({ ok: true, mode: "surge", override: { rps: 40, conc: 3 } });
+    const bad = await request(app).post("/api/devices/esp32/command").send({ scenario: "surge", rps: 1000 });
+    expect(bad.status).toBe(400);
+    const info = await request(app).get("/api/devices/esp32");
+    expect(info.body.mode).toBe("surge");
   });
 
   test("an unreachable node gives 502, an unknown device 404", async () => {
