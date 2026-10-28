@@ -559,6 +559,7 @@
       },
       "levelTitle": "Рівень інформаційної безпеки",
       "levelShort": "Рівень безпеки",
+      "stickyBack": "Повернутися до оцінок",
       "level": "рівень",
       "weakest": "Найслабша ланка",
       "weakestShort": "найслабша ланка",
@@ -595,7 +596,11 @@
       "reset": "Скинути",
       "modelTitle": "Застосовані моделі",
       "policyTitle": "Політика реагування",
-      "policyHint": "Стан пристрою визначається за рівнем безпеки; пороги можна змінити.",
+      "policyHint": "Стан пристрою визначається за рівнем безпеки. Пороги можна перетягнути позначками під смугою рівня безпеки або ввести тут.",
+      "policySummary": "попередження < {warn} · критичний < {critical}",
+      "policyChanged": "змінено",
+      "policyReset": "За замовчуванням ({warn} / {critical})",
+      "policyHandle": "Поріг стану «{status}»",
       "policyBelow": "якщо рівень нижчий за",
       "status": {
         "normal": "Норма",
@@ -681,14 +686,17 @@
         "mmhg": "мм рт. ст.",
         "lx": "лк",
         "updated": "оновлено",
+        "firmware": "прошивка",
         "unreachable": "Пристрій недоступний",
         "indicator": "Індикація рівня безпеки на пристрої",
         "indicatorAria": "Про індикацію на пристрої",
+        "indicatorStandby": "Очікування: пристрій підключено, оцінки ще немає",
         "indicatorInfoTitle": "Індикатор стану вузла",
         "indicatorInfo": {
-          "colors": "Світлодіод вузла показує стан за політикою реагування: зелений — норма, жовтий — попередження, червоний — критичний стан. Колір задає шлюз за обчисленим рівнем безпеки, це фізична реакція модуля прийняття рішень.",
-          "change": "Колір змінюється лише після двох вікон спостереження поспіль із новим станом, щоб коливання біля порогу не спричиняли миготіння; стабільний стан підтверджується раз на 20 с однією командою поза вікном вимірювання.",
-          "off": "Світлодіод гасне, коли індикацію вимкнено, прослуховування зупинено або пристрій відключено; якщо шлюз мовчить понад 60 с, вузол гасить його сам."
+          "colors": "Світлодіод вузла показує стан за політикою реагування: зелений — норма, жовтий — попередження, червоний — критичний стан. Колір задає шлюз за обчисленим рівнем безпеки, це фізична реакція модуля прийняття рішень. Тьмяний синій — очікування: пристрій підключено, індикацію ввімкнено, але оцінки ще немає (прослуховування не запущено).",
+          "test": "Під час увімкнення індикації без прослуховування світлодіод один раз проходить червоний → жовтий → зелений (перевірка лампи), а потім переходить в очікування.",
+          "change": "Якщо ввімкнути індикацію під час прослуховування, світлодіод одразу показує поточний стан; новий колір — лише після двох вікон поспіль, щоб не миготів біля порогу.",
+          "off": "Після зупинки прослуховування світлодіод повертається в очікування; гасне, коли індикацію вимкнено або пристрій відключено. Якщо шлюз мовчить понад 60 с, вузол гасить його сам."
         }
       },
       "modelHint": "Інтегральна оцінка використовує модель, застосовану до кожного контролера (на його сторінці).",
@@ -1287,6 +1295,7 @@
       },
       "levelTitle": "Information-security level",
       "levelShort": "Security level",
+      "stickyBack": "Back to the scores",
       "level": "level",
       "weakest": "Weakest link",
       "weakestShort": "weakest link",
@@ -1323,7 +1332,11 @@
       "reset": "Reset",
       "modelTitle": "Applied models",
       "policyTitle": "Response policy",
-      "policyHint": "The state of the device follows the security level; the thresholds can be changed.",
+      "policyHint": "The state of the device follows the security level. Drag the markers under the security-level bar or type the thresholds here.",
+      "policySummary": "warning < {warn} · critical < {critical}",
+      "policyChanged": "changed",
+      "policyReset": "Default ({warn} / {critical})",
+      "policyHandle": "Threshold of the “{status}” state",
       "policyBelow": "if the level is below",
       "status": {
         "normal": "Normal",
@@ -1409,14 +1422,17 @@
         "mmhg": "mmHg",
         "lx": "lx",
         "updated": "updated",
+        "firmware": "firmware",
         "unreachable": "Device unreachable",
         "indicator": "Security-level indicator on the device",
         "indicatorAria": "About the indicator on the device",
+        "indicatorStandby": "Standby: device connected, no assessment yet",
         "indicatorInfoTitle": "Node status indicator",
         "indicatorInfo": {
-          "colors": "The node's LED shows the state by the response policy: green — normal, yellow — warning, red — critical. The gateway sets the colour from the computed security level: a physical reaction of the decision module.",
-          "change": "The colour changes only after two consecutive observation windows with a new state, so oscillation around a threshold does not make it flicker; a stable state is confirmed every 20 s by one command outside the measurement window.",
-          "off": "The LED goes off when indication is disabled, listening stops or the device is disconnected; if the gateway is silent for more than 60 s the node switches it off itself."
+          "colors": "The node's LED shows the state by the response policy: green — normal, yellow — warning, red — critical. The gateway sets the colour from the computed security level: a physical reaction of the decision module. Dim blue — standby: the device is connected and indication is on, but there is no assessment yet (listening has not started).",
+          "test": "When indication is switched on without listening, the LED runs once through red → yellow → green (lamp test) and then goes to standby.",
+          "change": "When indication is switched on during listening, the LED shows the current state at once; a new colour only after two consecutive windows, so it does not flicker at a threshold.",
+          "off": "When listening stops the LED returns to standby; it goes off when indication is disabled or the device is disconnected. If the gateway is silent for more than 60 s the node switches it off itself."
         }
       },
       "modelHint": "The integral assessment uses the model applied to each controller (on its page).",

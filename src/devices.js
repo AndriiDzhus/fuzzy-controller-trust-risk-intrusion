@@ -20,8 +20,9 @@
  *   GET  /:id/stream       SSE of readings, one per window: { inputs, telemetry, flow }
  *   GET  /:id/reading      latest reading (polling fallback)
  *   POST /:id/command      { scenario: normal|ddos|scan|exhaustion } sets the mode
- *   POST /:id/indicate     { status: normal|warning|critical|off } sets the node's
- *                          status indicator (WS2812B pixel) to the decided state
+ *   POST /:id/indicate     { status: normal|warning|critical|standby|off } sets the
+ *                          node's status indicator (WS2812B pixel) to the decided
+ *                          state; standby = connected, no assessment yet
  */
 const http = require("http");
 const os = require("os");
@@ -308,7 +309,7 @@ function buildRouter() {
   // Status indicator on the node (one WS2812B pixel, firmware endpoint /led).
   // The page sends the state decided by the policy; the request is sent outside
   // the measurement window, so it is not counted in the flow statistics.
-  const INDICATOR_STATES = ["normal", "warning", "critical", "off"];
+  const INDICATOR_STATES = ["normal", "warning", "critical", "standby", "off"];
   router.post("/:id/indicate", async (req, res) => {
     const m = getMonitor(req.params.id);
     if (!m) return res.status(404).json({ error: "Unknown device" });
@@ -317,6 +318,8 @@ function buildRouter() {
     const r = await hit(m.dev.host, `/led?state=${encodeURIComponent(status)}`, 1500);
     if (r.ok) return res.json({ ok: true, status });
     if (r.status === 404) return res.status(404).json({ error: "Device has no indicator", host: m.dev.host });
+    // older firmware knows only normal|warning|critical|off
+    if (r.status === 400) return res.status(422).json({ error: "State not supported by the device firmware", status, host: m.dev.host });
     return res.status(502).json({ error: "Device unreachable", host: m.dev.host });
   });
 

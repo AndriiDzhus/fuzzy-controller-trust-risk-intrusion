@@ -24,7 +24,7 @@ beforeAll(async () => {
     if (url.pathname === "/ping") { res.writeHead(200, { "Content-Type": "text/plain" }); res.end("pong"); return; }
     if (url.pathname === "/status") {
       res.writeHead(200, { "Content-Type": "application/json" });
-      res.end(JSON.stringify({ node: "stub", sensors: { bme280: false, ina219: false, bh1750: false }, tx_power_dbm: 19.5, rssi_dbm: -60,
+      res.end(JSON.stringify({ node: "stub", fw_version: "1.1.0", sensors: { bme280: false, ina219: false, bh1750: false }, tx_power_dbm: 19.5, rssi_dbm: -60,
         indicator: { present: true, state: received[received.length - 1] || "off", age_s: 0 } }));
       return;
     }
@@ -60,8 +60,16 @@ describe("device status indicator (LED)", () => {
     const before = received.length;
     const r = await request(app).post("/api/devices/esp32/indicate").send({ status: "purple" });
     expect(r.status).toBe(400);
-    expect(r.body.allowed).toEqual(["normal", "warning", "critical", "off"]);
+    expect(r.body.allowed).toEqual(["normal", "warning", "critical", "standby", "off"]);
     expect(received.length).toBe(before);
+  });
+
+  test("standby on firmware that does not know it gives 422 (the page then turns the LED off)", async () => {
+    // the stub plays the older firmware: normal|warning|critical|off only
+    const app = appFor(`127.0.0.1:${nodePort}`);
+    const r = await request(app).post("/api/devices/esp32/indicate").send({ status: "standby" });
+    expect(r.status).toBe(422);
+    expect(received[received.length - 1]).toBe("standby");
   });
 
   test("the telemetry passes the indicator of the node through", async () => {
@@ -70,6 +78,7 @@ describe("device status indicator (LED)", () => {
     const r = await request(app).get("/api/devices/esp32/telemetry");
     expect(r.status).toBe(200);
     expect(r.body.indicator).toEqual({ present: true, state: "normal", age_s: 0 });
+    expect(r.body.fw_version).toBe("1.1.0"); // firmware version passes through to the page
   });
 
   test("the device check reports the running scenario (normal when idle)", async () => {

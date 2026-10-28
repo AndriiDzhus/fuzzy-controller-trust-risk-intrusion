@@ -1407,6 +1407,8 @@ function bindCanvasTooltip(canvasId, getTooltipModel) {
   };
 
   canvas.addEventListener("mouseleave", hide);
+  // touch screens: no mouseleave — close on scroll or on a tap outside the chart
+  window.transientTips?.register({ owner: canvas, hide, isOpen: () => lastPoint !== null });
   canvas.addEventListener("mousemove", (event) => {
     lastPoint = { clientX: event.clientX, clientY: event.clientY };
     if (frame) return;
@@ -1588,6 +1590,8 @@ function setupHelpTips() {
     tip.classList.add("visible");
   };
 
+  window.transientTips?.register({ owner: () => active, hide, isOpen: () => active !== null });
+
   document.addEventListener("mouseover", (event) => {
     if (helpTipAnchor(event)) show(event);
   });
@@ -1719,12 +1723,18 @@ function bindMuRefTooltips(config) {
   if (root.dataset.muRefBound) return;
   root.dataset.muRefBound = "1";
 
-  const hide = () => getGlobalTooltip().classList.remove("visible");
+  let active = null;
+  const hide = () => {
+    active = null;
+    getGlobalTooltip().classList.remove("visible");
+  };
   const fromEvent = (event) => {
     const el = event.target.closest?.(".mu-ref");
     if (!el) return;
+    active = el;
     showMuRefTooltip(el, event, root._muRefConfig);
   };
+  window.transientTips?.register({ owner: () => active, hide, isOpen: () => active !== null });
 
   document.addEventListener("mouseover", fromEvent);
   document.addEventListener("mousemove", (event) => {
@@ -1739,6 +1749,7 @@ function bindMuRefTooltips(config) {
   document.addEventListener("focusin", (event) => {
     const el = event.target.closest?.(".mu-ref");
     if (!el) return;
+    active = el;
     const rect = el.getBoundingClientRect();
     showMuRefTooltip(
       el,
