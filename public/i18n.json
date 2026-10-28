@@ -565,6 +565,7 @@
       "step": "Крок",
       "radarTitle": "Трикутник безпеки",
       "timelineTitle": "Динаміка оцінок у часі",
+      "timelineReset": "Почати графік спочатку",
       "inputsTitle": "Вхідні параметри спостереження",
       "inputsHint": "Зміна будь-якого параметра одразу перераховує всі три контролери та рівень безпеки; під час сценарію значення задає сценарій.",
       "scenarioTitle": "Сценарій",
@@ -680,7 +681,15 @@
         "mmhg": "мм рт. ст.",
         "lx": "лк",
         "updated": "оновлено",
-        "unreachable": "Пристрій недоступний"
+        "unreachable": "Пристрій недоступний",
+        "indicator": "Індикація рівня безпеки на пристрої",
+        "indicatorAria": "Про індикацію на пристрої",
+        "indicatorInfoTitle": "Індикатор стану вузла",
+        "indicatorInfo": {
+          "colors": "Світлодіод вузла показує стан за політикою реагування: зелений — норма, жовтий — попередження, червоний — критичний стан. Колір задає шлюз за обчисленим рівнем безпеки, це фізична реакція модуля прийняття рішень.",
+          "change": "Колір змінюється лише після двох вікон спостереження поспіль із новим станом, щоб коливання біля порогу не спричиняли миготіння; стабільний стан підтверджується раз на 20 с однією командою поза вікном вимірювання.",
+          "off": "Світлодіод гасне, коли індикацію вимкнено, прослуховування зупинено або пристрій відключено; якщо шлюз мовчить понад 60 с, вузол гасить його сам."
+        }
       },
       "modelHint": "Інтегральна оцінка використовує модель, застосовану до кожного контролера (на його сторінці).",
       "modelExpert": "експертна",
@@ -1284,6 +1293,7 @@
       "step": "Step",
       "radarTitle": "Security triangle",
       "timelineTitle": "Assessments over time",
+      "timelineReset": "Restart the chart",
       "inputsTitle": "Inputs of the observation",
       "inputsHint": "Changing any input recomputes the three controllers and the security level at once; during a scenario the values are set by the scenario.",
       "scenarioTitle": "Scenario",
@@ -1399,7 +1409,15 @@
         "mmhg": "mmHg",
         "lx": "lx",
         "updated": "updated",
-        "unreachable": "Device unreachable"
+        "unreachable": "Device unreachable",
+        "indicator": "Security-level indicator on the device",
+        "indicatorAria": "About the indicator on the device",
+        "indicatorInfoTitle": "Node status indicator",
+        "indicatorInfo": {
+          "colors": "The node's LED shows the state by the response policy: green — normal, yellow — warning, red — critical. The gateway sets the colour from the computed security level: a physical reaction of the decision module.",
+          "change": "The colour changes only after two consecutive observation windows with a new state, so oscillation around a threshold does not make it flicker; a stable state is confirmed every 20 s by one command outside the measurement window.",
+          "off": "The LED goes off when indication is disabled, listening stops or the device is disconnected; if the gateway is silent for more than 60 s the node switches it off itself."
+        }
       },
       "modelHint": "The integral assessment uses the model applied to each controller (on its page).",
       "modelExpert": "expert",

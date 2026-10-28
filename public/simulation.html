@@ -79,7 +79,10 @@
         </div>
         <div class="sim-charts">
           <div class="sim-timeline-wrap">
-            <h3 data-i18n="simulation.timelineTitle"></h3>
+            <div class="sim-timeline-head">
+              <h3 data-i18n="simulation.timelineTitle"></h3>
+              <button type="button" class="sim-icon-btn" id="sim-timeline-reset"><svg class="btn-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12a8 8 0 1 0 3-6.2"/><path d="M4 4v5h5"/></svg></button>
+            </div>
             <canvas id="sim-timeline" class="sim-timeline"></canvas>
           </div>
           <div class="sim-card sim-card-radar">
@@ -293,6 +296,15 @@
               <span class="sim-metric-label" data-i18n="simulation.sensors.lux"></span>
               <span class="sim-metric-val"><strong id="sim-m-lux">—</strong> <span class="sim-metric-unit" data-i18n="simulation.sensors.lx"></span></span>
             </div>
+          </div>
+          <div class="sim-indicator" id="sim-indicator-row" hidden>
+            <label class="sim-indicator-label">
+              <input type="checkbox" id="sim-indicator-on" />
+              <span class="sim-indicator-dot" id="sim-indicator-dot"></span>
+              <span data-i18n="simulation.sensors.indicator"></span>
+            </label>
+            <span class="sim-indicator-info" id="sim-indicator-info"></span>
+            <span class="sim-indicator-spacer"></span>
           </div>
           <p class="sim-hint sim-sensors-meta" id="sim-sensor-meta"></p>
         </div>
