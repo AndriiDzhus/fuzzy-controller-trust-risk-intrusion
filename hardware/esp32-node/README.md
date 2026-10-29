@@ -16,6 +16,18 @@ uptime) and sensor readings.
 All three share the I2C bus: **SDA → GPIO21 (D21), SCL → GPIO22 (D22), GND → GND**.
 Missing sensors are reported as `false` in `/status`; add them and reboot.
 
+### BH1750 (illuminance)
+`VCC -> 3V3`, `GND -> GND`, `SCL -> GPIO22`, `SDA -> GPIO21`, `ADDR` left open (address 0x23;
+tied to VCC it becomes 0x5C, which the firmware also accepts). Shares the I2C bus with the BME280.
+
+### INA219 (current / power of the node)
+Logic: `VCC -> 3V3`, `GND -> GND`, `SCL -> GPIO22`, `SDA -> GPIO21` (address 0x40, A0/A1 open).
+Measurement: the sensor must sit in the node's own 5 V supply line, high side:
+`5 V source (+) -> VIN+`, `VIN- -> ESP32 VIN (5V pin)`, `source GND -> ESP32 GND`.
+While measuring, the ESP32 USB port must be unplugged (otherwise part of the current bypasses
+the shunt). Flash over USB first, then power the board through the INA219.
+From firmware 1.3.0 `power_mw` is the mean of ~20 samples per 2 s period, `power_mw_max` the peak.
+
 ## Flash it
 
 1. **Arduino IDE** (or PlatformIO). In Arduino IDE:
