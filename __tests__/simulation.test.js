@@ -79,6 +79,23 @@ describe("simulation page: scenarios", () => {
   });
 });
 
+describe("simulation page: live numbers of the active device command", () => {
+  test("rate, error share and latency of the successful requests over the last windows", () => {
+    const f = sim.flowSummary([
+      { issued: 100, ok: 60, err: 40, reqPerSec: 50, rttMean: 20 },
+      { issued: 100, ok: 70, err: 30, reqPerSec: 50, rttMean: 30 },
+    ]);
+    expect(f.rps).toBe(50);
+    expect(f.errPct).toBe(35);
+    expect(f.rttMs).toBeCloseTo((20 * 60 + 30 * 70) / 130, 6);
+    expect(f.n).toBe(2);
+  });
+  test("no windows yet, or no successful request: nothing / no latency", () => {
+    expect(sim.flowSummary([])).toBeNull();
+    expect(sim.flowSummary([{ issued: 10, ok: 0, err: 10, reqPerSec: 5, rttMean: 800 }]).rttMs).toBeNull();
+  });
+});
+
 describe("simulation page: response policy thresholds", () => {
   const norm = sim.normalizePolicy;
   test("integers in 0..100", () => {
