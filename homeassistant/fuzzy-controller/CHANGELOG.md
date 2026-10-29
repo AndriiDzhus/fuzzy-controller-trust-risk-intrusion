@@ -8,6 +8,9 @@
 - Firmware 1.2.1: `/led` endpoint (incl. standby), sensor cache, watchdog,
   `fw_version` in `/status` (shown in the sensor panel); joins the strongest
   access point of a mesh network, `bssid` / `channel` in `/status`.
+- Firmware 1.3.0: INA219 sampled every 100 ms and averaged over the sensor
+  period (`power_mw` mean, `power_mw_max` peak, `ina_samples`); 32 V / 1 A
+  calibration.
 - Chart restart button on "Scores over time".
 - Response-policy thresholds: drag the markers under the security-level bar;
   the fields are in a collapsed "Response policy" section (current values and
