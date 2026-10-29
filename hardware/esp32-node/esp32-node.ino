@@ -20,6 +20,10 @@
  *   1.2.1  joins the access point with the strongest signal (mesh Wi-Fi:
  *          by default the ESP32 takes the first one it finds); "bssid" and
  *          "channel" in /status
+ *   1.3.0  INA219: sampled every 100 ms and averaged over the sensor period
+ *          (the node's current has short Wi-Fi TX spikes, one sample per 2 s
+ *          would be noise); "power_mw" is the mean, "power_mw_max" the peak,
+ *          "ina_samples" the number of samples; calibration 32 V / 1 A
  *
  * HTTP endpoints:
  *   GET /             small HTML page
@@ -38,7 +42,9 @@
  *
  * Wiring (all I2C sensors share the bus):
  *   SDA -> GPIO21 (D21)      SCL -> GPIO22 (D22)      GND -> GND
- *   BME280-5V : VCC -> 5V    INA219 : VCC -> 3V3      BH1750 : VCC -> 3V3
+ *   BME280-5V : VCC -> 5V    INA219 : VCC -> 3V3      BH1750 : VCC -> 3V3 (ADDR open -> 0x23)
+ *   INA219 measures the node's own supply: 5 V source (+) -> VIN+, VIN- -> ESP32 VIN (5V pin),
+ *   source GND -> ESP32 GND; the ESP32 USB port must be unplugged while measuring.
  *   WS2812B   : +5V -> VIN (5V)   GND -> GND   DIn -> GPIO27 via 330 ohm
  *
  * Libraries (Arduino Library Manager):
@@ -56,7 +62,7 @@
 #include <BH1750.h>
 #include <Adafruit_NeoPixel.h>
 
-const char* FW_VERSION = "1.2.1";          // bump on every firmware change (see the list above)
+const char* FW_VERSION = "1.3.0";          // bump on every firmware change (see the list above)
 
 // ---- configuration — EDIT THESE -----------------------------------------
 const char* WIFI_SSID = "YOUR_WIFI_SSID";
@@ -80,8 +86,14 @@ const uint32_t LED_WATCHDOG_MS = 60000;   // switch off if the gateway goes sile
 // response time must reflect the network, not the I2C bus.
 const uint32_t SENSOR_PERIOD_MS = 2000;
 const uint16_t I2C_TIMEOUT_MS   = 50;
-float cT = NAN, cH = NAN, cP = NAN, cLux = NAN, cVolt = NAN, cCur = NAN, cPw = NAN;
+float cT = NAN, cH = NAN, cP = NAN, cLux = NAN, cVolt = NAN, cCur = NAN, cPw = NAN, cPwMax = NAN;
+uint16_t cInaN = 0;
 uint32_t sensorsReadAt = 0;
+// INA219 is sampled continuously between sensor reads (see sampleIna()).
+const uint32_t INA_SAMPLE_MS = 100;
+float    inaSumV = 0, inaSumI = 0, inaSumP = 0, inaMaxP = 0;
+uint16_t inaN = 0;
+uint32_t inaSampledAt = 0;
 
 // ---- I2C addresses -------------------------------------------------------
 #define ADDR_BME_A 0x76
@@ -170,7 +182,8 @@ void scanSensors() {
   // INA219 (energy) — add later
   if (i2cPresent(ADDR_INA)) {
     hasINA = ina219.begin();
-    Serial.printf("[ina219] %s\n", hasINA ? "ready" : "begin FAIL");
+    if (hasINA) ina219.setCalibration_32V_1A();   // 0.4 mA resolution; ESP32 peaks stay below 1 A
+    Serial.printf("[ina219] %s\n", hasINA ? "ready (32 V / 1 A)" : "begin FAIL");
   } else Serial.println("[ina219] not found (add later)");
 
   // BH1750 (lux) — add later
@@ -184,14 +197,26 @@ void scanSensors() {
 
 String jnum(float v, int d) { return isnan(v) ? String("null") : String(v, d); }
 
+// One INA219 sample (called from loop() every INA_SAMPLE_MS): accumulated
+// until the next readSensors(), which turns the sum into the mean of the period.
+void sampleIna() {
+  float v = ina219.getBusVoltage_V() + ina219.getShuntVoltage_mV() / 1000.0f;
+  float i = ina219.getCurrent_mA();
+  float p = v * i;                          // mW (V * mA)
+  inaSumV += v; inaSumI += i; inaSumP += p;
+  if (inaN == 0 || p > inaMaxP) inaMaxP = p;
+  inaN += 1;
+  inaSampledAt = millis();
+}
+
 // Reads all present sensors into the cache (called from loop(), not from HTTP handlers).
 void readSensors() {
   if (hasBME) { cT = bme.readTemperature(); cH = bme.readHumidity(); cP = bme.readPressure() / 100.0f; }
   if (hasBH)  { cLux = lightMeter.readLightLevel(); }
   if (hasINA) {
-    cVolt = ina219.getBusVoltage_V() + ina219.getShuntVoltage_mV() / 1000.0f;
-    cCur  = ina219.getCurrent_mA();
-    cPw   = ina219.getPower_mW();
+    if (inaN == 0) sampleIna();             // first call after boot
+    cVolt = inaSumV / inaN; cCur = inaSumI / inaN; cPw = inaSumP / inaN; cPwMax = inaMaxP; cInaN = inaN;
+    inaSumV = inaSumI = inaSumP = inaMaxP = 0; inaN = 0;
   }
   sensorsReadAt = millis();
 }
@@ -222,7 +247,9 @@ String telemetryJson() {
   j += "\"lux\":"           + jnum(lux, 1) + ",";
   j += "\"bus_voltage_v\":" + jnum(volt, 3) + ",";
   j += "\"current_ma\":"    + jnum(cur, 2) + ",";
-  j += "\"power_mw\":"      + jnum(pw, 2) + ",";
+  j += "\"power_mw\":"      + jnum(pw, 2) + ",";          // mean over the sensor period
+  j += "\"power_mw_max\":"  + jnum(cPwMax, 2) + ",";      // peak sample of the period
+  j += "\"ina_samples\":"   + String(cInaN) + ",";
   j += "\"indicator\":{";
   j +=   "\"present\":" + String(HAS_INDICATOR ? "true" : "false") + ",";
   j +=   "\"state\":\"" + ledState + "\",";
@@ -303,6 +330,7 @@ void setup() {
 
 void loop() {
   server.handleClient();
+  if (hasINA && millis() - inaSampledAt >= INA_SAMPLE_MS) sampleIna();
   if (millis() - sensorsReadAt >= SENSOR_PERIOD_MS) readSensors();
   // watchdog: the indicator shows the gateway's decision, so it must not
   // keep the last colour forever once the gateway stops talking to the node
