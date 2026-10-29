@@ -15,6 +15,7 @@ uptime) and sensor readings.
 
 All three share the I2C bus: **SDA → GPIO21 (D21), SCL → GPIO22 (D22), GND → GND**.
 Missing sensors are reported as `false` in `/status`; add them and reboot.
+From firmware 1.3.1 an INA219 that did not answer at boot (e.g. on power-up from a power bank) is probed again every 5 s, no reboot needed.
 
 ### BH1750 (illuminance)
 `VCC -> 3V3`, `GND -> GND`, `SCL -> GPIO22`, `SDA -> GPIO21`, `ADDR` left open (address 0x23;

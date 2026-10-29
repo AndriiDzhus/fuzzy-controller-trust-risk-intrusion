@@ -24,6 +24,8 @@
  *          (the node's current has short Wi-Fi TX spikes, one sample per 2 s
  *          would be noise); "power_mw" is the mean, "power_mw_max" the peak,
  *          "ina_samples" the number of samples; calibration 32 V / 1 A
+ *   1.3.1  INA219 not found at boot -> probed again every 5 s (on power-up
+ *          from a power bank the module may not answer the first scan)
  *
  * HTTP endpoints:
  *   GET /             small HTML page
@@ -62,7 +64,7 @@
 #include <BH1750.h>
 #include <Adafruit_NeoPixel.h>
 
-const char* FW_VERSION = "1.3.0";          // bump on every firmware change (see the list above)
+const char* FW_VERSION = "1.3.1";          // bump on every firmware change (see the list above)
 
 // ---- configuration — EDIT THESE -----------------------------------------
 const char* WIFI_SSID = "YOUR_WIFI_SSID";
@@ -94,6 +96,8 @@ const uint32_t INA_SAMPLE_MS = 100;
 float    inaSumV = 0, inaSumI = 0, inaSumP = 0, inaMaxP = 0;
 uint16_t inaN = 0;
 uint32_t inaSampledAt = 0;
+const uint32_t INA_PROBE_MS = 5000;        // retry period while the INA219 is missing
+uint32_t inaProbedAt = 0;
 
 // ---- I2C addresses -------------------------------------------------------
 #define ADDR_BME_A 0x76
@@ -161,6 +165,8 @@ uint8_t bmeChipId(uint8_t addr) {
   return Wire.available() ? Wire.read() : 0;
 }
 
+void probeIna();
+
 void scanSensors() {
   Serial.println("[i2c] scanning bus...");
   for (uint8_t a = 1; a < 127; a++)
@@ -179,12 +185,8 @@ void scanSensors() {
                   bmeAddr, id, kind, hasBME ? "ok" : "FAIL");
   } else Serial.println("[bme] not found");
 
-  // INA219 (energy) — add later
-  if (i2cPresent(ADDR_INA)) {
-    hasINA = ina219.begin();
-    if (hasINA) ina219.setCalibration_32V_1A();   // 0.4 mA resolution; ESP32 peaks stay below 1 A
-    Serial.printf("[ina219] %s\n", hasINA ? "ready (32 V / 1 A)" : "begin FAIL");
-  } else Serial.println("[ina219] not found (add later)");
+  // INA219 (energy)
+  probeIna();
 
   // BH1750 (lux) — add later
   if (i2cPresent(ADDR_BH_A)) bhAddr = ADDR_BH_A;
@@ -193,6 +195,16 @@ void scanSensors() {
     hasBH = lightMeter.begin(BH1750::CONTINUOUS_HIGH_RES_MODE, bhAddr);
     Serial.printf("[bh1750] %s (0x%02X)\n", hasBH ? "ready" : "begin FAIL", bhAddr);
   } else Serial.println("[bh1750] not found (add later)");
+}
+
+// INA219: probed at boot and, while missing, again every INA_PROBE_MS from loop()
+void probeIna() {
+  inaProbedAt = millis();
+  if (i2cPresent(ADDR_INA)) {
+    hasINA = ina219.begin();
+    if (hasINA) ina219.setCalibration_32V_1A();   // 0.4 mA resolution; ESP32 peaks stay below 1 A
+    Serial.printf("[ina219] %s\n", hasINA ? "ready (32 V / 1 A)" : "begin FAIL");
+  } else Serial.println("[ina219] not found, will retry");
 }
 
 String jnum(float v, int d) { return isnan(v) ? String("null") : String(v, d); }
@@ -330,6 +342,7 @@ void setup() {
 
 void loop() {
   server.handleClient();
+  if (!hasINA && millis() - inaProbedAt >= INA_PROBE_MS) probeIna();
   if (hasINA && millis() - inaSampledAt >= INA_SAMPLE_MS) sampleIna();
   if (millis() - sensorsReadAt >= SENSOR_PERIOD_MS) readSensors();
   // watchdog: the indicator shows the gateway's decision, so it must not
