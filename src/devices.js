@@ -141,6 +141,22 @@ async function runWindow(host, mode, override = null) {
 // modes without failures (normal, scan, intense traffic). Rate = requests/s x this.
 const PACKETS_PER_REQUEST = 12;
 
+// EC from the INA219 (firmware >= 1.3.0, mean power over the 2 s sensor period).
+// Calibration 29.10.2026 (esp32-node, 5.08 V power bank, Wi-Fi sleep off,
+// indicator off): idle 704 mW; traffic adds only 5-36 mW (<= 5 %), so the
+// absolute power cannot be put on the dataset scale (0.01-0.05). EC is the
+// relative increase over the node's idle power: 0 % -> 0.01, IDLE_POWER_SPAN
+// (10 %) and more -> 0.05. Chosen from the power data only, before the security
+// scores were computed. Another node / wiring: measure its idle power and set
+// NODE_IDLE_POWER_MW.
+const IDLE_POWER_MW = Number(process.env.NODE_IDLE_POWER_MW) || 704;
+const IDLE_POWER_SPAN = 0.10;
+
+function energyFromPower(powerMw, idleMw = IDLE_POWER_MW) {
+  const rise = (powerMw / idleMw - 1) / IDLE_POWER_SPAN;
+  return 0.01 + 0.04 * clamp(rise, 0, 1);
+}
+
 function toInputs(flow, tele) {
   const { issued, err, bytesIn, reqPerSec, rttMean, conc } = flow;
   const txPower = tele && tele.tx_power_dbm != null ? Number(tele.tx_power_dbm) : 18;
@@ -153,7 +169,7 @@ function toInputs(flow, tele) {
     bytes: clamp(Math.log10(bytesIn + 1), 0, 12),              // BS: log10 of bytes from the node
     // Security controller — resources and channel
     energy: powerMw != null
-      ? clamp(0.01 + powerMw / 20000, 0.01, 0.05)              // EC: real, from INA219 power
+      ? energyFromPower(powerMw)                               // EC: real, rise of INA219 power over idle
       : clamp(0.015 + reqPerSec * 0.00025, 0.01, 0.05),        // EC: estimate from activity until INA219 is fitted
     strength: clamp(txPower, 0, 40),                           // TP: configured Wi-Fi TX power of the node (constant, not a measurement)
     response: clamp(rttMean / 12, 0, 10),                      // Lat: mean time of a successful request, ms / 12 (scaling)
@@ -372,4 +388,4 @@ function buildRouter() {
   return router;
 }
 
-module.exports = { buildRouter, toInputs, runWindow, MODES, PACKETS_PER_REQUEST, configuredDevices, discover, probe, localSubnets };
+module.exports = { buildRouter, toInputs, runWindow, MODES, PACKETS_PER_REQUEST, IDLE_POWER_MW, energyFromPower, configuredDevices, discover, probe, localSubnets };

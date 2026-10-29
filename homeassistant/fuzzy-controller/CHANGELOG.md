@@ -10,7 +10,7 @@
   access point of a mesh network, `bssid` / `channel` in `/status`.
 - Firmware 1.3.0: INA219 sampled every 100 ms and averaged over the sensor
   period (`power_mw` mean, `power_mw_max` peak, `ina_samples`); 32 V / 1 A
-  calibration.
+  calibration. 1.3.1: an INA219 missing at boot is probed again every 5 s.
 - Chart restart button on "Scores over time".
 - Response-policy thresholds: drag the markers under the security-level bar;
   the fields are in a collapsed "Response policy" section (current values and
@@ -25,6 +25,10 @@
 - Real-device mapping: Rate = requests/s × 12 (TCP packets per HTTP request,
   measured with tcpdump on the test bed) instead of × 20; a reading is labelled
   with the mode it was measured in.
+- Real-device mapping: EC from the INA219 = rise of the node's power over its
+  idle power (0 % -> 0.01, 10 % and more -> 0.05; idle 704 mW measured on the
+  test bed, `NODE_IDLE_POWER_MW` for another node) instead of 0.01 + P/20000,
+  which put every mode at 0.045-0.047.
 - Backend: `POST /api/devices/:id/indicate`; optional `rps` / `conc` override in
   `POST /api/devices/:id/command` (test-bed calibration).
 

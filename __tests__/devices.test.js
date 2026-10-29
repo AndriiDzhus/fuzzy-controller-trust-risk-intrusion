@@ -56,6 +56,22 @@ describe("mapping of the measured flow to the inputs", () => {
     expect(x.errors).toBe(0);
     expect(x.bytes).toBeCloseTo(Math.log10(44801), 10);
   });
+
+  test("EC from INA219 power: rise over the idle power, 0 % -> 0.01, 10 % and more -> 0.05", () => {
+    const devices = require("../src/devices");
+    const flow = { issued: 6, err: 0, bytesIn: 2400, reqPerSec: 3, rttMean: 20, conc: 1 };
+    const ec = (p) => devices.toInputs(flow, { tx_power_dbm: 19.5, power_mw: p }).energy;
+    const idle = devices.IDLE_POWER_MW;
+    expect(idle).toBe(704);
+    expect(ec(idle)).toBeCloseTo(0.01, 10);
+    expect(ec(idle * 0.95)).toBeCloseTo(0.01, 10);   // below idle -> lower bound
+    expect(ec(idle * 1.05)).toBeCloseTo(0.03, 10);   // 5 % rise -> middle of the range
+    expect(ec(idle * 1.10)).toBeCloseTo(0.05, 10);
+    expect(ec(idle * 1.5)).toBeCloseTo(0.05, 10);
+    expect(devices.energyFromPower(740.6)).toBeCloseTo(0.01 + 0.04 * (740.6 / 704 - 1) / 0.1, 10);
+    // no INA219 -> estimate from the request rate (unchanged)
+    expect(devices.toInputs(flow, { tx_power_dbm: 19.5 }).energy).toBeCloseTo(0.015 + 3 * 0.00025, 10);
+  });
 });
 
 describe("device status indicator (LED)", () => {
