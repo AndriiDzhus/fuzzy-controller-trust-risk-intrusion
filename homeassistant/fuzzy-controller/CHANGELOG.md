@@ -25,6 +25,7 @@
 - Real-device mapping: Rate = requests/s × 12 (TCP packets per HTTP request,
   measured with tcpdump on the test bed) instead of × 20; a reading is labelled
   with the mode it was measured in.
+- Device sensor panel: "Power" tile (mean power from the INA219, mW).
 - Real-device mapping: EC from the INA219 = rise of the node's power over its
   idle power (0 % -> 0.01, 10 % and more -> 0.05; idle 704 mW measured on the
   test bed, `NODE_IDLE_POWER_MW` for another node) instead of 0.01 + P/20000,
