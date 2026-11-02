@@ -1493,7 +1493,7 @@
   function renderSensors(tele) {
     const set = (id, v) => { const el = $(id); if (el) el.textContent = v; };
     if (!tele) {
-      ["sim-m-temp", "sim-m-hum", "sim-m-press", "sim-m-lux"].forEach((id) => set(id, "—"));
+      ["sim-m-temp", "sim-m-hum", "sim-m-press", "sim-m-lux", "sim-m-power"].forEach((id) => set(id, "—"));
       updateWifi(null);
       return;
     }
@@ -1502,6 +1502,7 @@
     set("sim-m-hum", metricText(tele.humidity_pct, 1));
     set("sim-m-press", tele.pressure_hpa != null ? (tele.pressure_hpa * HPA_TO_MMHG).toFixed(1) : "—");
     set("sim-m-lux", metricText(tele.lux, 0));
+    set("sim-m-power", metricText(tele.power_mw, 0)); // INA219: mean power over the sensor period (firmware 1.3.0+)
     set("sim-sensor-name", tele.node || "—");
     const s = tele.sensors || {};
     $("sim-sensor-chips").innerHTML = sensorChip("BME280", s.bme280) + sensorChip("BH1750", s.bh1750) + sensorChip("INA219", s.ina219);

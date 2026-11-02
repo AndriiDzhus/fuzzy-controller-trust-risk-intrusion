@@ -665,10 +665,11 @@
 .sim-metric-hum { border-left-color: #2f80ed; }
 .sim-metric-press { border-left-color: #8e44ad; }
 .sim-metric-lux { border-left-color: #f2c94c; }
+.sim-metric-power { border-left-color: #27ae60; }
 .sim-metric-label { font-size: 0.78rem; color: #5d6d7e; }
-.sim-metric-val { font-size: 1.05rem; color: #2c3e50; font-variant-numeric: tabular-nums; }
+.sim-metric-val { font-size: 1.05rem; color: #2c3e50; font-variant-numeric: tabular-nums; display: flex; flex-wrap: wrap; align-items: baseline; column-gap: 4px; }
 .sim-metric-val strong { font-size: 1.25rem; font-weight: 700; }
-.sim-metric-unit { font-size: 0.8rem; color: #95a5a6; font-weight: 500; }
+.sim-metric-unit { font-size: 0.8rem; color: #95a5a6; font-weight: 500; white-space: nowrap; }
 .sim-sensors-meta { margin: 8px 0 0; }
 /* status indicator (LED) on the node */
 .sim-indicator { margin: 10px 0 0; padding-top: 8px; border-top: 1px dashed #dfe4ea; display: flex; align-items: center; gap: 8px; }
