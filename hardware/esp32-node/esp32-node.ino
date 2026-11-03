@@ -26,6 +26,11 @@
  *          "ina_samples" the number of samples; calibration 32 V / 1 A
  *   1.3.1  INA219 not found at boot -> probed again every 5 s (on power-up
  *          from a power bank the module may not answer the first scan)
+ *   1.4.0  /txpower?dbm= : Wi-Fi TX power set by the gateway (nearest ESP32
+ *          level: 19.5 19 18.5 17 15 13 11 8.5 7 5 2 dBm); the level is kept
+ *          and re-applied if the Wi-Fi driver resets it (e.g. on reconnect);
+ *          "tx_power_set_dbm" in /status. Default after boot: 19.5 dBm
+ *          (unchanged behaviour until a command arrives).
  *
  * HTTP endpoints:
  *   GET /             small HTML page
@@ -33,6 +38,7 @@
  *   GET /ping         "pong" (latency / lightweight traffic target)
  *   GET /load?n=      N bytes of payload (traffic generation target)
  *   GET /led?state=   status indicator: normal | warning | critical | standby | off
+ *   GET /txpower?dbm= Wi-Fi TX power (no arg: report the current level)
  *
  * Status indicator (one WS2812B pixel cut from an addressable strip):
  *   the gateway sets the colour from the computed security level
@@ -64,7 +70,7 @@
 #include <BH1750.h>
 #include <Adafruit_NeoPixel.h>
 
-const char* FW_VERSION = "1.3.1";          // bump on every firmware change (see the list above)
+const char* FW_VERSION = "1.4.0";          // bump on every firmware change (see the list above)
 
 // ---- configuration — EDIT THESE -----------------------------------------
 const char* WIFI_SSID = "YOUR_WIFI_SSID";
@@ -233,6 +239,16 @@ void readSensors() {
   sensorsReadAt = millis();
 }
 
+// ---- Wi-Fi TX power (1.4.0) ---------------------------------------------
+// ESP32 Arduino levels (wifi_power_t, value in 0.25 dBm steps).
+const wifi_power_t TX_LEVELS[] = {
+  WIFI_POWER_19_5dBm, WIFI_POWER_19dBm, WIFI_POWER_18_5dBm, WIFI_POWER_17dBm,
+  WIFI_POWER_15dBm, WIFI_POWER_13dBm, WIFI_POWER_11dBm, WIFI_POWER_8_5dBm,
+  WIFI_POWER_7dBm, WIFI_POWER_5dBm, WIFI_POWER_2dBm };
+int txSetQ = WIFI_POWER_19_5dBm;           // requested level, 0.25 dBm steps (default = max)
+uint32_t txCheckedAt = 0;
+const uint32_t TX_CHECK_MS = 2000;         // re-apply the level if the driver reset it
+
 String telemetryJson() {
   float t = cT, h = cH, p = cP, lux = cLux, volt = cVolt, cur = cCur, pw = cPw;
   float txdbm = (float)WiFi.getTxPower() / 4.0f;   // enum value is in 0.25 dBm steps
@@ -246,6 +262,7 @@ String telemetryJson() {
   j += "\"bssid\":\"" + WiFi.BSSIDstr() + "\",";        // which access point (mesh node)
   j += "\"channel\":" + String(WiFi.channel()) + ",";
   j += "\"tx_power_dbm\":" + String(txdbm, 2) + ",";
+  j += "\"tx_power_set_dbm\":" + String(txSetQ / 4.0f, 2) + ",";   // level requested by the gateway
   j += "\"free_heap\":" + String(ESP.getFreeHeap()) + ",";
   j += "\"sensors_age_s\":" + String(sensorsReadAt ? (millis() - sensorsReadAt) / 1000 : 0) + ",";
   j += "\"sensors\":{";
@@ -289,6 +306,35 @@ void handleLed() {
   if (!setIndicator(s)) { server.send(400, "application/json", "{\"error\":\"bad state\"}"); return; }
   ledLastCmd = millis();
   server.send(200, "application/json", "{\"led\":\"" + s + "\"}");
+}
+
+// ---- Wi-Fi TX power handler (1.4.0) ------------------------------------
+wifi_power_t nearestTxLevel(float dbm) {
+  wifi_power_t best = TX_LEVELS[0]; float bestD = 1e9;
+  for (wifi_power_t l : TX_LEVELS) {
+    float d = fabs(l / 4.0f - dbm);
+    if (d < bestD) { bestD = d; best = l; }
+  }
+  return best;
+}
+
+// GET /txpower?dbm=11  -> {"requested":11,"set":11.00,"tx_power_dbm":11.00}
+// GET /txpower         -> current level
+void handleTxPower() {
+  if (server.hasArg("dbm")) {
+    float req = server.arg("dbm").toFloat();
+    if (req < 1 || req > 20) { server.send(400, "application/json", "{\"error\":\"dbm must be 2..19.5\"}"); return; }
+    wifi_power_t lvl = nearestTxLevel(req);
+    txSetQ = lvl;
+    WiFi.setTxPower(lvl);
+    Serial.printf("[tx] requested %.1f dBm -> set %.2f dBm\n", req, lvl / 4.0f);
+    String j = "{\"requested\":" + String(req, 2) + ",\"set\":" + String(lvl / 4.0f, 2) +
+               ",\"tx_power_dbm\":" + String((float)WiFi.getTxPower() / 4.0f, 2) + "}";
+    server.send(200, "application/json", j);
+    return;
+  }
+  server.send(200, "application/json", "{\"set\":" + String(txSetQ / 4.0f, 2) +
+              ",\"tx_power_dbm\":" + String((float)WiFi.getTxPower() / 4.0f, 2) + "}");
 }
 
 void handleRoot() {
@@ -335,6 +381,7 @@ void setup() {
   server.on("/ping", handlePing);
   server.on("/load", handleLoad);
   server.on("/led", handleLed);
+  server.on("/txpower", handleTxPower);
   server.begin();
   Serial.printf("[http] server on port %d  ->  http://%s/status\n",
                 HTTP_PORT, WiFi.localIP().toString().c_str());
@@ -345,6 +392,11 @@ void loop() {
   if (!hasINA && millis() - inaProbedAt >= INA_PROBE_MS) probeIna();
   if (hasINA && millis() - inaSampledAt >= INA_SAMPLE_MS) sampleIna();
   if (millis() - sensorsReadAt >= SENSOR_PERIOD_MS) readSensors();
+  // keep the requested TX power: the Wi-Fi driver may restore the default level after a reconnect
+  if (WiFi.status() == WL_CONNECTED && millis() - txCheckedAt >= TX_CHECK_MS) {
+    txCheckedAt = millis();
+    if ((int)WiFi.getTxPower() != txSetQ) WiFi.setTxPower((wifi_power_t)txSetQ);
+  }
   // watchdog: the indicator shows the gateway's decision, so it must not
   // keep the last colour forever once the gateway stops talking to the node
   if (ledLastCmd && ledState != "off" && millis() - ledLastCmd > LED_WATCHDOG_MS) {

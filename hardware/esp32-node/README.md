@@ -17,6 +17,8 @@ All three share the I2C bus: **SDA → GPIO21 (D21), SCL → GPIO22 (D22), GND �
 Missing sensors are reported as `false` in `/status`; add them and reboot.
 From firmware 1.3.1 an INA219 that did not answer at boot (e.g. on power-up from a power bank) is probed again every 5 s, no reboot needed.
 
+From firmware 1.4.0 the gateway can set the Wi-Fi TX power: `GET /txpower?dbm=11` (nearest ESP32 level of 19.5 / 19 / 18.5 / 17 / 15 / 13 / 11 / 8.5 / 7 / 5 / 2 dBm; `GET /txpower` reports the current level). The level is kept and re-applied if the Wi-Fi driver resets it; after a reboot the node starts at 19.5 dBm as before. `/status` reports the requested level as `tx_power_set_dbm` next to the actual `tx_power_dbm`.
+
 ### BH1750 (illuminance)
 `VCC -> 3V3`, `GND -> GND`, `SCL -> GPIO22`, `SDA -> GPIO21`, `ADDR` left open (address 0x23;
 tied to VCC it becomes 0x5C, which the firmware also accepts). Shares the I2C bus with the BME280.
@@ -53,7 +55,7 @@ From firmware 1.3.0 `power_mw` is the mean of ~20 samples per 2 s period, `power
 - From a browser or the Pi: `http://<esp-ip>/status` → JSON with
   `fw_version` (firmware version, `FW_VERSION` in the sketch; also printed at
   boot and shown in the app's sensor panel), `temperature_c`, `humidity_pct`,
-  `pressure_hpa`, `tx_power_dbm`, `rssi_dbm`,
+  `pressure_hpa`, `tx_power_dbm`, `tx_power_set_dbm` (1.4.0), `rssi_dbm`,
   and `ina219`/`bh1750` = `false` until those sensors are added.
 - `http://<esp-ip>/ping` → `pong`; `http://<esp-ip>/load?n=2000` → 2000 bytes.
 
