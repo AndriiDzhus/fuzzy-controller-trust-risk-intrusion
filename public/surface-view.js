@@ -15,6 +15,9 @@
   const DEFAULT_VIEW = { azimuth: -37.5, elevation: 30 };
   const Z_SCALE = 0.72; // height of the z axis relative to the x / y half-width
   const SURFACE_POINTS = 25;
+  // Pages of the three controllers: the switch in the modal opens the other
+  // page with ?surface, so its surface modal opens right away.
+  const CONTROLLER_PAGES = { trust: "index.html", security: "security.html", intrusion: "intrusion.html" };
 
   // ---------------------------------------------------------------------------
   // Colors: the favourable -> unfavourable scale of the term palette
@@ -359,6 +362,7 @@
           <button type="button" class="docs-modal-close" data-surface-close="1">×</button>
         </div>
         <div class="docs-modal-body">
+          <nav class="surface-controllers" aria-label="Controllers"></nav>
           <div class="surface-toolbar">
             <div class="surface-pairs" role="group"></div>
             <span class="surface-fixed"></span>
@@ -415,6 +419,7 @@
     const modal = ensureModal();
     const canvas = modal.querySelector(".surface-canvas");
     const pairsEl = modal.querySelector(".surface-pairs");
+    const controllersEl = modal.querySelector(".surface-controllers");
     const fixedEl = modal.querySelector(".surface-fixed");
     const inputsEl = modal.querySelector(".surface-inputs");
     const statusEl = modal.querySelector(".surface-status");
@@ -466,6 +471,14 @@
         "Поверхня відгуку"
       ).replace("{output}", text(config.surface?.outputTitleKey, outputKey));
       modal.querySelector(".docs-modal-close").setAttribute("aria-label", text("common.docs.close", "Close"));
+      controllersEl.innerHTML = Object.entries(CONTROLLER_PAGES)
+        .map(([controller, page]) => {
+          const label = text(`common.surface.controllers.${controller}`, controller);
+          return controller === config.controller
+            ? `<span class="docs-btn surface-pair surface-controller is-active" aria-current="page">${label}</span>`
+            : `<a class="docs-btn surface-pair surface-controller" href="${page}?surface&pair=${state.pair}">${label}</a>`;
+        })
+        .join("");
       pairsEl.innerHTML = pairs
         .map(
           ([a, b], index) =>
@@ -579,9 +592,40 @@
     const close = () => {
       modal.hidden = true;
       document.body.classList.remove("docs-modal-open");
+      // Opened by a link: drop ?surface so that a reload shows the plain page.
+      try {
+        const url = new URL(window.location.href);
+        if (url.searchParams.has("surface") || url.hash === "#surface") {
+          url.searchParams.delete("surface");
+          url.searchParams.delete("pair");
+          if (url.hash === "#surface") url.hash = "";
+          window.history.replaceState(null, "", url.pathname + url.search + url.hash);
+        }
+      } catch (error) {
+        // history is unavailable: nothing to clean up
+      }
     };
 
     button.addEventListener("click", open);
+
+    // The button is hidden in the page header on purpose: the response surface is
+    // reachable by a direct link instead, e.g. security.html?surface (or #surface).
+    // Opened after the page has finished its first calculation.
+    const wantsSurface = () => {
+      try {
+        return new URLSearchParams(window.location.search).has("surface") || window.location.hash === "#surface";
+      } catch (error) {
+        return false;
+      }
+    };
+    if (wantsSurface()) {
+      // ?pair=0..2 keeps the axis pair chosen on the previous controller page.
+      const pair = Number(new URLSearchParams(window.location.search).get("pair"));
+      if (Number.isInteger(pair) && pair >= 0 && pair < pairs.length) state.pair = pair;
+      const openFromLink = () => setTimeout(open, 0);
+      if (document.readyState === "complete") openFromLink();
+      else window.addEventListener("load", openFromLink, { once: true });
+    }
     modal.addEventListener("click", (event) => {
       if (event.target.closest("[data-surface-close]")) close();
       const pairBtn = event.target.closest("[data-pair]");

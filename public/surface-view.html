@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="uk">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex" />
+    <title>Поверхня відгуку</title>
+    <link rel="icon" href="favicon.svg" type="image/svg+xml" />
+    <script>
+      // Direct link to the response surface (the page buttons are hidden):
+      //   surface-view?controller=trust | security | intrusion
+      // opens the controller page with ?surface, which opens the surface modal.
+      // Other query parameters are passed through unchanged.
+      (function () {
+        var PAGES = { trust: "index.html", security: "security.html", intrusion: "intrusion.html" };
+        var params = new URLSearchParams(window.location.search);
+        var page = PAGES[(params.get("controller") || "").toLowerCase()];
+        if (!page) return;
+        params.delete("controller");
+        params.delete("surface");
+        var rest = params.toString();
+        window.location.replace(page + "?surface" + (rest ? "&" + rest : ""));
+      })();
+    </script>
+  </head>
+  <body style="font-family: system-ui, sans-serif; margin: 2rem; color: #2c3e50">
+    <p>Вкажіть контролер: <a href="surface-view?controller=trust">trust</a>,
+      <a href="surface-view?controller=security">security</a>,
+      <a href="surface-view?controller=intrusion">intrusion</a>.</p>
+  </body>
+</html>

@@ -69,6 +69,21 @@ describe("Surface API", () => {
     expect(response.body.fields.axes).toBeTruthy();
   });
 
+  test("surface button is hidden; the direct link /surface-view maps controllers to pages", async () => {
+    for (const page of ["/index.html", "/security.html", "/intrusion.html"]) {
+      const res = await request(app).get(page);
+      expect(res.text).toMatch(/data-surface hidden/);
+    }
+    const link = await request(app).get("/surface-view?controller=security");
+    expect(link.status).toBe(200);
+    expect(link.text).toContain('trust: "index.html", security: "security.html", intrusion: "intrusion.html"');
+    expect(link.text).toContain('page + "?surface"');
+    const i18n = await request(app).get("/i18n.json");
+    for (const lang of ["uk", "en"]) {
+      expect(Object.keys(i18n.body[lang].common.surface.controllers)).toEqual(["trust", "security", "intrusion"]);
+    }
+  });
+
   test("every page has the surface button and script", async () => {
     for (const page of ["/index.html", "/security.html", "/intrusion.html"]) {
       const res = await request(app).get(page);
