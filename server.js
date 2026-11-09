@@ -36,6 +36,8 @@ const app = express();
 const PORT = process.env.PORT || 3002;
 
 app.use("/vendor/katex", express.static(path.join(__dirname, "node_modules/katex/dist")));
+// Direct link to the response surface (its buttons are hidden on the pages).
+app.get("/surface-view", (req, res) => res.sendFile(path.join(__dirname, "public", "surface-view.html")));
 app.use(express.static(path.join(__dirname, "public")));
 app.use("/data", express.static(path.join(__dirname, "data")));
 app.use(express.json({ limit: "25mb" }));

@@ -374,6 +374,19 @@ function buildRouter() {
     return res.status(502).json({ error: "Device unreachable", host: m.dev.host });
   });
 
+  // Wi-Fi TX power of the node (firmware >= 1.4.0, endpoint /txpower): the
+  // gateway sets the level for the radio-channel series of the test bed.
+  router.post("/:id/txpower", async (req, res) => {
+    const m = getMonitor(req.params.id);
+    if (!m) return res.status(404).json({ error: "Unknown device" });
+    const dbm = Number(req.body && req.body.dbm);
+    if (!Number.isFinite(dbm) || dbm < 2 || dbm > 19.5) return res.status(400).json({ error: "dbm must be 2..19.5" });
+    const r = await hit(m.dev.host, `/txpower?dbm=${dbm}`, 1500);
+    if (!r.ok) return res.status(502).json({ error: "Device did not accept the command", status: r.status });
+    const tele = await fetchStatus(m.dev.host, 1500);
+    return res.json({ ok: true, requested: dbm, tx_power_dbm: tele ? tele.tx_power_dbm : null, tx_power_set_dbm: tele ? tele.tx_power_set_dbm : null });
+  });
+
   router.get("/:id/stream", (req, res) => {
     const m = getMonitor(req.params.id);
     if (!m) return res.status(404).end();
